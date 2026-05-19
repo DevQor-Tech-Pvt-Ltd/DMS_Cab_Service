@@ -13,10 +13,14 @@ const startServer = async () => {
 
   const server = http.createServer(app);
 
+  const allowedOrigins = process.env.CLIENT_URL
+    ? process.env.CLIENT_URL.split(',').map(url => url.trim())
+    : ['http://localhost:5173', 'http://localhost:4173'];
+
   // Setup Socket.IO
   const io = new Server(server, {
     cors: {
-      origin: [process.env.CLIENT_URL || 'http://localhost:5173', 'http://localhost:4173'],
+      origin: allowedOrigins,
       methods: ['GET', 'POST'],
     },
   });

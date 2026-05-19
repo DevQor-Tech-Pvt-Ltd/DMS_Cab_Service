@@ -10,6 +10,11 @@ web_modules/
 .env.test.local
 .env.production.local
 *.env
+.env.example
+*.env.example
+
+# Deployment Guide
+deployment_guide.md
 
 # Production Build Outputs
 dist/
