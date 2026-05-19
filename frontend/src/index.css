@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gold-500: #d4af37;
+  --color-gold-600: #aa8c2c;
+  --color-dark-900: #0a0a0a;
+  --color-dark-800: #141414;
+  --color-dark-700: #1f1f1f;
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Inter", sans-serif;
+}
+
+body {
+  background-color: var(--color-dark-900);
+  color: #ffffff;
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-serif);
+}
+
+.glass {
+  background: rgba(20, 20, 20, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+}
+
+button, 
+a, 
+[role="button"],
+input[type="submit"],
+input[type="button"],
+input[type="reset"] {
+  cursor: pointer !important;
+}
+
+/* Highly Optimized, GPU-Accelerated CSS Keyframe Animations */
+@keyframes fadeInUp {
+  0% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  opacity: 0; /* Starts hidden until animation triggers */
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  opacity: 0;
+}
+
+.animation-delay-100 {
+  animation-delay: 100ms;
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}
+
+.animation-delay-500 {
+  animation-delay: 500ms;
+}
+
+/* Custom Scrollbar Hide Utility */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+

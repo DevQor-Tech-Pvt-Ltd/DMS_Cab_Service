@@ -1,0 +1,246 @@
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const { sendInquiryEmail } = require('../utils/emailService');
+
+const createToken = (user) => {
+  return jwt.sign(
+    {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+    },
+    process.env.JWT_SECRET || 'supersecretjwt',
+    {
+      expiresIn: '7d',
+    }
+  );
+};
+
+const sendToken = (res, user) => {
+  const token = createToken(user);
+  const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none',
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+    path: '/',
+  };
+
+  res.cookie('token', token, cookieOptions);
+  res.status(200).json({ 
+    success: true, 
+    user: user.toJSON ? user.toJSON() : user, 
+    token,
+    role: user.role 
+  });
+};
+
+exports.register = async (req, res, next) => {
+  try {
+    const { fullName, email, phone, role, password, confirmPassword, vehicleNumber, licenseNumber, rcDocument, licenseDocument } = req.body;
+
+    // Validation
+    if (!fullName || !email || !phone || !role || !password || !confirmPassword) {
+      return res.status(400).json({ success: false, message: 'Please provide all required fields' });
+    }
+
+    if (password !== confirmPassword) {
+      return res.status(400).json({ success: false, message: 'Passwords do not match' });
+    }
+
+    if (!['admin', 'client', 'driver'].includes(role)) {
+      return res.status(400).json({ success: false, message: 'Invalid role' });
+    }
+
+    // Check if email already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(409).json({ success: false, message: 'Email already in use' });
+    }
+
+    // Prepare user data
+    const userData = { 
+      fullName, 
+      email, 
+      phone, 
+      role, 
+      password 
+    };
+
+    // If role is driver, set status to pending and require vehicle details
+    if (role === 'driver') {
+      if (!vehicleNumber || !licenseNumber || !rcDocument || !licenseDocument) {
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Vehicle number, license number, RC document, and license document are required for drivers' 
+        });
+      }
+      userData.vehicleNumber = vehicleNumber;
+      userData.licenseNumber = licenseNumber;
+      userData.rcDocument = rcDocument;
+      userData.licenseDocument = licenseDocument;
+      userData.status = 'pending'; // Drivers need admin approval
+      userData.isApproved = false;
+    } else {
+      // Clients are auto-approved
+      userData.status = 'approved';
+      userData.isApproved = true;
+    }
+
+    const user = await User.create(userData);
+
+    if (role === 'driver') {
+      return res.status(201).json({ 
+        success: true, 
+        message: 'Registration successful! Your account is pending admin approval.',
+        user: user.toJSON(),
+        approvalRequired: true 
+      });
+    }
+
+    sendToken(res, user);
+  } catch (error) {
+    console.error('Register error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Registration failed' });
+  }
+};
+
+exports.login = async (req, res, next) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ success: false, message: 'Email and password are required' });
+    }
+
+    const user = await User.findOne({ email }).select('+password');
+    if (!user || !(await user.matchPassword(password))) {
+      return res.status(401).json({ success: false, message: 'Invalid email or password' });
+    }
+
+    // Check if driver is approved
+    if (user.role === 'driver' && user.status !== 'approved') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Your account is pending admin approval. Please wait or contact support.',
+        status: user.status 
+      });
+    }
+
+    sendToken(res, user);
+  } catch (error) {
+    console.error('Login error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Login failed' });
+  }
+};
+
+exports.getMe = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id).populate('approvedBy', 'fullName email');
+    return res.status(200).json({ success: true, user: user.toJSON() });
+  } catch (error) {
+    console.error('GetMe error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Unable to fetch user' });
+  }
+};
+
+exports.logout = async (req, res, next) => {
+  try {
+    res.cookie('token', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none',
+      expires: new Date(0),
+      path: '/',
+    });
+
+    res.status(200).json({ success: true, message: 'Logged out successfully' });
+  } catch (error) {
+    console.error('Logout error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Logout failed' });
+  }
+};
+
+exports.updateProfile = async (req, res, next) => {
+  try {
+    const { fullName, email, phone, currentPassword, newPassword, vehicleNumber, licenseNumber, rcDocument, licenseDocument, profilePicture } = req.body;
+    
+    // Find the user (with password selected if they want to change it)
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Validate email if it's being updated
+    if (email && email !== user.email) {
+      const emailExists = await User.findOne({ email });
+      if (emailExists) {
+        return res.status(409).json({ success: false, message: 'Email is already in use' });
+      }
+      user.email = email;
+    }
+
+    // Update standard fields
+    if (fullName) user.fullName = fullName;
+    if (phone) user.phone = phone;
+    if (profilePicture !== undefined) user.profilePicture = profilePicture;
+
+    // Update driver specific fields if the user is a driver
+    if (user.role === 'driver') {
+      if (vehicleNumber) user.vehicleNumber = vehicleNumber;
+      if (licenseNumber) user.licenseNumber = licenseNumber;
+      if (rcDocument) user.rcDocument = rcDocument;
+      if (licenseDocument) user.licenseDocument = licenseDocument;
+    }
+
+    // Password update handling
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ success: false, message: 'Please provide current password to set a new password' });
+      }
+      const isMatch = await user.matchPassword(currentPassword);
+      if (!isMatch) {
+        return res.status(401).json({ success: false, message: 'Current password is incorrect' });
+      }
+      if (newPassword.length < 8) {
+        return res.status(400).json({ success: false, message: 'New password must be at least 8 characters long' });
+      }
+      user.password = newPassword;
+    }
+
+    await user.save();
+
+    // Remove password field before sending response
+    const updatedUser = user.toJSON();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully',
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Profile update failed' });
+  }
+};
+
+exports.contactInquiry = async (req, res, next) => {
+  try {
+    const { firstName, lastName, email, phone, subject, message } = req.body;
+    
+    if (!firstName || !lastName || !email || !subject || !message) {
+      return res.status(400).json({ success: false, message: 'Please provide all required fields' });
+    }
+
+    const emailSent = await sendInquiryEmail({ firstName, lastName, email, phone, subject, message });
+    
+    if (emailSent) {
+      return res.status(200).json({ success: true, message: 'Inquiry sent successfully' });
+    } else {
+      return res.status(500).json({ success: false, message: 'Failed to send inquiry email' });
+    }
+  } catch (error) {
+    console.error('Contact inquiry controller error:', error);
+    return res.status(500).json({ success: false, message: error.message || 'Failed to submit inquiry' });
+  }
+};
