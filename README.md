@@ -83,35 +83,6 @@ dms-cab-service/
 ├── .gitignore              # Root git ignore patterns
 └── README.md               # Documentation (This file)
 ```
-
----
-
-## ⚙️ Environment Configuration
-
-Create a `.env` file in the `/backend` directory:
-
-```env
-# MongoDB Connection String
-MONGO_URI=mongodb+srv://dms_admin:<password>@cluster0.zmmp2sd.mongodb.net/dms_luxe
-
-# Express Server Configuration
-PORT=5000
-NODE_ENV=development
-JWT_SECRET=your_super_secret_jwt_key_here
-
-# Razorpay API Credentials
-RAZORPAY_KEY_ID=rzp_test_abcdefghijkl
-RAZORPAY_KEY_SECRET=abcdefghijklsecret
-
-# Email SMTP Settings (Nodemailer)
-SMTP_USER=admin@gmail.com
-SMTP_PASS=abcd efgh ijkl mnop
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-```
-
----
-
 ## 🚀 Getting Started
 
 ### 1. Prerequisite Installations
