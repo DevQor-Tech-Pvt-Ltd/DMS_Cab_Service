@@ -1,5 +1,6 @@
 import React, { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
+import { api } from './services/authService';
 
 // Scroll to top on page change
 const ScrollToTop = () => {
@@ -41,6 +42,11 @@ const PageLoader = () => (
 );
 
 function App() {
+  useEffect(() => {
+    // Wake up the Render backend container in the background as soon as user lands
+    api.get('/').catch((err) => console.log('Backend wake-up ping:', err.message));
+  }, []);
+
   return (
     <Router>
       <ScrollToTop />

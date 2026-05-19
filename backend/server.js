@@ -5,11 +5,10 @@ const app = require('./app');
 const connectDB = require('./config/db');
 const createAdmin = require("./config/createAdmin");
 
-createAdmin();
-
 // Connect to Database and start server
 const startServer = async () => {
   await connectDB();
+  await createAdmin();
 
   const server = http.createServer(app);
 
