@@ -53,6 +53,10 @@ app.get('/', (req, res) => {
     res.send('DMS Luxe API is running');
 });
 
+app.get('/api/v1', (req, res) => {
+    res.status(200).json({ success: true, message: 'DMS Luxe API v1 is running' });
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
