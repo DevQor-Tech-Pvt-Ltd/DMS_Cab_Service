@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import {
   MapPin, Clock, CalendarCheck, Star,
@@ -11,6 +11,17 @@ import { useNavigate, Link } from 'react-router-dom';
 import TrackingMap from '../components/TrackingMap';
 import io from 'socket.io-client';
 import axios from 'axios';
+
+const StatCardSkeleton = () => (
+  <div className="bg-[#111620] border border-white/5 rounded-2xl p-6 relative overflow-hidden animate-pulse">
+    <div className="flex items-start justify-between mb-4">
+      <div className="w-12 h-12 rounded-xl bg-white/5"></div>
+    </div>
+    <div className="w-20 h-8 bg-white/5 rounded-lg mb-2"></div>
+    <div className="w-28 h-4 bg-white/5 rounded-md"></div>
+    <div className="w-24 h-3 bg-white/5 rounded mt-2"></div>
+  </div>
+);
 
 const StatCard = ({ icon: Icon, label, value, sub, color, delay }) => (
   <motion.div
@@ -34,6 +45,9 @@ const ClientDashboard = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [ridesList, setRidesList] = useState([]);
+  const [ridesLoading, setRidesLoading] = useState(true);
+  const [ridesError, setRidesError] = useState(null);
+  const hasFetched = useRef(false);
   const [resendingOtpId, setResendingOtpId] = useState(null);
   const [savedAddresses, setSavedAddresses] = useState([]);
 
@@ -80,28 +94,39 @@ const ClientDashboard = () => {
     localStorage.setItem(`dms_luxe_addresses_${user._id}`, JSON.stringify(updated));
   };
 
+  const fetchRides = async (force = false) => {
+    if (hasFetched.current && !force) return;
+    hasFetched.current = true;
+
+    try {
+      setRidesLoading(true);
+      setRidesError(null);
+      const token = localStorage.getItem('dms_luxe_token');
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      if (response.data.success) {
+        setRidesList(response.data.rides);
+      } else {
+        throw new Error(response.data.message || 'Failed to fetch rides.');
+      }
+    } catch (err) {
+      console.error('Failed to fetch client rides:', err);
+      setRidesError(err.response?.data?.message || err.message || 'Failed to load rides. Please check your connection.');
+      hasFetched.current = false;
+    } finally {
+      setRidesLoading(false);
+    }
+  };
+
   useEffect(() => {
     // If the auth session is loading/null, wait to prevent fetching without active token
     if (!user) return;
-
-    const fetchRides = async () => {
-      try {
-        const token = localStorage.getItem('dms_luxe_token');
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`
-            }
-          }
-        );
-        if (response.data.success) {
-          setRidesList(response.data.rides);
-        }
-      } catch (err) {
-        console.error('Failed to fetch client rides:', err);
-      }
-    };
     fetchRides();
   }, [user]);
 
@@ -323,11 +348,33 @@ const ClientDashboard = () => {
           </div>
         </motion.div>
 
+        {/* Notifications */}
+        {ridesError && (
+          <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-300 flex justify-between items-center">
+            <span>{ridesError}</span>
+            <button
+              onClick={() => fetchRides(true)}
+              className="px-3 py-1 text-xs font-semibold bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg transition-colors border border-red-500/30"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-          {stats.map((stat, index) => (
-            <StatCard key={stat.label} {...stat} delay={index * 0.1} />
-          ))}
+          {ridesLoading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            stats.map((stat, index) => (
+              <StatCard key={stat.label} {...stat} delay={index * 0.1} />
+            ))
+          )}
         </div>
 
         {/* Live Trip tracking */}
@@ -367,7 +414,20 @@ const ClientDashboard = () => {
               </Link>
             </div>
 
-            {upcomingRides.length === 0 ? (
+            {ridesLoading ? (
+              <div className="space-y-4">
+                {[...Array(2)].map((_, i) => (
+                  <div key={i} className="bg-[#0a0f18] border border-white/5 rounded-xl p-5 relative overflow-hidden animate-pulse">
+                    <div className="flex justify-between mb-4">
+                      <div className="w-24 h-4 bg-white/5 rounded"></div>
+                      <div className="w-16 h-4 bg-white/5 rounded my-1"></div>
+                    </div>
+                    <div className="h-4 bg-white/5 rounded w-3/4 mb-3"></div>
+                    <div className="h-3 bg-white/5 rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
+            ) : upcomingRides.length === 0 ? (
               <div className="text-center py-12 text-gray-500">
                 <Car size={40} className="mx-auto mb-3 opacity-30" />
                 <p>No upcoming rides. Book your next journey!</p>
@@ -567,7 +627,18 @@ const ClientDashboard = () => {
             )}
           </div>
 
-          {rideHistory.length === 0 ? (
+          {ridesLoading ? (
+            <div className="space-y-3 py-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="flex justify-between items-center py-2 border-b border-white/5 animate-pulse">
+                  <div className="w-16 h-4 bg-white/5 rounded"></div>
+                  <div className="w-24 h-4 bg-white/5 rounded"></div>
+                  <div className="w-32 h-4 bg-white/5 rounded"></div>
+                  <div className="w-16 h-4 bg-white/5 rounded"></div>
+                </div>
+              ))}
+            </div>
+          ) : rideHistory.length === 0 ? (
             <div className="text-center py-12 text-gray-500 border border-dashed border-white/5 rounded-xl">
               <History size={40} className="mx-auto mb-3 opacity-30" />
               <p className="text-sm">No completed journeys yet.</p>

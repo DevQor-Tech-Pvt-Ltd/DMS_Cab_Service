@@ -32,6 +32,17 @@ const StatCard = ({ icon: Icon, label, value, sub, color, delay }) => (
   </motion.div>
 );
 
+const StatCardSkeleton = () => (
+  <div className="bg-[#111620] border border-white/5 rounded-2xl p-6 relative overflow-hidden animate-pulse">
+    <div className="flex items-start justify-between mb-4">
+      <div className="w-12 h-12 rounded-xl bg-white/5"></div>
+    </div>
+    <div className="w-20 h-8 bg-white/5 rounded-lg mb-2"></div>
+    <div className="w-28 h-4 bg-white/5 rounded-md"></div>
+    <div className="w-24 h-3 bg-white/5 rounded mt-2"></div>
+  </div>
+);
+
 const DriverDashboard = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
@@ -40,6 +51,9 @@ const DriverDashboard = () => {
   // Dynamic Ride tracking states
   const [activeRide, setActiveRide] = useState(null);
   const [allRides, setAllRides] = useState([]);
+  const [ridesLoading, setRidesLoading] = useState(true);
+  const [ridesError, setRidesError] = useState(null);
+  const hasFetched = useRef(false);
   const [rideNotifications, setRideNotifications] = useState([]);
   const [notificationStatus, setNotificationStatus] = useState({});
   const [rideCancelStatus, setRideCancelStatus] = useState(null);
@@ -136,8 +150,13 @@ const DriverDashboard = () => {
     });
 
     // Load current rides from DB on mount
-    const fetchCurrentRides = async () => {
+    const fetchCurrentRides = async (force = false) => {
+      if (hasFetched.current && !force) return;
+      hasFetched.current = true;
+
       try {
+        setRidesLoading(true);
+        setRidesError(null);
         const token = localStorage.getItem('dms_luxe_token');
         const response = await axios.get(
           `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides`,
@@ -167,9 +186,15 @@ const DriverDashboard = () => {
             r => r.status === 'pending' && !handledList.includes(r._id)
           );
           setRideNotifications(pendings);
+        } else {
+          throw new Error(response.data.message || 'Failed to fetch rides.');
         }
       } catch (err) {
         console.error('Failed to load current rides:', err);
+        setRidesError(err.response?.data?.message || err.message || 'Failed to load rides. Please check your connection.');
+        hasFetched.current = false;
+      } finally {
+        setRidesLoading(false);
       }
     };
 
@@ -612,11 +637,33 @@ const DriverDashboard = () => {
           })}
         </AnimatePresence>
 
+        {/* Notifications */}
+        {ridesError && (
+          <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-300 flex justify-between items-center">
+            <span>{ridesError}</span>
+            <button
+              onClick={() => fetchCurrentRides(true)}
+              className="px-3 py-1 text-xs font-semibold bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg transition-colors border border-red-500/30"
+            >
+              Retry
+            </button>
+          </div>
+        )}
+
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-          {stats.map((stat, index) => (
-            <StatCard key={stat.label} {...stat} delay={index * 0.1} />
-          ))}
+          {ridesLoading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            stats.map((stat, index) => (
+              <StatCard key={stat.label} {...stat} delay={index * 0.1} />
+            ))
+          )}
         </div>
 
         {/* Current Ride + Upcoming Assignments */}

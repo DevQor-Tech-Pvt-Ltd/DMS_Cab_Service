@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Users, Car, CalendarCheck, TrendingUp, 
@@ -298,10 +298,13 @@ const AdminDashboard = () => {
   const [statsData, setStatsData] = useState(null);
   const [drivers, setDrivers] = useState([]);
   const [approvedDriversList, setApprovedDriversList] = useState([]);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [statsError, setStatsError] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedDoc, setSelectedDoc] = useState(null); // { docData, docTitle, driverName }
+
+  const hasFetched = useRef(false);
 
   // Redirect non-admin or unauthenticated users (e.g. on logout)
   useEffect(() => {
@@ -312,20 +315,41 @@ const AdminDashboard = () => {
     }
   }, [user, authLoading, navigate]);
 
-  const fetchData = async () => {
+  const fetchData = async (forceRetry = false) => {
+    if (hasFetched.current && !forceRetry) return;
+    hasFetched.current = true;
+
     try {
+      setStatsLoading(true);
       setLoading(true);
-      setError('');
-      const statsRes = await getDashboardStats();
-      const driversRes = await getPendingDrivers();
-      const approvedRes = await getApprovedDrivers();
-      if (statsRes.success) setStatsData(statsRes.stats);
-      if (driversRes.success) setDrivers(driversRes.drivers);
-      if (approvedRes.success) setApprovedDriversList(approvedRes.drivers);
+      setStatsError(null);
+
+      // Perform parallel requests for maximum production performance
+      const [statsRes, driversRes, approvedRes] = await Promise.all([
+        getDashboardStats(),
+        getPendingDrivers(),
+        getApprovedDrivers()
+      ]);
+
+      if (statsRes.success) {
+        setStatsData(statsRes.stats);
+      } else {
+        throw new Error(statsRes.message || 'Failed to fetch dashboard statistics.');
+      }
+
+      if (driversRes.success) {
+        setDrivers(driversRes.drivers);
+      }
+      if (approvedRes.success) {
+        setApprovedDriversList(approvedRes.drivers);
+      }
     } catch (err) {
-      console.error(err);
-      setError('Failed to fetch dashboard data. Please try again.');
+      console.error('Error loading admin dashboard stats:', err);
+      setStatsError(err.message || 'Failed to load dashboard data. Please check your network connection.');
+      // Allow retry if it failed
+      hasFetched.current = false;
     } finally {
+      setStatsLoading(false);
       setLoading(false);
     }
   };
@@ -338,31 +362,33 @@ const AdminDashboard = () => {
 
   const handleApprove = async (driverId) => {
     try {
-      setError('');
+      setStatsError(null);
       setSuccessMessage('');
       const res = await approveDriver(driverId);
       if (res.success) {
         setSuccessMessage(res.message || 'Driver approved successfully!');
-        fetchData();
+        // Pass forceRetry to re-fetch new statistics
+        fetchData(true);
       }
     } catch (err) {
       console.error(err);
-      setError(err?.response?.data?.message || 'Failed to approve driver.');
+      setStatsError(err?.response?.data?.message || 'Failed to approve driver.');
     }
   };
 
   const handleReject = async (driverId) => {
     try {
-      setError('');
+      setStatsError(null);
       setSuccessMessage('');
       const res = await rejectDriver(driverId);
       if (res.success) {
         setSuccessMessage(res.message || 'Driver application rejected.');
-        fetchData();
+        // Pass forceRetry to re-fetch new statistics
+        fetchData(true);
       }
     } catch (err) {
       console.error(err);
-      setError(err?.response?.data?.message || 'Failed to reject driver.');
+      setStatsError(err?.response?.data?.message || 'Failed to reject driver.');
     }
   };
 
@@ -382,10 +408,10 @@ const AdminDashboard = () => {
   }
 
   const stats = [
-    { icon: Users, label: 'Total Users', value: statsData ? statsData.totalUsers.toString() : '0', trend: statsData?.trends?.userTrend, color: 'bg-blue-500/10 text-blue-400' },
-    { icon: Car, label: 'Approved Chauffeurs', value: statsData ? statsData.approvedDrivers.toString() : '0', trend: statsData?.trends?.approvedTrend, color: 'bg-[#d4af37]/10 text-[#d4af37]' },
-    { icon: AlertTriangle, label: 'Pending Approvals', value: statsData ? statsData.pendingDriverApprovals.toString() : '0', trend: statsData?.trends?.pendingTrend, color: 'bg-amber-500/10 text-amber-400' },
-    { icon: TrendingUp, label: 'Total Drivers Registered', value: statsData ? statsData.totalDrivers.toString() : '0', trend: statsData?.trends?.driverTrend, color: 'bg-purple-500/10 text-purple-400' },
+    { icon: Users, label: 'Total Users', value: statsData ? statsData.totalUsers.toString() : '', trend: statsData?.trends?.userTrend, color: 'bg-blue-500/10 text-blue-400' },
+    { icon: Car, label: 'Approved Chauffeurs', value: statsData ? statsData.approvedDrivers.toString() : '', trend: statsData?.trends?.approvedTrend, color: 'bg-[#d4af37]/10 text-[#d4af37]' },
+    { icon: AlertTriangle, label: 'Pending Approvals', value: statsData ? statsData.pendingDriverApprovals.toString() : '', trend: statsData?.trends?.pendingTrend, color: 'bg-amber-500/10 text-amber-400' },
+    { icon: TrendingUp, label: 'Total Drivers Registered', value: statsData ? statsData.totalDrivers.toString() : '', trend: statsData?.trends?.driverTrend, color: 'bg-purple-500/10 text-purple-400' },
   ];
 
 
@@ -412,9 +438,18 @@ const AdminDashboard = () => {
         </motion.div>
 
         {/* Notifications */}
-        {error && (
-          <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-300">
-            {error}
+        {statsError && (
+          <div className="mb-6 rounded-xl bg-red-500/10 border border-red-500/30 px-4 py-3 text-sm text-red-300 flex justify-between items-center">
+            <span>{statsError}</span>
+            <button
+              onClick={() => {
+                hasFetched.current = false;
+                fetchData(true);
+              }}
+              className="px-3 py-1 text-xs font-semibold bg-red-500/20 hover:bg-red-500/30 text-red-200 rounded-lg transition-colors border border-red-500/30"
+            >
+              Retry
+            </button>
           </div>
         )}
         {successMessage && (
@@ -425,18 +460,18 @@ const AdminDashboard = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-          {loading && !statsData ? (
+          {statsLoading ? (
             <>
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
               <StatCardSkeleton />
             </>
-          ) : (
+          ) : statsData ? (
             stats.map((stat, index) => (
               <StatCard key={stat.label} {...stat} delay={index * 0.1} />
             ))
-          )}
+          ) : null}
         </div>
 
         {/* Business Overview Section */}
@@ -451,7 +486,7 @@ const AdminDashboard = () => {
             <h2 className="text-xl font-serif text-white">Business Overview</h2>
           </div>
 
-          {loading && !statsData ? (
+          {statsLoading ? (
             <div className="space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 {[...Array(4)].map((_, i) => (
@@ -464,40 +499,40 @@ const AdminDashboard = () => {
               </div>
               <ChartSkeleton />
             </div>
-          ) : (
+          ) : statsData ? (
             <>
               {/* Business Stats Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
                 <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
                   <p className="text-xs text-gray-400 mb-1">Total Bookings</p>
-                  <p className="text-2xl font-bold text-white font-mono">{statsData?.businessStats?.totalRides || 0}</p>
+                  <p className="text-2xl font-bold text-white font-mono">{statsData.businessStats?.totalRides || 0}</p>
                   <p className="text-[10px] text-gray-500 mt-1">All-time bookings</p>
                 </div>
                 <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
                   <p className="text-xs text-gray-400 mb-1">Completed Rides</p>
-                  <p className="text-2xl font-bold text-emerald-400 font-mono">{statsData?.businessStats?.completedRides || 0}</p>
+                  <p className="text-2xl font-bold text-emerald-400 font-mono">{statsData.businessStats?.completedRides || 0}</p>
                   <p className="text-[10px] text-gray-500 mt-1">Successfully delivered</p>
                 </div>
                 <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
                   <p className="text-xs text-gray-400 mb-1">Active Rides</p>
-                  <p className="text-2xl font-bold text-blue-400 font-mono">{statsData?.businessStats?.activeRides || 0}</p>
+                  <p className="text-2xl font-bold text-blue-400 font-mono">{statsData.businessStats?.activeRides || 0}</p>
                   <p className="text-[10px] text-gray-500 mt-1">In progress on the road</p>
                 </div>
                 <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
                   <p className="text-xs text-gray-400 mb-1">Total Earnings</p>
-                  <p className="text-2xl font-bold text-[#d4af37] font-mono font-sans">₹{(statsData?.businessStats?.totalRevenue || 0).toLocaleString('en-IN')}</p>
+                  <p className="text-2xl font-bold text-[#d4af37] font-mono font-sans">₹{(statsData.businessStats?.totalRevenue || 0).toLocaleString('en-IN')}</p>
                   <p className="text-[10px] text-gray-500 mt-1">Completed ride fares</p>
                 </div>
               </div>
 
               {/* Dynamic SVG business chart */}
-              <BusinessAnalyticsChart data={statsData?.chartData} />
+              <BusinessAnalyticsChart data={statsData.chartData} />
             </>
-          )}
+          ) : null}
         </motion.div>
 
         {/* Main Content Grid */}
-        {loading && !statsData ? (
+        {statsLoading ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
             <div className="lg:col-span-2 bg-[#111620] border border-white/5 rounded-2xl p-6 h-80 relative overflow-hidden animate-pulse">
               <div className="w-48 h-6 bg-white/5 rounded mb-6"></div>
@@ -526,7 +561,7 @@ const AdminDashboard = () => {
               </div>
             </div>
           </div>
-        ) : (
+        ) : statsData ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Recent Activity */}
             <motion.div
@@ -635,7 +670,7 @@ const AdminDashboard = () => {
               </div>
             </motion.div>
           </div>
-        )}
+        ) : null}
 
         {/* Pending Driver Approvals */}
         <motion.div
