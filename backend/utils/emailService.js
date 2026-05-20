@@ -1,12 +1,15 @@
 const nodemailer = require('nodemailer');
 
+const smtpUser = process.env.SMTP_USER || 'engineering@devqor.in';
+const smtpPass = process.env.SMTP_PASS || 'mski ivlv nydl xqok';
+
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
   port: parseInt(process.env.SMTP_PORT || '587'),
   secure: false, // true for 465, false for other ports
   auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    user: smtpUser,
+    pass: smtpPass,
   },
 });
 
@@ -291,7 +294,7 @@ exports.sendInvoiceEmail = async (ride) => {
     `;
 
     const mailOptions = {
-      from: `"DMS Luxe" <${process.env.SMTP_USER}>`,
+      from: `"DMS Luxe" <${smtpUser}>`,
       to,
       subject: `Luxury Booking Invoice - #${bookingId} [DMS Luxe]`,
       html: htmlContent,
@@ -312,7 +315,7 @@ exports.sendInvoiceEmail = async (ride) => {
 exports.sendEmail = async ({ to, subject, html }) => {
   try {
     const mailOptions = {
-      from: `"DMS Luxe" <${process.env.SMTP_USER}>`,
+      from: `"DMS Luxe" <${smtpUser}>`,
       to,
       subject,
       html,
@@ -457,7 +460,7 @@ exports.sendOtpEmail = async (ride, otp, driverName) => {
  */
 exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, message }) => {
   try {
-    const to = `pritam.mondal@devqor.in, ${process.env.SMTP_USER || 'engineering@devqor.in'}`;
+    const to = `pritam.mondal@devqor.in, ${smtpUser}`;
     const fullName = `${firstName} ${lastName}`;
     
     const htmlContent = `
@@ -581,7 +584,7 @@ exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, 
     `;
 
     const mailOptions = {
-      from: `"${fullName} via DMS Luxe" <${process.env.SMTP_USER}>`,
+      from: `"${fullName} via DMS Luxe" <${smtpUser}>`,
       to,
       replyTo: email,
       subject: `New Inquiry: ${subject.toUpperCase()} from ${fullName}`,

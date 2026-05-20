@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, Phone, Mail, Clock, Send, CheckCircle2 } from '../utils/icons';
+import { MapPin, Phone, Mail, Clock, Send, CheckCircle2, Loader2 } from '../utils/icons';
 import { submitContactInquiry } from '../services/authService';
 
 const ContactPage = () => {
@@ -254,7 +254,11 @@ const ContactPage = () => {
                     className="w-full bg-[#ffe392] disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold py-4 rounded-lg flex items-center justify-center space-x-2 hover:bg-[#e6c87a] transition-colors"
                   >
                     <span>{loading ? 'Sending Message...' : 'Send Message'}</span>
-                    <Send size={18} />
+                    {loading ? (
+                      <Loader2 size={18} className="animate-spin" />
+                    ) : (
+                      <Send size={18} />
+                    )}
                   </button>
                 </form>
 

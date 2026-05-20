@@ -58,6 +58,7 @@ import Plane from "lucide-react/dist/esm/icons/plane";
 import CalendarDays from "lucide-react/dist/esm/icons/calendar-days";
 import Building from "lucide-react/dist/esm/icons/building";
 import Gem from "lucide-react/dist/esm/icons/gem";
+import Loader2 from "lucide-react/dist/esm/icons/loader-2";
 
 export {
   User,
@@ -116,5 +117,6 @@ export {
   Plane,
   CalendarDays,
   Building,
-  Gem
+  Gem,
+  Loader2
 };
