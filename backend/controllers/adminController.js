@@ -178,6 +178,28 @@ exports.getDashboardStats = async (req, res) => {
       ? Math.round((processedDrivers / totalDrivers) * 100) 
       : 100;
 
+    // Calculate dynamic growth trends
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    const recentUsersCount = await User.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
+    const priorUsersCount = await User.countDocuments({ createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo } });
+    const userTrend = priorUsersCount > 0 
+      ? Math.round(((recentUsersCount - priorUsersCount) / priorUsersCount) * 100)
+      : recentUsersCount > 0 ? 100 : 0;
+
+    const recentDriversCount = await User.countDocuments({ role: 'driver', createdAt: { $gte: sevenDaysAgo } });
+    const priorDriversCount = await User.countDocuments({ role: 'driver', createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo } });
+    const driverTrend = priorDriversCount > 0
+      ? Math.round(((recentDriversCount - priorDriversCount) / priorDriversCount) * 100)
+      : recentDriversCount > 0 ? 100 : 0;
+
+    const pendingTrend = totalDrivers > 0
+      ? Math.round((pendingDriverApprovals / totalDrivers) * 100)
+      : 0;
+
     // Fetch ride statistics
     const totalRides = await Ride.countDocuments();
     const completedRides = await Ride.countDocuments({ status: 'completed' });
@@ -279,6 +301,12 @@ exports.getDashboardStats = async (req, res) => {
         applicationSuccessRate,
         documentAuthenticityIndex,
         backgroundVerificationCheck
+      },
+      trends: {
+        userTrend,
+        driverTrend,
+        pendingTrend,
+        approvedTrend: applicationSuccessRate
       },
       activities,
       businessStats: {

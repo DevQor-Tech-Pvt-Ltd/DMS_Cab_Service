@@ -351,10 +351,10 @@ const AdminDashboard = () => {
   }
 
   const stats = [
-    { icon: Users, label: 'Total Users', value: statsData ? statsData.totalUsers : '1,247', trend: 12, color: 'bg-blue-500/10 text-blue-400' },
-    { icon: Car, label: 'Approved Chauffeurs', value: statsData ? statsData.approvedDrivers : '12', trend: 5, color: 'bg-[#d4af37]/10 text-[#d4af37]' },
-    { icon: AlertTriangle, label: 'Pending Approvals', value: statsData ? statsData.pendingDriverApprovals : '3', trend: -20, color: 'bg-amber-500/10 text-amber-400' },
-    { icon: TrendingUp, label: 'Total Drivers Registered', value: statsData ? statsData.totalDrivers : '15', trend: 8, color: 'bg-purple-500/10 text-purple-400' },
+    { icon: Users, label: 'Total Users', value: statsData ? statsData.totalUsers.toString() : '0', trend: statsData?.trends?.userTrend, color: 'bg-blue-500/10 text-blue-400' },
+    { icon: Car, label: 'Approved Chauffeurs', value: statsData ? statsData.approvedDrivers.toString() : '0', trend: statsData?.trends?.approvedTrend, color: 'bg-[#d4af37]/10 text-[#d4af37]' },
+    { icon: AlertTriangle, label: 'Pending Approvals', value: statsData ? statsData.pendingDriverApprovals.toString() : '0', trend: statsData?.trends?.pendingTrend, color: 'bg-amber-500/10 text-amber-400' },
+    { icon: TrendingUp, label: 'Total Drivers Registered', value: statsData ? statsData.totalDrivers.toString() : '0', trend: statsData?.trends?.driverTrend, color: 'bg-purple-500/10 text-purple-400' },
   ];
 
 
