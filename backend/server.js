@@ -12,14 +12,25 @@ const startServer = async () => {
 
   const server = http.createServer(app);
 
-  const allowedOrigins = process.env.CLIENT_URL
-    ? process.env.CLIENT_URL.split(',').map(url => url.trim())
-    : ['http://localhost:5173', 'http://localhost:4173'];
-
   // Setup Socket.IO
   const io = new Server(server, {
     cors: {
-      origin: allowedOrigins,
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        const list = process.env.CLIENT_URL
+            ? process.env.CLIENT_URL.split(',').map(url => url.trim())
+            : ['http://localhost:5173', 'http://localhost:4173'];
+
+        const isAllowed = list.some(allowed => origin === allowed) || 
+                          origin.endsWith('.vercel.app') || 
+                          process.env.NODE_ENV === 'development';
+
+        if (isAllowed) {
+          callback(null, true);
+        } else {
+          callback(new Error('Not allowed by CORS'));
+        }
+      },
       methods: ['GET', 'POST'],
     },
   });
