@@ -62,7 +62,16 @@ const Navbar = () => {
           </div>
 
           <div className="hidden md:flex items-center space-x-6 min-h-[46px]">
-            {!loading && (
+            {loading && !user ? (
+              <div className="flex items-center space-x-6 animate-pulse">
+                <div className="flex items-center space-x-2">
+                  <div className="w-7 h-7 rounded-full bg-white/5 border border-white/10"></div>
+                  <div className="h-4 w-20 bg-white/5 rounded"></div>
+                </div>
+                <div className="w-24 h-9 bg-white/5 border border-white/10 rounded-lg"></div>
+                <div className="w-16 h-4 bg-white/5 rounded"></div>
+              </div>
+            ) : (
               <>
                 {user ? (
                   <>
@@ -147,7 +156,16 @@ const Navbar = () => {
                 </Link>
               ))}
               <div className="pt-4 border-t border-white/10 space-y-4">
-                {!loading && (
+                {loading && !user ? (
+                  <div className="space-y-4 animate-pulse px-2">
+                    <div className="flex items-center space-x-2 py-1">
+                      <div className="w-6 h-6 rounded-full bg-white/5"></div>
+                      <div className="h-4 w-24 bg-white/5 rounded"></div>
+                    </div>
+                    <div className="h-4 w-20 bg-white/5 rounded"></div>
+                    <div className="h-4 w-16 bg-white/5 rounded"></div>
+                  </div>
+                ) : (
                   <>
                     {user ? (
                       <>
