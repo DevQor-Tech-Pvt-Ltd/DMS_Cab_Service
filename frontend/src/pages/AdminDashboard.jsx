@@ -34,6 +34,37 @@ const StatCard = ({ icon: Icon, label, value, trend, color, delay }) => (
   </motion.div>
 );
 
+const StatCardSkeleton = () => (
+  <div className="bg-[#111620] border border-white/5 rounded-2xl p-6 relative overflow-hidden animate-pulse">
+    <div className="flex items-start justify-between mb-4">
+      <div className="w-12 h-12 rounded-xl bg-white/5"></div>
+      <div className="w-12 h-5 rounded-full bg-white/5"></div>
+    </div>
+    <div className="w-20 h-8 bg-white/5 rounded-lg mb-2"></div>
+    <div className="w-28 h-4 bg-white/5 rounded-md"></div>
+  </div>
+);
+
+const ChartSkeleton = () => (
+  <div className="bg-[#111620] border border-white/5 rounded-2xl p-6 h-80 flex flex-col justify-between animate-pulse">
+    <div className="flex justify-between items-center mb-6">
+      <div className="space-y-2">
+        <div className="w-32 h-5 bg-white/5 rounded-md"></div>
+        <div className="w-48 h-3 bg-white/5 rounded-md"></div>
+      </div>
+      <div className="flex space-x-2">
+        <div className="w-24 h-8 bg-white/5 rounded-lg"></div>
+        <div className="w-24 h-8 bg-white/5 rounded-lg"></div>
+      </div>
+    </div>
+    <div className="flex-1 w-full bg-white/5 rounded-xl flex items-end p-4 space-x-3">
+      {[...Array(7)].map((_, i) => (
+        <div key={i} className="flex-1 bg-white/[0.03] rounded-t-lg" style={{ height: `${20 + i * 10}%` }}></div>
+      ))}
+    </div>
+  </div>
+);
+
 const iconMap = {
   Users,
   Shield,
@@ -394,10 +425,20 @@ const AdminDashboard = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
-          {stats.map((stat, index) => (
-            <StatCard key={stat.label} {...stat} delay={index * 0.1} />
-          ))}
+          {loading && !statsData ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            stats.map((stat, index) => (
+              <StatCard key={stat.label} {...stat} delay={index * 0.1} />
+            ))
+          )}
         </div>
+
         {/* Business Overview Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -410,143 +451,191 @@ const AdminDashboard = () => {
             <h2 className="text-xl font-serif text-white">Business Overview</h2>
           </div>
 
-          {/* Business Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
-            <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
-              <p className="text-xs text-gray-400 mb-1">Total Bookings</p>
-              <p className="text-2xl font-bold text-white font-mono">{statsData?.businessStats?.totalRides || 0}</p>
-              <p className="text-[10px] text-gray-500 mt-1">All-time bookings</p>
+          {loading && !statsData ? (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-[#111620] border border-white/5 rounded-2xl p-5 relative overflow-hidden animate-pulse">
+                    <div className="w-24 h-4 bg-white/5 rounded mb-2"></div>
+                    <div className="w-16 h-8 bg-white/5 rounded mb-2"></div>
+                    <div className="w-20 h-3 bg-white/5 rounded"></div>
+                  </div>
+                ))}
+              </div>
+              <ChartSkeleton />
             </div>
-            <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
-              <p className="text-xs text-gray-400 mb-1">Completed Rides</p>
-              <p className="text-2xl font-bold text-emerald-400 font-mono">{statsData?.businessStats?.completedRides || 0}</p>
-              <p className="text-[10px] text-gray-500 mt-1">Successfully delivered</p>
-            </div>
-            <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
-              <p className="text-xs text-gray-400 mb-1">Active Rides</p>
-              <p className="text-2xl font-bold text-blue-400 font-mono">{statsData?.businessStats?.activeRides || 0}</p>
-              <p className="text-[10px] text-gray-500 mt-1">In progress on the road</p>
-            </div>
-            <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
-              <p className="text-xs text-gray-400 mb-1">Total Earnings</p>
-              <p className="text-2xl font-bold text-[#d4af37] font-mono font-sans">₹{(statsData?.businessStats?.totalRevenue || 0).toLocaleString('en-IN')}</p>
-              <p className="text-[10px] text-gray-500 mt-1">Completed ride fares</p>
-            </div>
-          </div>
+          ) : (
+            <>
+              {/* Business Stats Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+                <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
+                  <p className="text-xs text-gray-400 mb-1">Total Bookings</p>
+                  <p className="text-2xl font-bold text-white font-mono">{statsData?.businessStats?.totalRides || 0}</p>
+                  <p className="text-[10px] text-gray-500 mt-1">All-time bookings</p>
+                </div>
+                <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
+                  <p className="text-xs text-gray-400 mb-1">Completed Rides</p>
+                  <p className="text-2xl font-bold text-emerald-400 font-mono">{statsData?.businessStats?.completedRides || 0}</p>
+                  <p className="text-[10px] text-gray-500 mt-1">Successfully delivered</p>
+                </div>
+                <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
+                  <p className="text-xs text-gray-400 mb-1">Active Rides</p>
+                  <p className="text-2xl font-bold text-blue-400 font-mono">{statsData?.businessStats?.activeRides || 0}</p>
+                  <p className="text-[10px] text-gray-500 mt-1">In progress on the road</p>
+                </div>
+                <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
+                  <p className="text-xs text-gray-400 mb-1">Total Earnings</p>
+                  <p className="text-2xl font-bold text-[#d4af37] font-mono font-sans">₹{(statsData?.businessStats?.totalRevenue || 0).toLocaleString('en-IN')}</p>
+                  <p className="text-[10px] text-gray-500 mt-1">Completed ride fares</p>
+                </div>
+              </div>
 
-          {/* Dynamic SVG business chart */}
-          <BusinessAnalyticsChart data={statsData?.chartData} />
+              {/* Dynamic SVG business chart */}
+              <BusinessAnalyticsChart data={statsData?.chartData} />
+            </>
+          )}
         </motion.div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Recent Activity */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
-            className="lg:col-span-2 bg-[#111620] border border-white/5 rounded-2xl p-6"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center space-x-2">
-                <Activity size={20} className="text-[#d4af37]" />
-                <h2 className="text-lg font-serif text-white">System Activity Logs</h2>
+        {loading && !statsData ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div className="lg:col-span-2 bg-[#111620] border border-white/5 rounded-2xl p-6 h-80 relative overflow-hidden animate-pulse">
+              <div className="w-48 h-6 bg-white/5 rounded mb-6"></div>
+              <div className="space-y-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex space-x-4 items-center">
+                    <div className="w-9 h-9 rounded-lg bg-white/5"></div>
+                    <div className="flex-1 h-4 bg-white/5 rounded"></div>
+                    <div className="w-16 h-3 bg-white/5 rounded"></div>
+                  </div>
+                ))}
               </div>
             </div>
-            <div className="space-y-1">
-              {!statsData?.activities || statsData.activities.length === 0 ? (
-                <div className="text-center py-8 text-gray-500 text-sm">
-                  No system activity logs recorded yet.
-                </div>
-              ) : (
-                statsData.activities.map((activity, index) => {
-                  const colorMap = {
-                    success: 'text-emerald-400 bg-emerald-500/10',
-                    info: 'text-blue-400 bg-blue-500/10',
-                    warning: 'text-amber-400 bg-amber-500/10',
-                    error: 'text-red-400 bg-red-500/10',
-                  };
-                  const colors = colorMap[activity.type] || colorMap.info;
-                  const ActivityIcon = iconMap[activity.iconName] || Clock;
-                  return (
-                    <div 
-                      key={index} 
-                      className="flex items-center space-x-4 p-3 rounded-xl hover:bg-white/[0.02] transition-colors"
-                    >
-                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors}`}>
-                        <ActivityIcon size={16} />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-200 truncate">{activity.text}</p>
-                      </div>
-                      <div className="flex items-center space-x-1 text-xs text-gray-500 shrink-0">
-                        <Clock size={12} />
-                        <span>{formatRelativeTime(activity.time)}</span>
-                      </div>
+            <div className="bg-[#111620] border border-white/5 rounded-2xl p-6 h-80 relative overflow-hidden animate-pulse">
+              <div className="w-48 h-6 bg-white/5 rounded mb-6"></div>
+              <div className="space-y-6">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="flex justify-between">
+                      <div className="w-28 h-4 bg-white/5 rounded"></div>
+                      <div className="w-10 h-4 bg-white/5 rounded"></div>
                     </div>
-                  );
-                })
-              )}
+                    <div className="h-2 bg-white/5 rounded-full"></div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </motion.div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Recent Activity */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.4 }}
+              className="lg:col-span-2 bg-[#111620] border border-white/5 rounded-2xl p-6"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center space-x-2">
+                  <Activity size={20} className="text-[#d4af37]" />
+                  <h2 className="text-lg font-serif text-white">System Activity Logs</h2>
+                </div>
+              </div>
+              <div className="space-y-1">
+                {!statsData?.activities || statsData.activities.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500 text-sm">
+                    No system activity logs recorded yet.
+                  </div>
+                ) : (
+                  statsData.activities.map((activity, index) => {
+                    const colorMap = {
+                      success: 'text-emerald-400 bg-emerald-500/10',
+                      info: 'text-blue-400 bg-blue-500/10',
+                      warning: 'text-amber-400 bg-amber-500/10',
+                      error: 'text-red-400 bg-red-500/10',
+                    };
+                    const colors = colorMap[activity.type] || colorMap.info;
+                    const ActivityIcon = iconMap[activity.iconName] || Clock;
+                    return (
+                      <div 
+                        key={index} 
+                        className="flex items-center space-x-4 p-3 rounded-xl hover:bg-white/[0.02] transition-colors"
+                      >
+                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors}`}>
+                          <ActivityIcon size={16} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-200 truncate">{activity.text}</p>
+                        </div>
+                        <div className="flex items-center space-x-1 text-xs text-gray-500 shrink-0">
+                          <Clock size={12} />
+                          <span>{formatRelativeTime(activity.time)}</span>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </motion.div>
 
-          {/* Quick Stats Sidebar */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
-            className="bg-[#111620] border border-white/5 rounded-2xl p-6"
-          >
-            <div className="flex items-center space-x-2 mb-6">
-              <BarChart3 size={20} className="text-[#d4af37]" />
-              <h2 className="text-lg font-serif text-white">Chauffeur Quality Index</h2>
-            </div>
-            <div className="space-y-5">
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-400">Application Success Rate</span>
-                  <span className="text-white font-medium">
-                    {statsData?.qualityIndex ? `${statsData.qualityIndex.applicationSuccessRate}%` : '100%'}
-                  </span>
+            {/* Quick Stats Sidebar */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.5 }}
+              className="bg-[#111620] border border-white/5 rounded-2xl p-6"
+            >
+              <div className="flex items-center space-x-2 mb-6">
+                <BarChart3 size={20} className="text-[#d4af37]" />
+                <h2 className="text-lg font-serif text-white">Chauffeur Quality Index</h2>
+              </div>
+              <div className="space-y-5">
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gray-400">Application Success Rate</span>
+                    <span className="text-white font-medium">
+                      {statsData?.qualityIndex ? `${statsData.qualityIndex.applicationSuccessRate}%` : '100%'}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-[#d4af37] to-[#ffe392] rounded-full transition-all duration-500" 
+                      style={{ width: `${statsData?.qualityIndex ? statsData.qualityIndex.applicationSuccessRate : 100}%` }}
+                    ></div>
+                  </div>
                 </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-[#d4af37] to-[#ffe392] rounded-full transition-all duration-500" 
-                    style={{ width: `${statsData?.qualityIndex ? statsData.qualityIndex.applicationSuccessRate : 100}%` }}
-                  ></div>
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gray-400">Document Authenticity Index</span>
+                    <span className="text-white font-medium">
+                      {statsData?.qualityIndex ? `${statsData.qualityIndex.documentAuthenticityIndex}%` : '100%'}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-full transition-all duration-500" 
+                      style={{ width: `${statsData?.qualityIndex ? statsData.qualityIndex.documentAuthenticityIndex : 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-sm mb-2">
+                    <span className="text-gray-400">Background Verification Check</span>
+                    <span className="text-white font-medium">
+                      {statsData?.qualityIndex ? `${statsData.qualityIndex.backgroundVerificationCheck}%` : '100%'}
+                    </span>
+                  </div>
+                  <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-500 to-blue-300 rounded-full transition-all duration-500" 
+                      style={{ width: `${statsData?.qualityIndex ? statsData.qualityIndex.backgroundVerificationCheck : 100}%` }}
+                    ></div>
+                  </div>
                 </div>
               </div>
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-400">Document Authenticity Index</span>
-                  <span className="text-white font-medium">
-                    {statsData?.qualityIndex ? `${statsData.qualityIndex.documentAuthenticityIndex}%` : '100%'}
-                  </span>
-                </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-full transition-all duration-500" 
-                    style={{ width: `${statsData?.qualityIndex ? statsData.qualityIndex.documentAuthenticityIndex : 100}%` }}
-                  ></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-2">
-                  <span className="text-gray-400">Background Verification Check</span>
-                  <span className="text-white font-medium">
-                    {statsData?.qualityIndex ? `${statsData.qualityIndex.backgroundVerificationCheck}%` : '100%'}
-                  </span>
-                </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-gradient-to-r from-blue-500 to-blue-300 rounded-full transition-all duration-500" 
-                    style={{ width: `${statsData?.qualityIndex ? statsData.qualityIndex.backgroundVerificationCheck : 100}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
+            </motion.div>
+          </div>
+        )}
 
         {/* Pending Driver Approvals */}
         <motion.div
