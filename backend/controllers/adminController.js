@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Ride = require('../models/Ride');
 
 // Get all pending driver applications
 exports.getPendingDrivers = async (req, res) => {
@@ -177,6 +178,46 @@ exports.getDashboardStats = async (req, res) => {
       ? Math.round((processedDrivers / totalDrivers) * 100) 
       : 100;
 
+    // Fetch ride statistics
+    const totalRides = await Ride.countDocuments();
+    const completedRides = await Ride.countDocuments({ status: 'completed' });
+    const cancelledRides = await Ride.countDocuments({ status: 'cancelled' });
+    const activeRides = await Ride.countDocuments({ status: { $in: ['accepted', 'driver_assigned', 'driver_arrived', 'ride_started'] } });
+    
+    const completedRidesList = await Ride.find({ status: 'completed' }).select('fare');
+    const totalRevenue = completedRidesList.reduce((sum, r) => sum + (r.fare || 0), 0);
+
+    // Last 7 days business chart data
+    const chartData = [];
+    for (let i = 6; i >= 0; i--) {
+      const startOfDay = new Date();
+      startOfDay.setDate(startOfDay.getDate() - i);
+      startOfDay.setHours(0, 0, 0, 0);
+
+      const endOfDay = new Date();
+      endOfDay.setDate(endOfDay.getDate() - i);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const dayBookings = await Ride.countDocuments({
+        createdAt: { $gte: startOfDay, $lte: endOfDay }
+      });
+
+      const dayCompletedRides = await Ride.find({
+        status: 'completed',
+        createdAt: { $gte: startOfDay, $lte: endOfDay }
+      }).select('fare');
+
+      const dayRevenue = dayCompletedRides.reduce((sum, r) => sum + (r.fare || 0), 0);
+
+      const dateLabel = startOfDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+      chartData.push({
+        label: dateLabel,
+        bookings: dayBookings,
+        revenue: dayRevenue
+      });
+    }
+
     // Fetch recent users/registrations to construct dynamic logs
     const recentUsers = await User.find()
       .sort({ updatedAt: -1 })
@@ -239,7 +280,15 @@ exports.getDashboardStats = async (req, res) => {
         documentAuthenticityIndex,
         backgroundVerificationCheck
       },
-      activities
+      activities,
+      businessStats: {
+        totalRides,
+        completedRides,
+        cancelledRides,
+        activeRides,
+        totalRevenue
+      },
+      chartData
     };
 
     return res.status(200).json({ 

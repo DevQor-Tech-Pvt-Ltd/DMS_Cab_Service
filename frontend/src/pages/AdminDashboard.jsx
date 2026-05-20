@@ -59,6 +59,207 @@ const formatRelativeTime = (dateString) => {
   return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
 };
 
+const BusinessAnalyticsChart = ({ data }) => {
+  const [activeTab, setActiveTab] = useState('revenue'); // 'revenue' or 'bookings'
+  const [hoveredIndex, setHoveredIndex] = useState(null);
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="bg-[#111620] border border-white/5 rounded-2xl p-6 h-80 flex items-center justify-center text-gray-500">
+        No business data available to chart.
+      </div>
+    );
+  }
+
+  // Find max value for scaling
+  const values = data.map(d => activeTab === 'revenue' ? d.revenue : d.bookings);
+  const maxValue = Math.max(...values, 10);
+  
+  // Chart dimensions
+  const width = 500;
+  const height = 200;
+  const paddingLeft = 50;
+  const paddingRight = 20;
+  const paddingTop = 20;
+  const paddingBottom = 30;
+
+  const chartWidth = width - paddingLeft - paddingRight;
+  const chartHeight = height - paddingTop - paddingBottom;
+
+  // Calculate coordinates for points
+  const points = data.map((d, index) => {
+    const x = paddingLeft + (index / (data.length - 1)) * chartWidth;
+    const value = activeTab === 'revenue' ? d.revenue : d.bookings;
+    const y = paddingTop + chartHeight - (value / maxValue) * chartHeight;
+    return { x, y, label: d.label, val: value };
+  });
+
+  // Build SVG path
+  let pathD = '';
+  let areaD = '';
+  if (points.length > 0) {
+    pathD = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+      const cpX1 = points[i-1].x + chartWidth / (data.length - 1) / 3;
+      const cpY1 = points[i-1].y;
+      const cpX2 = points[i].x - chartWidth / (data.length - 1) / 3;
+      const cpY2 = points[i].y;
+      pathD += ` C ${cpX1} ${cpY1}, ${cpX2} ${cpY2}, ${points[i].x} ${points[i].y}`;
+    }
+    areaD = `${pathD} L ${points[points.length - 1].x} ${paddingTop + chartHeight} L ${points[0].x} ${paddingTop + chartHeight} Z`;
+  }
+
+  return (
+    <div className="bg-[#111620] border border-white/5 rounded-2xl p-6 mb-8">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6">
+        <div>
+          <h2 className="text-lg font-serif text-white">Business Analytics</h2>
+          <p className="text-xs text-gray-400">Weekly performance summary</p>
+        </div>
+        <div className="flex space-x-2 mt-4 sm:mt-0">
+          <button
+            onClick={() => setActiveTab('revenue')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === 'revenue' 
+                ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/10' 
+                : 'bg-white/5 text-gray-400 hover:text-white'
+            }`}
+          >
+            Revenue (INR)
+          </button>
+          <button
+            onClick={() => setActiveTab('bookings')}
+            className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === 'bookings' 
+                ? 'bg-[#d4af37] text-black shadow-lg shadow-[#d4af37]/10' 
+                : 'bg-white/5 text-gray-400 hover:text-white'
+            }`}
+          >
+            Rides Booked
+          </button>
+        </div>
+      </div>
+
+      {/* SVG Chart */}
+      <div className="relative">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto overflow-visible">
+          <defs>
+            <linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#d4af37" stopOpacity="0.3"/>
+              <stop offset="100%" stopColor="#d4af37" stopOpacity="0.0"/>
+            </linearGradient>
+            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#d4af37" floodOpacity="0.25"/>
+            </filter>
+          </defs>
+
+          {/* Grid lines */}
+          {[0, 0.25, 0.5, 0.75, 1].map((ratio, idx) => {
+            const y = paddingTop + ratio * chartHeight;
+            const val = Math.round(maxValue - ratio * maxValue);
+            return (
+              <g key={idx} className="opacity-20">
+                <line 
+                  x1={paddingLeft} 
+                  y1={y} 
+                  x2={width - paddingRight} 
+                  y2={y} 
+                  stroke="#fff" 
+                  strokeWidth="0.5" 
+                  strokeDasharray="4 4"
+                />
+                <text 
+                  x={paddingLeft - 8} 
+                  y={y + 4} 
+                  fill="#fff" 
+                  fontSize="8" 
+                  textAnchor="end" 
+                  className="font-mono font-light fill-gray-400"
+                >
+                  {activeTab === 'revenue' ? `₹${val}` : val}
+                </text>
+              </g>
+            );
+          })}
+
+          {/* X Axis labels */}
+          {points.map((pt, index) => (
+            <text
+              key={index}
+              x={pt.x}
+              y={height - 10}
+              fill="#9ca3af"
+              fontSize="8"
+              textAnchor="middle"
+              className="font-mono font-light"
+            >
+              {pt.label}
+            </text>
+          ))}
+
+          {/* Area Fill */}
+          <path d={areaD} fill="url(#chartGrad)" />
+
+          {/* Glowing Line */}
+          <path 
+            d={pathD} 
+            fill="none" 
+            stroke="#d4af37" 
+            strokeWidth="2.5" 
+            strokeLinecap="round"
+            filter="url(#glow)"
+          />
+
+          {/* Interactive Hover / Points */}
+          {points.map((pt, index) => (
+            <g 
+              key={index}
+              onMouseEnter={() => setHoveredIndex(index)}
+              onMouseLeave={() => setHoveredIndex(null)}
+              className="cursor-pointer"
+            >
+              <circle
+                cx={pt.x}
+                cy={pt.y}
+                r={hoveredIndex === index ? "6" : "3.5"}
+                fill={hoveredIndex === index ? "#fff" : "#d4af37"}
+                stroke="#111620"
+                strokeWidth="1.5"
+                className="transition-all duration-150"
+              />
+              <circle
+                cx={pt.x}
+                cy={pt.y}
+                r="15"
+                fill="transparent"
+              />
+            </g>
+          ))}
+        </svg>
+
+        {/* Floating Tooltip */}
+        {hoveredIndex !== null && (
+          <div 
+            className="absolute z-10 bg-[#161c2a] border border-[#d4af37]/30 text-white p-3 rounded-xl shadow-2xl text-xs pointer-events-none transition-all duration-75"
+            style={{
+              left: `${((points[hoveredIndex].x - paddingLeft) / chartWidth) * 100}%`,
+              top: `${(points[hoveredIndex].y / height) * 100 - 35}%`,
+              transform: 'translateX(-50%)',
+            }}
+          >
+            <p className="font-semibold text-gray-300 mb-1">{points[hoveredIndex].label}</p>
+            <p className="text-[#d4af37] font-semibold font-mono">
+              {activeTab === 'revenue' 
+                ? `Revenue: ₹${points[hoveredIndex].val.toLocaleString('en-IN')}`
+                : `Bookings: ${points[hoveredIndex].val} rides`}
+            </p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
 const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -197,6 +398,45 @@ const AdminDashboard = () => {
             <StatCard key={stat.label} {...stat} delay={index * 0.1} />
           ))}
         </div>
+        {/* Business Overview Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.2 }}
+          className="mb-8"
+        >
+          <div className="flex items-center space-x-2 mb-4">
+            <BarChart3 size={18} className="text-[#d4af37]" />
+            <h2 className="text-xl font-serif text-white">Business Overview</h2>
+          </div>
+
+          {/* Business Stats Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-6">
+            <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
+              <p className="text-xs text-gray-400 mb-1">Total Bookings</p>
+              <p className="text-2xl font-bold text-white font-mono">{statsData?.businessStats?.totalRides || 0}</p>
+              <p className="text-[10px] text-gray-500 mt-1">All-time bookings</p>
+            </div>
+            <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
+              <p className="text-xs text-gray-400 mb-1">Completed Rides</p>
+              <p className="text-2xl font-bold text-emerald-400 font-mono">{statsData?.businessStats?.completedRides || 0}</p>
+              <p className="text-[10px] text-gray-500 mt-1">Successfully delivered</p>
+            </div>
+            <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
+              <p className="text-xs text-gray-400 mb-1">Active Rides</p>
+              <p className="text-2xl font-bold text-blue-400 font-mono">{statsData?.businessStats?.activeRides || 0}</p>
+              <p className="text-[10px] text-gray-500 mt-1">In progress on the road</p>
+            </div>
+            <div className="bg-[#111620] border border-white/5 rounded-2xl p-5 hover:border-white/10 transition-colors">
+              <p className="text-xs text-gray-400 mb-1">Total Earnings</p>
+              <p className="text-2xl font-bold text-[#d4af37] font-mono font-sans">₹{(statsData?.businessStats?.totalRevenue || 0).toLocaleString('en-IN')}</p>
+              <p className="text-[10px] text-gray-500 mt-1">Completed ride fares</p>
+            </div>
+          </div>
+
+          {/* Dynamic SVG business chart */}
+          <BusinessAnalyticsChart data={statsData?.chartData} />
+        </motion.div>
 
         {/* Main Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
