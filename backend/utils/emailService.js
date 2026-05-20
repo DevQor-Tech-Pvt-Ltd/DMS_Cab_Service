@@ -1,7 +1,11 @@
 const nodemailer = require('nodemailer');
 
-const smtpUser = process.env.SMTP_USER || 'engineering@devqor.in';
-const smtpPass = process.env.SMTP_PASS || 'mski ivlv nydl xqok';
+const smtpUser = process.env.SMTP_USER;
+const smtpPass = process.env.SMTP_PASS;
+
+if (!smtpUser || !smtpPass) {
+  console.warn('Warning: SMTP_USER or SMTP_PASS environment variables are not set.');
+}
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST || 'smtp.gmail.com',
