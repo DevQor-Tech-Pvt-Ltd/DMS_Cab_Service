@@ -3,13 +3,16 @@ const User = require('../models/User');
 const { sendInquiryEmail } = require('../utils/emailService');
 
 const createToken = (user) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is not configured. Server cannot issue tokens.');
+  }
   return jwt.sign(
     {
       id: user._id,
       email: user.email,
       role: user.role,
     },
-    process.env.JWT_SECRET || 'supersecretjwt',
+    process.env.JWT_SECRET,
     {
       expiresIn: '7d',
     }
@@ -18,10 +21,11 @@ const createToken = (user) => {
 
 const sendToken = (res, user) => {
   const token = createToken(user);
+  const isProduction = process.env.NODE_ENV === 'production';
   const cookieOptions = {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none',
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin Vercel↔Render
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/',
   };
@@ -48,7 +52,8 @@ exports.register = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Passwords do not match' });
     }
 
-    if (!['admin', 'client', 'driver'].includes(role)) {
+    // Only 'client' and 'driver' roles are allowed via public registration
+    if (!['client', 'driver'].includes(role)) {
       return res.status(400).json({ success: false, message: 'Invalid role' });
     }
 
@@ -101,7 +106,7 @@ exports.register = async (req, res, next) => {
     sendToken(res, user);
   } catch (error) {
     console.error('Register error:', error);
-    return res.status(500).json({ success: false, message: error.message || 'Registration failed' });
+    return res.status(500).json({ success: false, message: 'Registration failed. Please try again.' });
   }
 };
 
@@ -130,7 +135,7 @@ exports.login = async (req, res, next) => {
     sendToken(res, user);
   } catch (error) {
     console.error('Login error:', error);
-    return res.status(500).json({ success: false, message: error.message || 'Login failed' });
+    return res.status(500).json({ success: false, message: 'Login failed. Please try again.' });
   }
 };
 
@@ -140,16 +145,17 @@ exports.getMe = async (req, res, next) => {
     return res.status(200).json({ success: true, user: user.toJSON() });
   } catch (error) {
     console.error('GetMe error:', error);
-    return res.status(500).json({ success: false, message: error.message || 'Unable to fetch user' });
+    return res.status(500).json({ success: false, message: 'Unable to fetch user profile.' });
   }
 };
 
 exports.logout = async (req, res, next) => {
   try {
+    const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('token', '', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'lax' : 'none',
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
       expires: new Date(0),
       path: '/',
     });
@@ -157,7 +163,7 @@ exports.logout = async (req, res, next) => {
     res.status(200).json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
     console.error('Logout error:', error);
-    return res.status(500).json({ success: false, message: error.message || 'Logout failed' });
+    return res.status(500).json({ success: false, message: 'Logout failed.' });
   }
 };
 
@@ -220,7 +226,7 @@ exports.updateProfile = async (req, res, next) => {
     });
   } catch (error) {
     console.error('Update profile error:', error);
-    return res.status(500).json({ success: false, message: error.message || 'Profile update failed' });
+    return res.status(500).json({ success: false, message: 'Profile update failed. Please try again.' });
   }
 };
 
@@ -241,6 +247,6 @@ exports.contactInquiry = async (req, res, next) => {
     }
   } catch (error) {
     console.error('Contact inquiry controller error:', error);
-    return res.status(500).json({ success: false, message: error.message || 'Failed to submit inquiry' });
+    return res.status(500).json({ success: false, message: 'Failed to submit inquiry. Please try again.' });
   }
 };
