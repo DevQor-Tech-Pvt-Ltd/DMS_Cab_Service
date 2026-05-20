@@ -11,3 +11,6 @@ export const approveDriver = (driverId) =>
 
 export const rejectDriver = (driverId, reason = '') => 
   api.patch(`/admin/reject-driver/${driverId}`, { reason }).then((res) => res.data);
+
+export const getApprovedDrivers = () => 
+  api.get('/admin/approved-drivers').then((res) => res.data);
