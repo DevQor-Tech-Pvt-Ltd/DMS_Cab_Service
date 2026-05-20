@@ -6,7 +6,12 @@ import tailwindcss from '@tailwindcss/vite'
 export default defineConfig(({ mode }) => {
   // Load env file based on mode in the current working directory.
   const env = loadEnv(mode, process.cwd(), '');
-  const apiURL = env.VITE_API_URL || 'https://dms-cab-service-fh35.onrender.com/api/v1';
+  let apiURL = env.VITE_API_URL || 'https://dms-cab-service-fh35.onrender.com/api/v1';
+
+  // Ensure that the API URL ends with /api/v1 to prevent 404 router errors
+  if (apiURL && !apiURL.endsWith('/api/v1')) {
+    apiURL = apiURL.replace(/\/$/, '') + '/api/v1';
+  }
 
   return {
     plugins: [react(), tailwindcss()],
