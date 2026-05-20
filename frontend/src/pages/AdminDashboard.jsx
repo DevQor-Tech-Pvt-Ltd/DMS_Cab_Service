@@ -34,6 +34,31 @@ const StatCard = ({ icon: Icon, label, value, trend, color, delay }) => (
   </motion.div>
 );
 
+const iconMap = {
+  Users,
+  Shield,
+  CheckCircle,
+  XCircle,
+  UserCheck,
+  AlertTriangle,
+  Clock
+};
+
+const formatRelativeTime = (dateString) => {
+  if (!dateString) return 'Just now';
+  const now = new Date();
+  const past = new Date(dateString);
+  const diffMs = now - past;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMins < 1) return 'Just now';
+  if (diffMins < 60) return `${diffMins} ${diffMins === 1 ? 'min' : 'mins'} ago`;
+  if (diffHours < 24) return `${diffHours} ${diffHours === 1 ? 'hr' : 'hrs'} ago`;
+  return `${diffDays} ${diffDays === 1 ? 'day' : 'days'} ago`;
+};
+
 const AdminDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
@@ -131,12 +156,7 @@ const AdminDashboard = () => {
     { icon: TrendingUp, label: 'Total Drivers Registered', value: statsData ? statsData.totalDrivers : '15', trend: 8, color: 'bg-purple-500/10 text-purple-400' },
   ];
 
-  const recentActivities = [
-    { icon: UserCheck, text: 'New driver registration received', time: 'Just now', type: 'success' },
-    { icon: Shield, text: 'Document verification modules updated', time: '12 min ago', type: 'info' },
-    { icon: AlertTriangle, text: 'Pending driver verification check scheduled', time: '25 min ago', type: 'warning' },
-    { icon: CheckCircle, text: 'Admin active session established', time: '1 hr ago', type: 'success' },
-  ];
+
 
   return (
     <div className="min-h-screen bg-[#060a11] pt-28 pb-16 px-4 sm:px-6 lg:px-8">
@@ -194,32 +214,39 @@ const AdminDashboard = () => {
               </div>
             </div>
             <div className="space-y-1">
-              {recentActivities.map((activity, index) => {
-                const colorMap = {
-                  success: 'text-emerald-400 bg-emerald-500/10',
-                  info: 'text-blue-400 bg-blue-500/10',
-                  warning: 'text-amber-400 bg-amber-500/10',
-                  error: 'text-red-400 bg-red-500/10',
-                };
-                const colors = colorMap[activity.type] || colorMap.info;
-                return (
-                  <div 
-                    key={index} 
-                    className="flex items-center space-x-4 p-3 rounded-xl hover:bg-white/[0.02] transition-colors"
-                  >
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors}`}>
-                      <activity.icon size={16} />
+              {!statsData?.activities || statsData.activities.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 text-sm">
+                  No system activity logs recorded yet.
+                </div>
+              ) : (
+                statsData.activities.map((activity, index) => {
+                  const colorMap = {
+                    success: 'text-emerald-400 bg-emerald-500/10',
+                    info: 'text-blue-400 bg-blue-500/10',
+                    warning: 'text-amber-400 bg-amber-500/10',
+                    error: 'text-red-400 bg-red-500/10',
+                  };
+                  const colors = colorMap[activity.type] || colorMap.info;
+                  const ActivityIcon = iconMap[activity.iconName] || Clock;
+                  return (
+                    <div 
+                      key={index} 
+                      className="flex items-center space-x-4 p-3 rounded-xl hover:bg-white/[0.02] transition-colors"
+                    >
+                      <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${colors}`}>
+                        <ActivityIcon size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-200 truncate">{activity.text}</p>
+                      </div>
+                      <div className="flex items-center space-x-1 text-xs text-gray-500 shrink-0">
+                        <Clock size={12} />
+                        <span>{formatRelativeTime(activity.time)}</span>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-gray-200 truncate">{activity.text}</p>
-                    </div>
-                    <div className="flex items-center space-x-1 text-xs text-gray-500 shrink-0">
-                      <Clock size={12} />
-                      <span>{activity.time}</span>
-                    </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </motion.div>
 
@@ -238,28 +265,43 @@ const AdminDashboard = () => {
               <div>
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-gray-400">Application Success Rate</span>
-                  <span className="text-white font-medium">82%</span>
+                  <span className="text-white font-medium">
+                    {statsData?.qualityIndex ? `${statsData.qualityIndex.applicationSuccessRate}%` : '100%'}
+                  </span>
                 </div>
                 <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-[#d4af37] to-[#ffe392] rounded-full" style={{ width: '82%' }}></div>
+                  <div 
+                    className="h-full bg-gradient-to-r from-[#d4af37] to-[#ffe392] rounded-full transition-all duration-500" 
+                    style={{ width: `${statsData?.qualityIndex ? statsData.qualityIndex.applicationSuccessRate : 100}%` }}
+                  ></div>
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-gray-400">Document Authenticity Index</span>
-                  <span className="text-white font-medium">99%</span>
+                  <span className="text-white font-medium">
+                    {statsData?.qualityIndex ? `${statsData.qualityIndex.documentAuthenticityIndex}%` : '100%'}
+                  </span>
                 </div>
                 <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-full" style={{ width: '99%' }}></div>
+                  <div 
+                    className="h-full bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-full transition-all duration-500" 
+                    style={{ width: `${statsData?.qualityIndex ? statsData.qualityIndex.documentAuthenticityIndex : 100}%` }}
+                  ></div>
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-sm mb-2">
                   <span className="text-gray-400">Background Verification Check</span>
-                  <span className="text-white font-medium">100%</span>
+                  <span className="text-white font-medium">
+                    {statsData?.qualityIndex ? `${statsData.qualityIndex.backgroundVerificationCheck}%` : '100%'}
+                  </span>
                 </div>
                 <div className="h-2 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-blue-500 to-blue-300 rounded-full" style={{ width: '100%' }}></div>
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-blue-300 rounded-full transition-all duration-500" 
+                    style={{ width: `${statsData?.qualityIndex ? statsData.qualityIndex.backgroundVerificationCheck : 100}%` }}
+                  ></div>
                 </div>
               </div>
             </div>

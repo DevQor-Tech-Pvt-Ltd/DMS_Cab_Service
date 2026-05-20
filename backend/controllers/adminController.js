@@ -157,14 +157,89 @@ exports.rejectDriver = async (req, res) => {
 // Get dashboard stats for admin
 exports.getDashboardStats = async (req, res) => {
   try {
+    const totalUsers = await User.countDocuments();
+    const totalAdmins = await User.countDocuments({ role: 'admin' });
+    const totalClients = await User.countDocuments({ role: 'client' });
+    const totalDrivers = await User.countDocuments({ role: 'driver' });
+    const pendingDriverApprovals = await User.countDocuments({ role: 'driver', status: 'pending' });
+    const approvedDrivers = await User.countDocuments({ role: 'driver', status: 'approved' });
+    const rejectedDrivers = await User.countDocuments({ role: 'driver', status: 'rejected' });
+
+    // Calculate dynamic indices
+    const processedDrivers = approvedDrivers + rejectedDrivers;
+    const applicationSuccessRate = processedDrivers > 0 
+      ? Math.round((approvedDrivers / processedDrivers) * 100) 
+      : 100;
+    const documentAuthenticityIndex = totalDrivers > 0 
+      ? Math.round((approvedDrivers / totalDrivers) * 100) 
+      : 100;
+    const backgroundVerificationCheck = totalDrivers > 0 
+      ? Math.round((processedDrivers / totalDrivers) * 100) 
+      : 100;
+
+    // Fetch recent users/registrations to construct dynamic logs
+    const recentUsers = await User.find()
+      .sort({ updatedAt: -1 })
+      .limit(10)
+      .populate('approvedBy', 'fullName');
+
+    const activities = [];
+    for (const u of recentUsers) {
+      if (u.role === 'driver') {
+        if (u.status === 'pending') {
+          activities.push({
+            iconName: 'UserCheck',
+            text: `Chauffeur application received: ${u.fullName}`,
+            time: u.createdAt,
+            type: 'warning'
+          });
+        } else if (u.status === 'approved') {
+          const approverName = u.approvedBy ? u.approvedBy.fullName : 'Admin';
+          activities.push({
+            iconName: 'CheckCircle',
+            text: `Chauffeur approved: ${u.fullName} (by ${approverName})`,
+            time: u.approvalDate || u.updatedAt,
+            type: 'success'
+          });
+        } else if (u.status === 'rejected') {
+          activities.push({
+            iconName: 'XCircle',
+            text: `Chauffeur application rejected: ${u.fullName}`,
+            time: u.updatedAt,
+            type: 'error'
+          });
+        }
+      } else if (u.role === 'client') {
+        activities.push({
+          iconName: 'Users',
+          text: `New client registration: ${u.fullName}`,
+          time: u.createdAt,
+          type: 'info'
+        });
+      } else if (u.role === 'admin') {
+        activities.push({
+          iconName: 'Shield',
+          text: `Admin access granted: ${u.fullName}`,
+          time: u.createdAt,
+          type: 'success'
+        });
+      }
+    }
+
     const stats = {
-      totalUsers: await User.countDocuments(),
-      totalAdmins: await User.countDocuments({ role: 'admin' }),
-      totalClients: await User.countDocuments({ role: 'client' }),
-      totalDrivers: await User.countDocuments({ role: 'driver' }),
-      pendingDriverApprovals: await User.countDocuments({ role: 'driver', status: 'pending' }),
-      approvedDrivers: await User.countDocuments({ role: 'driver', status: 'approved' }),
-      rejectedDrivers: await User.countDocuments({ role: 'driver', status: 'rejected' }),
+      totalUsers,
+      totalAdmins,
+      totalClients,
+      totalDrivers,
+      pendingDriverApprovals,
+      approvedDrivers,
+      rejectedDrivers,
+      qualityIndex: {
+        applicationSuccessRate,
+        documentAuthenticityIndex,
+        backgroundVerificationCheck
+      },
+      activities
     };
 
     return res.status(200).json({ 
