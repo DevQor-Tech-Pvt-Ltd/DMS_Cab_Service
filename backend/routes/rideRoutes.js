@@ -7,7 +7,8 @@ const {
   driverArrived,
   verifyOtp,
   resendOtp,
-  completeRide
+  completeRide,
+  rateRide
 } = require('../controllers/rideController');
 const { protect } = require('../middleware/authMiddleware');
 const { rideBookingLimiter } = require('../middlewares/rateLimiters');
@@ -28,5 +29,6 @@ router.patch('/:id/driver-arrived', driverArrived);
 router.post('/verify-otp', verifyOtp);
 router.post('/:id/resend-otp', resendOtp);
 router.patch('/:id/complete', completeRide);
+router.patch('/:id/rate', rateRide);
 
 module.exports = router;

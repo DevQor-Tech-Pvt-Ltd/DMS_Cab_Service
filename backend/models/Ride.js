@@ -89,6 +89,19 @@ const rideSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    completedAt: {
+      type: Date,
+      default: null,
+    },
+    rating: {
+      type: Number,
+      min: 1,
+      max: 5,
+    },
+    feedback: {
+      type: String,
+      default: '',
+    },
     otpAuditLogs: [
       {
         attemptedAt: { type: Date, default: Date.now },

@@ -37,6 +37,14 @@ const ClientDashboard = () => {
   const [resendingOtpId, setResendingOtpId] = useState(null);
   const [savedAddresses, setSavedAddresses] = useState([]);
 
+  // Rating states
+  const [showRatingModal, setShowRatingModal] = useState(false);
+  const [selectedRideId, setSelectedRideId] = useState(null);
+  const [userRating, setUserRating] = useState(5);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [feedbackText, setFeedbackText] = useState('');
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+
   // Redirect to home page if not authenticated (e.g. on logout)
   useEffect(() => {
     if (!loading && !user) {
@@ -163,14 +171,58 @@ const ClientDashboard = () => {
   const rideHistory = liveRides.filter(r => 
     ['completed', 'cancelled'].includes(r.status)
   ).map(r => ({
+    _id: r._id,
     id: r.id,
     date: r.date,
     from: r.pickup,
     to: r.drop,
     amount: `₹${r.fare ? r.fare.toLocaleString() : '0'}`,
     status: r.status,
-    rating: r.rating || 5 // Default rating placeholder
+    rating: r.rating
   }));
+
+  const handleOpenRatingModal = (rideId) => {
+    setSelectedRideId(rideId);
+    setUserRating(5);
+    setHoverRating(0);
+    setFeedbackText('');
+    setShowRatingModal(true);
+  };
+
+  const handleSubmitRating = async (e) => {
+    e.preventDefault();
+    if (!selectedRideId) return;
+
+    setRatingSubmitting(true);
+    try {
+      const token = localStorage.getItem('dms_luxe_token');
+      const response = await axios.patch(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides/${selectedRideId}/rate`,
+        {
+          rating: userRating,
+          feedback: feedbackText
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      if (response.data.success) {
+        setRidesList(prev =>
+          prev.map(r => r._id === selectedRideId ? { ...r, rating: userRating, feedback: feedbackText } : r)
+        );
+        setShowRatingModal(false);
+        alert('Thank you for rating your ride!');
+      }
+    } catch (err) {
+      console.error('Failed to submit rating:', err);
+      alert(err.response?.data?.message || 'Failed to submit rating. Please try again.');
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
 
   // Action helper to resend OTP
   const handleResendOtp = async (rideId) => {
@@ -542,15 +594,28 @@ const ClientDashboard = () => {
                       <td className="py-4 text-sm text-gray-300">{ride.to}</td>
                       <td className="py-4 text-sm text-white font-medium">{ride.amount}</td>
                       <td className="py-4">
-                        <div className="flex items-center space-x-1">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              size={13}
-                              className={i < ride.rating ? 'text-[#d4af37] fill-[#d4af37]' : 'text-gray-600'}
-                            />
-                          ))}
-                        </div>
+                        {ride.status === 'completed' ? (
+                          ride.rating ? (
+                            <div className="flex items-center space-x-1">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  size={13}
+                                  className={i < ride.rating ? 'text-[#d4af37] fill-[#d4af37]' : 'text-gray-600'}
+                                />
+                              ))}
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => handleOpenRatingModal(ride._id)}
+                              className="text-xs bg-[#d4af37]/10 text-[#d4af37] border border-[#d4af37]/20 hover:bg-[#d4af37] hover:text-[#060a11] px-2.5 py-1.5 rounded-lg transition-all font-semibold cursor-pointer"
+                            >
+                              Rate Ride
+                            </button>
+                          )
+                        ) : (
+                          <span className="text-gray-600">—</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -560,6 +625,94 @@ const ClientDashboard = () => {
           )}
         </motion.div>
       </div>
+
+      {/* Premium Dark/Gold Rating Modal */}
+      {showRatingModal && (
+        <div className="fixed inset-0 z-50 bg-[#060a11]/90 backdrop-blur-md flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="w-full max-w-md bg-[#111620] border border-[#d4af37]/30 rounded-2xl p-6 shadow-2xl relative overflow-hidden"
+          >
+            {/* Visual Gold Bar at top */}
+            <div className="absolute left-0 right-0 top-0 h-1.5 bg-[#d4af37]" />
+
+            <h3 className="text-xl font-serif text-white mb-2">Rate Your Journey</h3>
+            <p className="text-xs text-gray-400 mb-6">Your feedback helps us maintain our peak chauffeur service standards.</p>
+
+            <form onSubmit={handleSubmitRating} className="space-y-6">
+              {/* Stars */}
+              <div className="flex flex-col items-center justify-center py-2 bg-[#0a0f18] rounded-xl border border-white/5">
+                <p className="text-xs text-gray-500 uppercase tracking-wider mb-2">Select Rating</p>
+                <div className="flex items-center space-x-2">
+                  {[1, 2, 3, 4, 5].map((starValue) => {
+                    const isLit = (hoverRating || userRating) >= starValue;
+                    return (
+                      <button
+                        type="button"
+                        key={starValue}
+                        onClick={() => setUserRating(starValue)}
+                        onMouseEnter={() => setHoverRating(starValue)}
+                        onMouseLeave={() => setHoverRating(0)}
+                        className="p-1 transition-transform active:scale-95 cursor-pointer"
+                      >
+                        <Star
+                          size={32}
+                          className={`transition-colors duration-200 ${
+                            isLit
+                              ? 'text-[#d4af37] fill-[#d4af37]'
+                              : 'text-gray-700 hover:text-gray-500'
+                          }`}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+                <span className="text-xs font-semibold text-[#d4af37] mt-2 h-4">
+                  {userRating === 5 && 'Exceeded Expectations • 5/5'}
+                  {userRating === 4 && 'Very Satisfied • 4/5'}
+                  {userRating === 3 && 'Good Service • 3/5'}
+                  {userRating === 2 && 'Needs Improvement • 2/5'}
+                  {userRating === 1 && 'Unsatisfactory • 1/5'}
+                </span>
+              </div>
+
+              {/* Feedback Textarea */}
+              <div className="space-y-1">
+                <label className="text-xs text-gray-400 uppercase tracking-wider block font-semibold">Chauffeur & Journey Comments</label>
+                <textarea
+                  value={feedbackText}
+                  onChange={(e) => setFeedbackText(e.target.value)}
+                  placeholder="Share details about the cleanliness, driving safety, or courtesy..."
+                  className="w-full h-24 bg-[#0a0f18] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-[#d4af37] transition-all resize-none"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex items-center space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowRatingModal(false)}
+                  className="flex-1 border border-white/10 hover:border-white/20 text-gray-400 hover:text-white py-3 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={ratingSubmitting}
+                  className="flex-1 bg-[#d4af37] text-[#060a11] hover:bg-[#ffe392] py-3 rounded-xl text-xs font-bold transition-colors shadow-lg shadow-[#d4af37]/10 cursor-pointer disabled:opacity-50 flex items-center justify-center"
+                >
+                  {ratingSubmitting ? (
+                    <div className="w-4 h-4 border-2 border-[#060a11] border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    'Submit Feedback'
+                  )}
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };

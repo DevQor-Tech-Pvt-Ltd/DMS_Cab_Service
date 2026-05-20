@@ -377,13 +377,15 @@ exports.completeRide = async (req, res) => {
     }
 
     ride.status = 'completed';
+    ride.completedAt = new Date();
     await ride.save();
 
     // Broadcast complete status
     const io = req.app.get('io');
     if (io) {
       io.emit(`ride_status_${ride._id}`, {
-        status: 'completed'
+        status: 'completed',
+        completedAt: ride.completedAt
       });
     }
 
@@ -397,6 +399,53 @@ exports.completeRide = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to complete ride',
+      error: error.message
+    });
+  }
+};
+
+// Rate and review a completed ride booking
+exports.rateRide = async (req, res) => {
+  try {
+    const { rating, feedback } = req.body;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid rating between 1 and 5.' });
+    }
+
+    const ride = await Ride.findOne({ _id: req.params.id, client: req.user._id });
+
+    if (!ride) {
+      return res.status(404).json({ success: false, message: 'Ride booking not found.' });
+    }
+
+    if (ride.status !== 'completed') {
+      return res.status(400).json({ success: false, message: 'You can only rate completed rides.' });
+    }
+
+    ride.rating = rating;
+    ride.feedback = feedback || '';
+    await ride.save();
+
+    // Broadcast rating/feedback update in real-time
+    const io = req.app.get('io');
+    if (io) {
+      io.emit(`ride_status_${ride._id}`, {
+        rating: ride.rating,
+        feedback: ride.feedback
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Thank you for your rating and feedback!',
+      ride
+    });
+  } catch (error) {
+    console.error('Error rating ride:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to rate ride',
       error: error.message
     });
   }

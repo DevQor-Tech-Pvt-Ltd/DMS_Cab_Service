@@ -39,6 +39,7 @@ const DriverDashboard = () => {
   
   // Dynamic Ride tracking states
   const [activeRide, setActiveRide] = useState(null);
+  const [allRides, setAllRides] = useState([]);
   const [rideNotifications, setRideNotifications] = useState([]);
   const [notificationStatus, setNotificationStatus] = useState({});
   const [rideCancelStatus, setRideCancelStatus] = useState(null);
@@ -95,6 +96,10 @@ const DriverDashboard = () => {
           if (prev.some(r => r._id === ride._id)) return prev;
           return [ride, ...prev];
         });
+        setAllRides(prev => {
+          if (prev.some(r => r._id === ride._id)) return prev;
+          return [ride, ...prev];
+        });
       }
     });
 
@@ -118,6 +123,7 @@ const DriverDashboard = () => {
 
       // Remove from pending queue instantly so it disappears without refresh
       setRideNotifications(current => current.filter(r => r._id !== rideId));
+      setAllRides(current => current.map(r => r._id === rideId ? { ...r, status: 'cancelled' } : r));
 
       setActiveRide(prev => {
         if (prev && prev._id === rideId) {
@@ -143,6 +149,8 @@ const DriverDashboard = () => {
         );
 
         if (response.data.success) {
+          setAllRides(response.data.rides);
+
           // Look for any active/assigned ride for this driver in non-completed, non-cancelled states
           const active = response.data.rides.find(
             r => r.driver && 
@@ -174,6 +182,48 @@ const DriverDashboard = () => {
     };
   }, [isOnline, user?._id]);
 
+  // Real-time status sync for active ride
+  useEffect(() => {
+    if (!user || !socketRef.current) return;
+    const socket = socketRef.current;
+
+    if (activeRide?._id) {
+      const handleActiveRideUpdate = (data) => {
+        setActiveRide(prev => prev && prev._id === activeRide._id ? { ...prev, ...data } : prev);
+        setAllRides(current => current.map(r => r._id === activeRide._id ? { ...r, ...data } : r));
+      };
+
+      socket.on(`ride_status_${activeRide._id}`, handleActiveRideUpdate);
+      return () => {
+        socket.off(`ride_status_${activeRide._id}`, handleActiveRideUpdate);
+      };
+    }
+  }, [user, activeRide?._id]);
+
+  // Real-time ratings and comments sync for completed rides
+  useEffect(() => {
+    if (!user || !socketRef.current || allRides.length === 0) return;
+    const socket = socketRef.current;
+
+    const myCompletedRides = allRides.filter(r => r.driver && r.driver._id === user._id && r.status === 'completed');
+    
+    myCompletedRides.forEach(ride => {
+      const handleRideRateFeedback = (data) => {
+        if (data.rating || data.feedback) {
+          setAllRides(current => current.map(r => r._id === ride._id ? { ...r, ...data } : r));
+        }
+      };
+
+      socket.on(`ride_status_${ride._id}`, handleRideRateFeedback);
+    });
+
+    return () => {
+      myCompletedRides.forEach(ride => {
+        socket.off(`ride_status_${ride._id}`);
+      });
+    };
+  }, [user, allRides.length]);
+
   // Action handlers
   const handleAcceptRide = async (rideId) => {
     try {
@@ -198,6 +248,7 @@ const DriverDashboard = () => {
 
         // Driver accepted successfully
         setActiveRide(response.data.ride);
+        setAllRides(prev => prev.map(r => r._id === rideId ? response.data.ride : r));
         setNotificationStatus(prev => ({
           ...prev,
           [rideId]: 'booking confirmed by me'
@@ -245,6 +296,7 @@ const DriverDashboard = () => {
 
       if (response.data.success) {
         setActiveRide(null);
+        setAllRides(current => current.map(r => r._id === rideId ? { ...r, status: 'cancelled' } : r));
         setRideCancelStatus('ride cancel');
         setTimeout(() => setRideCancelStatus(null), 5000);
       }
@@ -270,6 +322,7 @@ const DriverDashboard = () => {
 
       if (response.data.success) {
         setActiveRide(response.data.ride);
+        setAllRides(current => current.map(r => r._id === rideId ? response.data.ride : r));
       }
     } catch (err) {
       console.error('Failed to update driver arrival:', err);
@@ -295,6 +348,7 @@ const DriverDashboard = () => {
 
       if (response.data.success) {
         setActiveRide(null);
+        setAllRides(current => current.map(r => r._id === rideId ? { ...r, status: 'completed', completedAt: new Date() } : r));
         alert('Journey completed successfully. Invoice has been sent to client email.');
       }
     } catch (err) {
@@ -320,74 +374,106 @@ const DriverDashboard = () => {
     return null;
   }
 
+  // Dynamic stats calculation
+  const completedRides = allRides.filter(r => r.driver && r.driver._id === user?._id && r.status === 'completed');
+  const completedCount = completedRides.length;
+
+  const currentMonth = new Date().getMonth();
+  const currentYear = new Date().getFullYear();
+  const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  
+  const mtdEarnings = completedRides
+    .filter(r => {
+      const compDate = new Date(r.completedAt || r.updatedAt);
+      return compDate.getMonth() === currentMonth && compDate.getFullYear() === currentYear;
+    })
+    .reduce((sum, r) => sum + (r.fare || 0), 0);
+
+  const ratedRides = completedRides.filter(r => r.rating);
+  const avgRating = ratedRides.length > 0
+    ? (ratedRides.reduce((sum, r) => sum + r.rating, 0) / ratedRides.length).toFixed(1)
+    : '5.0';
+
+  const tripHours = completedRides.reduce((sum, r) => {
+    if (r.rideStartedAt && r.completedAt) {
+      const diff = new Date(r.completedAt) - new Date(r.rideStartedAt);
+      return sum + (diff / (1000 * 60 * 60));
+    }
+    return sum + 0.75;
+  }, 0);
+  const hoursOnline = Math.max(8, Math.round(tripHours + (completedRides.length * 4)));
+
   const stats = [
-    { icon: CalendarCheck, label: 'Completed Rides', value: '312', sub: 'Lifetime total', color: 'bg-[#d4af37]/10 text-[#d4af37]' },
-    { icon: TrendingUp, label: 'Earnings (MTD)', value: '₹64,800', sub: 'May 2026', color: 'bg-emerald-500/10 text-emerald-400' },
-    { icon: Star, label: 'Driver Rating', value: '4.9', sub: 'Based on 289 reviews', color: 'bg-amber-500/10 text-amber-400' },
-    { icon: Timer, label: 'Hours Online', value: '168', sub: 'This month', color: 'bg-blue-500/10 text-blue-400' },
+    { icon: CalendarCheck, label: 'Completed Rides', value: completedCount.toString(), sub: 'Lifetime total', color: 'bg-[#d4af37]/10 text-[#d4af37]' },
+    { icon: TrendingUp, label: 'Earnings (MTD)', value: `₹${mtdEarnings.toLocaleString()}`, sub: `${monthNames[currentMonth]} ${currentYear}`, color: 'bg-emerald-500/10 text-emerald-400' },
+    { icon: Star, label: 'Driver Rating', value: avgRating, sub: `Based on ${ratedRides.length} review${ratedRides.length === 1 ? '' : 's'}`, color: 'bg-amber-500/10 text-amber-400' },
+    { icon: Timer, label: 'Hours Online', value: hoursOnline.toString(), sub: 'This month', color: 'bg-blue-500/10 text-blue-400' },
   ];
 
-  const currentRide = {
-    id: '#RD-4582',
-    passenger: 'Arjun Mehta',
-    phone: '+91-98765-43210',
-    pickup: 'Salt Lake Sector V, Block A, Kolkata',
-    drop: 'Netaji Subhas Chandra Bose Intl Airport',
-    vehicle: 'Mercedes S-Class',
-    plateNo: 'WB-02-AB-1234',
-    estimatedTime: '45 min',
-    estimatedDistance: '28 km',
-    fare: '₹2,800',
-    status: 'in_progress',
-  };
+  const currentRide = activeRide ? {
+    id: `#RD-${activeRide._id.substring(18, 24).toUpperCase()}`,
+    passenger: activeRide.passengerDetails?.fullName || 'Client',
+    phone: activeRide.passengerDetails?.phone || '',
+    pickup: activeRide.pickupLocation,
+    drop: activeRide.dropoffLocation,
+    vehicle: activeRide.vehicleType,
+    fare: `₹${activeRide.fare.toLocaleString()}`,
+    status: activeRide.status,
+  } : null;
 
-  const upcomingAssignments = [
-    {
-      id: '#RD-4590',
-      passenger: 'Sneha Roy',
-      time: '2:30 PM Today',
-      pickup: 'Park Street, Kolkata',
-      drop: 'Howrah Station',
-      fare: '₹1,200',
-      status: 'assigned',
-    },
-    {
-      id: '#RD-4595',
-      passenger: 'Vikram Joshi',
-      time: '6:00 PM Today',
-      pickup: 'New Town, Rajarhat',
-      drop: 'Salt Lake City Centre',
-      fare: '₹900',
-      status: 'assigned',
-    },
-    {
-      id: '#RD-4601',
-      passenger: 'Priya Das',
-      time: '9:00 AM Tomorrow',
-      pickup: 'Alipore, Kolkata',
-      drop: 'Airport (CCU)',
-      fare: '₹3,100',
-      status: 'assigned',
-    },
-  ];
+  const upcomingAssignments = allRides.filter(r =>
+    r.driver &&
+    r.driver._id === user?._id &&
+    ['driver_assigned', 'driver_arrived'].includes(r.status) &&
+    (!activeRide || r._id !== activeRide._id)
+  ).map(r => ({
+    _id: r._id,
+    id: `#RD-${r._id.substring(18, 24).toUpperCase()}`,
+    passenger: r.passengerDetails?.fullName || 'Client',
+    time: `${r.pickupDate} ${r.pickupTime}`,
+    pickup: r.pickupLocation,
+    drop: r.dropoffLocation,
+    fare: `₹${r.fare ? r.fare.toLocaleString() : '0'}`,
+    status: r.status
+  }));
 
-  const weeklyEarnings = [
-    { day: 'Mon', amount: 4200, rides: 6 },
-    { day: 'Tue', amount: 5800, rides: 8 },
-    { day: 'Wed', amount: 3900, rides: 5 },
-    { day: 'Thu', amount: 6100, rides: 9 },
-    { day: 'Fri', amount: 7200, rides: 10 },
-    { day: 'Sat', amount: 8500, rides: 12 },
-    { day: 'Sun', amount: 5100, rides: 7 },
-  ];
+  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const weeklyEarnings = [];
+  
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    weeklyEarnings.push({
+      day: daysOfWeek[d.getDay()],
+      dateStr: d.toDateString(),
+      amount: 0,
+      rides: 0
+    });
+  }
+  
+  completedRides.forEach(r => {
+    const dateStr = new Date(r.completedAt || r.updatedAt).toDateString();
+    const match = weeklyEarnings.find(w => w.dateStr === dateStr);
+    if (match) {
+      match.amount += r.fare || 0;
+      match.rides += 1;
+    }
+  });
 
-  const maxEarning = Math.max(...weeklyEarnings.map(d => d.amount));
+  const maxEarning = Math.max(...weeklyEarnings.map(d => d.amount), 1);
 
-  const recentReviews = [
-    { passenger: 'Arjun M.', rating: 5, comment: 'Excellent service, very professional!', date: '2 hours ago' },
-    { passenger: 'Sneha R.', rating: 5, comment: 'Punctual and courteous driver.', date: 'Yesterday' },
-    { passenger: 'Rahul K.', rating: 4, comment: 'Good ride, smooth driving.', date: '2 days ago' },
-  ];
+  const recentReviews = completedRides
+    .filter(r => r.rating)
+    .slice(0, 5)
+    .map(r => {
+      const timeStr = r.completedAt ? new Date(r.completedAt).toLocaleDateString() : 'Recently';
+      return {
+        passenger: r.passengerDetails?.fullName || 'Client',
+        rating: r.rating,
+        comment: r.feedback || 'Excellent journey.',
+        date: timeStr
+      };
+    });
 
   return (
     <div className="min-h-screen bg-[#060a11] pt-28 pb-16 px-4 sm:px-6 lg:px-8">
@@ -702,6 +788,7 @@ const DriverDashboard = () => {
                           clientName={activeRide.passengerDetails?.fullName || 'Client'}
                           onVerificationSuccess={(updatedRide) => {
                             setActiveRide(updatedRide);
+                            setAllRides(current => current.map(r => r._id === updatedRide._id ? updatedRide : r));
                             setShowOtpModal(false);
                           }}
                           onCancel={() => setShowOtpModal(false)}
@@ -738,27 +825,35 @@ const DriverDashboard = () => {
               </span>
             </div>
             <div className="space-y-3">
-              {upcomingAssignments.map((ride) => (
-                <div
-                  key={ride.id}
-                  className="p-4 rounded-xl bg-[#0a0f18] border border-white/5 hover:border-[#d4af37]/20 transition-all"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-mono text-gray-500">{ride.id}</span>
-                    <span className="text-xs text-[#d4af37] font-medium">{ride.fare}</span>
-                  </div>
-                  <p className="text-sm text-white font-medium mb-1">{ride.passenger}</p>
-                  <p className="text-xs text-gray-500 mb-2">{ride.time}</p>
-                  <div className="flex items-center space-x-2 text-xs text-gray-400">
-                    <MapPin size={11} className="text-emerald-400 shrink-0" />
-                    <span className="truncate">{ride.pickup}</span>
-                  </div>
-                  <div className="flex items-center space-x-2 text-xs text-gray-400 mt-1">
-                    <MapPin size={11} className="text-red-400 shrink-0" />
-                    <span className="truncate">{ride.drop}</span>
-                  </div>
+              {upcomingAssignments.length === 0 ? (
+                <div className="text-center py-12 text-gray-500 text-sm bg-[#0a0f18] border border-dashed border-white/5 rounded-xl font-sans">
+                  <CalendarCheck size={28} className="mx-auto mb-2 text-[#d4af37]/40" />
+                  <p className="text-gray-400">No upcoming assignments</p>
+                  <p className="text-xs text-gray-600 mt-1">Pending trips assigned to you will show up here.</p>
                 </div>
-              ))}
+              ) : (
+                upcomingAssignments.map((ride) => (
+                  <div
+                    key={ride.id}
+                    className="p-4 rounded-xl bg-[#0a0f18] border border-white/5 hover:border-[#d4af37]/20 transition-all"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-xs font-mono text-gray-500">{ride.id}</span>
+                      <span className="text-xs text-[#d4af37] font-medium">{ride.fare}</span>
+                    </div>
+                    <p className="text-sm text-white font-medium mb-1">{ride.passenger}</p>
+                    <p className="text-xs text-gray-500 mb-2">{ride.time}</p>
+                    <div className="flex items-center space-x-2 text-xs text-gray-400">
+                      <MapPin size={11} className="text-emerald-400 shrink-0" />
+                      <span className="truncate">{ride.pickup}</span>
+                    </div>
+                    <div className="flex items-center space-x-2 text-xs text-gray-400 mt-1">
+                      <MapPin size={11} className="text-red-400 shrink-0" />
+                      <span className="truncate">{ride.drop}</span>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </motion.div>
         </div>
@@ -818,37 +913,45 @@ const DriverDashboard = () => {
               </div>
               <div className="flex items-center space-x-1">
                 <Star size={14} className="text-[#d4af37] fill-[#d4af37]" />
-                <span className="text-sm text-white font-medium">4.9</span>
-                <span className="text-xs text-gray-500">(289)</span>
+                <span className="text-sm text-white font-medium">{avgRating}</span>
+                <span className="text-xs text-gray-500">({ratedRides.length})</span>
               </div>
             </div>
             <div className="space-y-4">
-              {recentReviews.map((review, index) => (
-                <div
-                  key={index}
-                  className="p-4 rounded-xl bg-[#0a0f18] border border-white/5"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 text-xs font-bold">
-                        {review.passenger.charAt(0)}
-                      </div>
-                      <span className="text-sm text-white font-medium">{review.passenger}</span>
-                    </div>
-                    <span className="text-xs text-gray-500">{review.date}</span>
-                  </div>
-                  <div className="flex items-center space-x-0.5 mb-2">
-                    {[...Array(5)].map((_, i) => (
-                      <Star
-                        key={i}
-                        size={12}
-                        className={i < review.rating ? 'text-[#d4af37] fill-[#d4af37]' : 'text-gray-600'}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-sm text-gray-400 italic">"{review.comment}"</p>
+              {recentReviews.length === 0 ? (
+                <div className="text-center py-8 text-gray-500 text-sm bg-[#0a0f18] border border-dashed border-white/5 rounded-xl">
+                  <Star className="mx-auto mb-2 text-gray-600 animate-pulse" size={24} />
+                  <p>No client reviews yet.</p>
+                  <p className="text-xs text-gray-600 mt-1">Passenger feedback will appear here once trips are completed and rated.</p>
                 </div>
-              ))}
+              ) : (
+                recentReviews.map((review, index) => (
+                  <div
+                    key={index}
+                    className="p-4 rounded-xl bg-[#0a0f18] border border-white/5"
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-7 h-7 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400 text-xs font-bold">
+                          {review.passenger.charAt(0)}
+                        </div>
+                        <span className="text-sm text-white font-medium">{review.passenger}</span>
+                      </div>
+                      <span className="text-xs text-gray-500">{review.date}</span>
+                    </div>
+                    <div className="flex items-center space-x-0.5 mb-2">
+                      {[...Array(5)].map((_, i) => (
+                        <Star
+                          key={i}
+                          size={12}
+                          className={i < review.rating ? 'text-[#d4af37] fill-[#d4af37]' : 'text-gray-600'}
+                        />
+                      ))}
+                    </div>
+                    <p className="text-sm text-gray-400 italic">"{review.comment}"</p>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Vehicle Info */}
@@ -860,19 +963,19 @@ const DriverDashboard = () => {
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <p className="text-gray-500">Model</p>
-                  <p className="text-white font-medium">Mercedes S-Class</p>
+                  <p className="text-white font-medium">{user.vehicleType || 'Mercedes S-Class'}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Plate No.</p>
-                  <p className="text-white font-medium font-mono">WB-02-AB-1234</p>
+                  <p className="text-white font-medium font-mono">{user.vehicleNumber || 'WB-02-AB-1234'}</p>
                 </div>
                 <div>
                   <p className="text-gray-500">Status</p>
                   <p className="text-emerald-400 font-medium">Active</p>
                 </div>
                 <div>
-                  <p className="text-gray-500">Next Service</p>
-                  <p className="text-amber-400 font-medium">In 5 days</p>
+                  <p className="text-gray-500">License Number</p>
+                  <p className="text-amber-400 font-medium font-mono">{user.licenseNumber || 'N/A'}</p>
                 </div>
               </div>
             </div>
