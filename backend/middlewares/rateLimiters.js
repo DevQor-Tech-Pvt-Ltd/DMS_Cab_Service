@@ -76,7 +76,7 @@ const createLimiter = ({ windowMs, maxProd, maxDev, message, apiName }) => {
  * Protects auth/login against credential-stuffing and brute-force bot sweeps.
  */
 const loginLimiter = createLimiter({
-  windowMs: 15 * 60 * 1000, // 15 Minutes
+  windowMs: 5 * 60 * 1000, // 5 Minutes
   maxProd: 10,              // Strict limit for protection
   maxDev: 1000,
   message: 'Too many login attempts. Please try again later.',
@@ -124,7 +124,7 @@ const driverLocationLimiter = createLimiter({
  * Prevents brute-forcing short OTP codes.
  */
 const otpVerificationLimiter = createLimiter({
-  windowMs: 10 * 60 * 1000, // 10 Minutes
+  windowMs: 5 * 60 * 1000, // 5 Minutes
   maxProd: 5,
   maxDev: 1000,
   message: 'Too many verification attempts. Please request a new OTP code.',

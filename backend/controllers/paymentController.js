@@ -98,7 +98,10 @@ exports.verifyPayment = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Internal server error during payment verification',
-      error: error.message
-    });
+      error:
+            process.env.NODE_ENV === 'development'
+              ? error.message
+              : 'Internal Server Error'
+              });
   }
 };

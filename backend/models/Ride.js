@@ -69,7 +69,7 @@ const rideSchema = new mongoose.Schema(
       enum: ['pending', 'accepted', 'driver_assigned', 'driver_arrived', 'ride_started', 'completed', 'cancelled'],
       default: 'pending',
     },
-    rideOtp: {
+    rideOtpHash: {
       type: String,
       default: null,
     },
@@ -105,13 +105,23 @@ const rideSchema = new mongoose.Schema(
     otpAuditLogs: [
       {
         attemptedAt: { type: Date, default: Date.now },
-        otpEntered: { type: String },
+        otpMasked: { type: String },
         success: { type: Boolean },
         ipAddress: { type: String }
       }
     ],
+    otpLastSentAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
+
+// INDEXES FOR PERFORMANCE & FAST QUERIES
+rideSchema.index({ client: 1 });
+rideSchema.index({ driver: 1 });
+rideSchema.index({ status: 1 });
+rideSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Ride', rideSchema);

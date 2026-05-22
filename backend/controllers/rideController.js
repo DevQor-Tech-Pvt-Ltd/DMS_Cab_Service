@@ -1,6 +1,7 @@
 const Ride = require('../models/Ride');
 const Razorpay = require('razorpay');
 const { sendInvoiceEmail } = require('../utils/emailService');
+const bcrypt = require('bcryptjs');
 
 let razorpay = null;
 if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
@@ -107,8 +108,11 @@ exports.createRide = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to create ride booking',
-      error: error.message,
-    });
+      error:
+            process.env.NODE_ENV === 'development'
+              ? error.message
+              : 'Internal Server Error'
+              });
   }
 };
 
@@ -119,8 +123,11 @@ exports.acceptRide = async (req, res) => {
     const { sendOtpEmail } = require('../utils/emailService');
 
     // Securely generate a 4-digit OTP
-    const secureOtp = crypto.randomInt(1000, 10000).toString();
-    const otpExpiryTime = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes window
+    const secureOtp = crypto.randomInt(100000, 1000000).toString();
+    // Hash OTP before storing
+    const hashedOtp = await bcrypt.hash(secureOtp, 10)
+    // Expiry time 5 minutes window
+    const otpExpiryTime = new Date(Date.now() + 5 * 60 * 1000); 
 
     // Atomically find the ride and update status to driver_assigned
     const ride = await Ride.findOneAndUpdate(
@@ -128,7 +135,7 @@ exports.acceptRide = async (req, res) => {
       { 
         driver: req.user._id, 
         status: 'driver_assigned',
-        rideOtp: secureOtp,
+        rideOtpHash: hashedOtp,
         otpVerified: false,
         otpExpiresAt: otpExpiryTime,
         otpAttempts: 0
@@ -180,8 +187,11 @@ exports.acceptRide = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to accept ride',
-      error: error.message,
-    });
+      error:
+            process.env.NODE_ENV === 'development'
+              ? error.message
+              : 'Internal Server Error'
+              });
   }
 };
 
@@ -222,8 +232,11 @@ exports.driverArrived = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to update chauffeur status',
-      error: error.message
-    });
+      error:
+            process.env.NODE_ENV === 'development'
+              ? error.message
+              : 'Internal Server Error'
+              });
   }
 };
 
@@ -237,9 +250,18 @@ exports.verifyOtp = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Booking ID and OTP code are required.' });
     }
 
-    const ride = await Ride.findById(bookingId);
+    const ride = await Ride.findOne({
+      _id: bookingId,
+      driver: req.user._id
+    });
     if (!ride) {
       return res.status(404).json({ success: false, message: 'Booking not found.' });
+    }
+    if (ride.status !== 'driver_arrived') {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP verification is not allowed at this stage.'
+      });
     }
 
     // Expiry verification
@@ -258,14 +280,22 @@ exports.verifyOtp = async (req, res) => {
     // Increment attempts
     ride.otpAttempts += 1;
 
-    const isMatch = ride.rideOtp === otp.trim();
+    const isMatch = await bcrypt.compare(
+      otp.trim(),
+      ride.rideOtpHash
+    );
 
     // Create Audit Log record
     ride.otpAuditLogs.push({
-      otpEntered: otp,
+      otpMasked: otp.slice(0, 2) + '****',
       success: isMatch,
       ipAddress
     });
+
+    // Keep only latest 10 OTP logs
+    if (ride.otpAuditLogs.length > 10) {
+      ride.otpAuditLogs.shift();
+    }
 
     if (!isMatch) {
       await ride.save();
@@ -279,6 +309,9 @@ exports.verifyOtp = async (req, res) => {
     ride.otpVerified = true;
     ride.status = 'ride_started';
     ride.rideStartedAt = new Date();
+    ride.rideOtpHash = null;
+    ride.otpExpiresAt = null;
+
     await ride.save();
 
     await ride.populate('client', 'fullName email phone');
@@ -304,8 +337,11 @@ exports.verifyOtp = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Internal server error during verification',
-      error: error.message
-    });
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Internal Server Error'
+          });
   }
 };
 
@@ -315,17 +351,35 @@ exports.resendOtp = async (req, res) => {
     const crypto = require('crypto');
     const { sendOtpEmail } = require('../utils/emailService');
 
-    const ride = await Ride.findById(req.params.id);
+    const ride = await Ride.findOne({
+      _id: req.params.id,
+      driver: req.user._id
+    });
     if (!ride) {
       return res.status(404).json({ success: false, message: 'Booking not found.' });
     }
-
-    // Generate fresh secure 4-digit code
-    const freshOtp = crypto.randomInt(1000, 10000).toString();
+    if (ride.status !== 'driver_arrived') {
+      return res.status(400).json({
+        success: false,
+        message: 'OTP verification is not allowed at this stage.'
+      });
+    }
+      if (
+    ride.otpLastSentAt &&
+    Date.now() - ride.otpLastSentAt.getTime() < 30000
+  ) {
+    return res.status(429).json({
+      success: false,
+      message: 'Please wait before requesting another OTP.'
+    });
+  }
+    // Generate fresh secure 6-digit code
+    const freshOtp = crypto.randomInt(100000, 1000000).toString();
     
-    ride.rideOtp = freshOtp;
+    ride.rideOtpHash = await bcrypt.hash(freshOtp, 10);
     ride.otpAttempts = 0;
-    ride.otpExpiresAt = new Date(Date.now() + 15 * 60 * 1000); // Reset for another 15 minutes
+    ride.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // Reset for another 5 minutes
+    ride.otpLastSentAt = new Date();
     await ride.save();
 
     await ride.populate('client', 'fullName email phone');
@@ -354,8 +408,11 @@ exports.resendOtp = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to resend OTP',
-      error: error.message
-    });
+      error:
+          process.env.NODE_ENV === 'development'
+            ? error.message
+            : 'Internal Server Error'
+            });
   }
 };
 
@@ -399,8 +456,11 @@ exports.completeRide = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to complete ride',
-      error: error.message
-    });
+      error:
+            process.env.NODE_ENV === 'development'
+              ? error.message
+              : 'Internal Server Error'
+              });
   }
 };
 
@@ -446,15 +506,21 @@ exports.rateRide = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to rate ride',
-      error: error.message
-    });
+      error:
+            process.env.NODE_ENV === 'development'
+              ? error.message
+              : 'Internal Server Error'
+              });
   }
 };
 
 // Cancel an active ride booking (driver cancelling the pickup)
 exports.cancelRide = async (req, res) => {
   try {
-    const ride = await Ride.findById(req.params.id);
+    const ride = await Ride.findOne({
+      _id: req.params.id,
+      driver: req.user._id
+    });
 
     if (!ride) {
       return res.status(404).json({ success: false, message: 'Ride not found' });
@@ -483,8 +549,11 @@ exports.cancelRide = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to cancel ride',
-      error: error.message,
-    });
+      error:
+            process.env.NODE_ENV === 'development'
+              ? error.message
+              : 'Internal Server Error'
+              });
   }
 };
 
@@ -522,7 +591,10 @@ exports.getRides = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to fetch rides',
-      error: error.message,
-    });
+      error:
+            process.env.NODE_ENV === 'development'
+              ? error.message
+              : 'Internal Server Error'
+              });
   }
 };
