@@ -7,7 +7,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const hpp = require('hpp');
 const compression = require('compression');
 const timeout = require('connect-timeout');
-const globalLimiter = require('./middlewares/globalRateLimiter');
+const globalLimiter = require('./middleware/globalRateLimiter');
 
 
 
