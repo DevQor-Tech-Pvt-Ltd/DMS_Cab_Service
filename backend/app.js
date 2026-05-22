@@ -3,9 +3,21 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cookieParser = require('cookie-parser');
-const path = require('path');
+const mongoSanitize = require('express-mongo-sanitize');
+const hpp = require('hpp');
+const compression = require('compression');
+const timeout = require('connect-timeout');
+const globalLimiter = require('./middlewares/globalRateLimiter');
+
+
 
 const app = express();
+
+const haltOnTimedout = (req, res, next) => {
+  if (!req.timedout) next();
+};
+
+app.disable('x-powered-by');
 
 // Trust Proxy Enabled for Production Rate Limiting Accuracy (Nginx, AWS ALB, Cloudflare support)
 app.set('trust proxy', 1);
@@ -14,7 +26,9 @@ app.set('trust proxy', 1);
 // app.use(helmet());
 app.use(
     helmet({
-        crossOriginResourcePolicy: false,
+    crossOriginResourcePolicy: {
+        policy: 'cross-origin',
+    },
     })
 );
 app.use(
@@ -27,8 +41,7 @@ app.use(
                 ? process.env.CLIENT_URL.split(',').map(url => url.trim())
                 : ['http://localhost:5173', 'http://localhost:4173'];
 
-            const isAllowed = list.some(allowed => origin === allowed) || 
-                              origin.endsWith('.vercel.app') || 
+            const isAllowed = list.some(allowed => origin === allowed) ||
                               process.env.NODE_ENV === 'development';
 
             if (isAllowed) {
@@ -41,9 +54,17 @@ app.use(
         methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
     })
 );
+app.use(globalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+app.use(mongoSanitize());
+app.use(hpp());
+app.use(compression());
 app.use(cookieParser());
+
+app.use(timeout('15s'));
+app.use(haltOnTimedout);
+
 if (process.env.NODE_ENV === 'production') {
   // Use 'combined' for production: outputs structured, single-line Apache-style logs
   app.use(morgan('combined'));
@@ -56,16 +77,16 @@ if (process.env.NODE_ENV === 'production') {
 const { driverLocationLimiter, paymentLimiter } = require('./middlewares/rateLimiters');
 
 // Routes
-app.use('/api/v1/auth', require('./routes/authRoutes'));
-app.use('/api/v1/admin', require('./routes/adminRoutes'));
-app.use('/api/v1/rides', require('./routes/rideRoutes'));
+app.use('/api/v1/auth', haltOnTimedout, require('./routes/authRoutes'));
+app.use('/api/v1/admin', haltOnTimedout, require('./routes/adminRoutes'));
+app.use('/api/v1/rides', haltOnTimedout, require('./routes/rideRoutes'));
 
 // Driver Location & Payment API Stubs protected by their respective route-specific limiters
 app.post('/api/v1/drivers/location', driverLocationLimiter, (req, res) => {
     res.status(200).json({ success: true, message: 'Driver location updated successfully (Stub)' });
 });
 
-app.use('/api/v1/payment', paymentLimiter, require('./routes/paymentRoutes'));
+app.use('/api/v1/payment', paymentLimiter, haltOnTimedout, require('./routes/paymentRoutes'));
 
 // Basic route
 app.get('/', (req, res) => {
@@ -76,12 +97,26 @@ app.get('/api/v1', (req, res) => {
     res.status(200).json({ success: true, message: 'DMS Luxe API v1 is running' });
 });
 
+app.use((err, req, res, next) => {
+  if (err && err.timeout) {
+    return res.status(503).json({
+      success: false,
+      message: 'Request timeout. Please try again later.',
+    });
+  }
+
+  next(err);
+});
+
 // Error handling middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(err.status || 500).json({
         success: false,
-        error: err.message || 'Server Error'
+        message:
+                process.env.NODE_ENV === 'development'
+                    ? err.message
+                    : 'Internal Server Error',
     });
 });
 

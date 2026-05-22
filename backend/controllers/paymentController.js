@@ -1,24 +1,20 @@
 const crypto = require('crypto');
 const Ride = require('../models/Ride');
 const { sendInvoiceEmail } = require('../utils/emailService');
+const { verifyPaymentSchema } = require('../validations/paymentValidation');
+const { ZodError } = require('zod');
 
 /**
  * Verify Razorpay payment signature
  */
 exports.verifyPayment = async (req, res) => {
   try {
+    const validatedData = verifyPaymentSchema.parse(req.body);
     const {
       razorpay_payment_id,
       razorpay_order_id,
       razorpay_signature
-    } = req.body;
-
-    if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature) {
-      return res.status(400).json({
-        success: false,
-        message: 'Payment verification parameters missing'
-      });
-    }
+    } = validatedData;
 
     // Verify signature
     const secret = process.env.RAZORPAY_KEY_SECRET;
@@ -34,7 +30,12 @@ exports.verifyPayment = async (req, res) => {
       .update(`${razorpay_order_id}|${razorpay_payment_id}`)
       .digest('hex');
 
-    const isVerified = generatedSignature === razorpay_signature;
+    const generatedBuffer = Buffer.from(generatedSignature);
+    const receivedBuffer = Buffer.from(razorpay_signature);
+
+    const isVerified =
+      generatedBuffer.length === receivedBuffer.length &&
+      crypto.timingSafeEqual(generatedBuffer, receivedBuffer);
 
     if (!isVerified) {
       // Find the ride to set paymentStatus as failed
@@ -60,6 +61,12 @@ exports.verifyPayment = async (req, res) => {
       });
     }
 
+    if (ride.paymentStatus === 'paid') {
+      return res.status(400).json({
+        success: false,
+        message: 'Payment already verified.'
+      });
+    }
     // Update ride payment details and status
     ride.paymentStatus = 'paid';
     ride.razorpayPaymentId = razorpay_payment_id;
@@ -94,14 +101,25 @@ exports.verifyPayment = async (req, res) => {
       ride
     });
   } catch (error) {
-    console.error('Error verifying payment:', error);
-    return res.status(500).json({
+
+  // Zod Validation Errors
+  if (error instanceof ZodError) {
+    return res.status(400).json({
       success: false,
-      message: 'Internal server error during payment verification',
-      error:
-            process.env.NODE_ENV === 'development'
-              ? error.message
-              : 'Internal Server Error'
-              });
+      message: 'Validation failed',
+      errors: error.errors,
+    });
   }
+
+  console.error('Error verifying payment:', error);
+
+  return res.status(500).json({
+    success: false,
+    message: 'Internal server error during payment verification',
+    error:
+      process.env.NODE_ENV === 'development'
+        ? error.message
+        : 'Internal Server Error'
+  });
+}
 };
