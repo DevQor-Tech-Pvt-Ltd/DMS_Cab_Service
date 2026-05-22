@@ -179,9 +179,6 @@ const BusinessAnalyticsChart = ({ data }) => {
               <stop offset="0%" stopColor="#d4af37" stopOpacity="0.3"/>
               <stop offset="100%" stopColor="#d4af37" stopOpacity="0.0"/>
             </linearGradient>
-            <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-              <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#d4af37" floodOpacity="0.25"/>
-            </filter>
           </defs>
 
           {/* Grid lines */}
@@ -238,7 +235,6 @@ const BusinessAnalyticsChart = ({ data }) => {
             stroke="#d4af37" 
             strokeWidth="2.5" 
             strokeLinecap="round"
-            filter="url(#glow)"
           />
 
           {/* Interactive Hover / Points */}
@@ -475,12 +471,7 @@ const AdminDashboard = () => {
         </div>
 
         {/* Business Overview Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.2 }}
-          className="mb-8"
-        >
+        <div className="mb-8">
           <div className="flex items-center space-x-2 mb-4">
             <BarChart3 size={18} className="text-[#d4af37]" />
             <h2 className="text-xl font-serif text-white">Business Overview</h2>
@@ -529,7 +520,7 @@ const AdminDashboard = () => {
               <BusinessAnalyticsChart data={statsData.chartData} />
             </>
           ) : null}
-        </motion.div>
+        </div>
 
         {/* Main Content Grid */}
         {statsLoading ? (
@@ -699,88 +690,170 @@ const AdminDashboard = () => {
               <p>All driver applications are processed. No pending approvals!</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px] lg:min-w-0">
-                <thead>
-                  <tr className="border-b border-white/5">
-                    <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Chauffeur</th>
-                    <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Contact</th>
-                    <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Vehicle / License No.</th>
-                    <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Attached Documents</th>
-                    <th className="text-right text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {drivers.map((driver) => (
-                    <tr key={driver._id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-[#d4af37]/10 flex items-center justify-center text-[#d4af37] text-sm font-medium">
-                            {driver.fullName.charAt(0)}
-                          </div>
-                          <span className="text-sm text-white font-medium">{driver.fullName}</span>
-                        </div>
-                      </td>
-                      <td className="py-4">
-                        <p className="text-sm text-white">{driver.email}</p>
-                        <p className="text-xs text-gray-500">{driver.phone}</p>
-                      </td>
-                      <td className="py-4">
-                        <p className="text-sm text-gray-300 font-mono">Vehicle: {driver.vehicleNumber}</p>
-                        <p className="text-xs text-gray-500 font-mono">License: {driver.licenseNumber}</p>
-                      </td>
-                      <td className="py-4">
-                        <div className="flex items-center space-x-2">
-                          {driver.rcDocument && (
-                            <button
-                              onClick={() => setSelectedDoc({
-                                docData: driver.rcDocument,
-                                docTitle: 'RC Document (Vehicle Registration)',
-                                driverName: driver.fullName
-                              })}
-                              className="flex items-center space-x-1 text-xs bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/20 px-2.5 py-1.5 rounded-lg transition-colors"
-                            >
-                              <Eye size={12} />
-                              <span>View RC Copy</span>
-                            </button>
-                          )}
-                          {driver.licenseDocument && (
-                            <button
-                              onClick={() => setSelectedDoc({
-                                docData: driver.licenseDocument,
-                                docTitle: 'Chauffeur Driving License',
-                                driverName: driver.fullName
-                              })}
-                              className="flex items-center space-x-1 text-xs bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/20 px-2.5 py-1.5 rounded-lg transition-colors"
-                            >
-                              <Eye size={12} />
-                              <span>View License</span>
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-4 text-right">
-                        <div className="flex items-center justify-end space-x-2">
-                          <button
-                            onClick={() => handleApprove(driver._id)}
-                            className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors" 
-                            title="Approve Driver Application"
-                          >
-                            <CheckCircle size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleReject(driver._id)}
-                            className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors" 
-                            title="Reject Driver Application"
-                          >
-                            <XCircle size={18} />
-                          </button>
-                        </div>
-                      </td>
+            <div>
+              {/* Desktop view */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full min-w-[700px] lg:min-w-0">
+                  <thead>
+                    <tr className="border-b border-white/5">
+                      <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Chauffeur</th>
+                      <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Contact</th>
+                      <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Vehicle / License No.</th>
+                      <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Attached Documents</th>
+                      <th className="text-right text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Actions</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {drivers.map((driver) => (
+                      <tr key={driver._id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full bg-[#d4af37]/10 flex items-center justify-center text-[#d4af37] text-sm font-medium">
+                              {driver.fullName.charAt(0)}
+                            </div>
+                            <span className="text-sm text-white font-medium">{driver.fullName}</span>
+                          </div>
+                        </td>
+                        <td className="py-4">
+                          <p className="text-sm text-white">{driver.email}</p>
+                          <p className="text-xs text-gray-500">{driver.phone}</p>
+                        </td>
+                        <td className="py-4">
+                          <p className="text-sm text-gray-300 font-mono">Vehicle: {driver.vehicleNumber}</p>
+                          <p className="text-xs text-gray-500 font-mono">License: {driver.licenseNumber}</p>
+                        </td>
+                        <td className="py-4">
+                          <div className="flex items-center space-x-2">
+                            {driver.rcDocument && (
+                              <button
+                                onClick={() => setSelectedDoc({
+                                  docData: driver.rcDocument,
+                                  docTitle: 'RC Document (Vehicle Registration)',
+                                  driverName: driver.fullName
+                                })}
+                                className="flex items-center space-x-1 text-xs bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/20 px-2.5 py-1.5 rounded-lg transition-colors"
+                              >
+                                <Eye size={12} />
+                                <span>View RC Copy</span>
+                              </button>
+                            )}
+                            {driver.licenseDocument && (
+                              <button
+                                onClick={() => setSelectedDoc({
+                                  docData: driver.licenseDocument,
+                                  docTitle: 'Chauffeur Driving License',
+                                  driverName: driver.fullName
+                                })}
+                                className="flex items-center space-x-1 text-xs bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/20 px-2.5 py-1.5 rounded-lg transition-colors"
+                              >
+                                <Eye size={12} />
+                                <span>View License</span>
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-4 text-right">
+                          <div className="flex items-center justify-end space-x-2">
+                            <button
+                              onClick={() => handleApprove(driver._id)}
+                              className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-colors" 
+                              title="Approve Driver Application"
+                            >
+                              <CheckCircle size={18} />
+                            </button>
+                            <button
+                              onClick={() => handleReject(driver._id)}
+                              className="p-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors" 
+                              title="Reject Driver Application"
+                            >
+                              <XCircle size={18} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile view */}
+              <div className="md:hidden space-y-4">
+                {drivers.map((driver) => (
+                  <div key={driver._id} className="bg-[#161c2a] border border-white/5 rounded-2xl p-5 space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-9 h-9 rounded-full bg-[#d4af37]/10 flex items-center justify-center text-[#d4af37] text-sm font-medium">
+                        {driver.fullName.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-white">{driver.fullName}</h4>
+                        <span className="text-[10px] text-gray-500">ID: {driver._id.substring(18)}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Contact</p>
+                        <p className="text-xs text-white break-all">{driver.email}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{driver.phone}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Credentials</p>
+                        <p className="text-xs text-gray-300 font-mono">Vehicle: {driver.vehicleNumber}</p>
+                        <p className="text-xs text-gray-400 font-mono mt-0.5">License: {driver.licenseNumber}</p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-white/5">
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Documents</p>
+                      <div className="flex flex-wrap gap-2">
+                        {driver.rcDocument && (
+                          <button
+                            onClick={() => setSelectedDoc({
+                              docData: driver.rcDocument,
+                              docTitle: 'RC Document (Vehicle Registration)',
+                              driverName: driver.fullName
+                            })}
+                            className="flex items-center space-x-1 text-[11px] bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/20 px-2.5 py-1.5 rounded-lg transition-colors"
+                          >
+                            <Eye size={12} />
+                            <span>RC Copy</span>
+                          </button>
+                        )}
+                        {driver.licenseDocument && (
+                          <button
+                            onClick={() => setSelectedDoc({
+                              docData: driver.licenseDocument,
+                              docTitle: 'Chauffeur Driving License',
+                              driverName: driver.fullName
+                            })}
+                            className="flex items-center space-x-1 text-[11px] bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/20 px-2.5 py-1.5 rounded-lg transition-colors"
+                          >
+                            <Eye size={12} />
+                            <span>License</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-end space-x-3 pt-3 border-t border-white/5">
+                      <button
+                        onClick={() => handleReject(driver._id)}
+                        className="flex-1 py-2 rounded-lg bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-semibold flex items-center justify-center space-x-1 transition-colors"
+                      >
+                        <XCircle size={14} />
+                        <span>Reject</span>
+                      </button>
+                      <button
+                        onClick={() => handleApprove(driver._id)}
+                        className="flex-1 py-2 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center justify-center space-x-1 transition-colors"
+                      >
+                        <CheckCircle size={14} />
+                        <span>Approve</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </motion.div>
@@ -812,86 +885,165 @@ const AdminDashboard = () => {
               <p>No approved drivers found. Approve some applications to populate the list!</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[700px] lg:min-w-0">
-                <thead>
-                  <tr className="border-b border-white/5">
-                    <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Chauffeur</th>
-                    <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Contact</th>
-                    <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Vehicle / License No.</th>
-                    <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Verification Documents</th>
-                    <th className="text-right text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Status / Approved On</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {approvedDriversList.map((driver) => (
-                    <tr key={driver._id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-4">
-                        <div className="flex items-center space-x-3">
-                          <div className="w-8 h-8 rounded-full bg-[#d4af37]/10 flex items-center justify-center text-[#d4af37] text-sm font-medium">
-                            {driver.fullName.charAt(0)}
-                          </div>
-                          <div>
-                            <span className="text-sm text-white font-medium block">{driver.fullName}</span>
-                            <span className="text-xs text-gray-500">ID: {driver._id.substring(18)}</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4">
-                        <p className="text-sm text-white">{driver.email}</p>
-                        <p className="text-xs text-gray-500">{driver.phone}</p>
-                      </td>
-                      <td className="py-4">
-                        <p className="text-sm text-gray-300 font-mono">Vehicle: {driver.vehicleNumber}</p>
-                        <p className="text-xs text-gray-500 font-mono">License: {driver.licenseNumber}</p>
-                      </td>
-                      <td className="py-4">
-                        <div className="flex items-center space-x-2">
-                          {driver.rcDocument ? (
-                            <button
-                              onClick={() => setSelectedDoc({
-                                docData: driver.rcDocument,
-                                docTitle: 'RC Document (Vehicle Registration)',
-                                driverName: driver.fullName
-                              })}
-                              className="flex items-center space-x-1 text-xs bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/20 px-2.5 py-1.5 rounded-lg transition-colors"
-                            >
-                              <Eye size={12} />
-                              <span>View RC Copy</span>
-                            </button>
-                          ) : (
-                            <span className="text-xs text-gray-600 italic">No RC Document</span>
-                          )}
-                          {driver.licenseDocument ? (
-                            <button
-                              onClick={() => setSelectedDoc({
-                                docData: driver.licenseDocument,
-                                docTitle: 'Chauffeur Driving License',
-                                driverName: driver.fullName
-                              })}
-                              className="flex items-center space-x-1 text-xs bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/20 px-2.5 py-1.5 rounded-lg transition-colors"
-                            >
-                              <Eye size={12} />
-                              <span>View License</span>
-                            </button>
-                          ) : (
-                            <span className="text-xs text-gray-600 italic">No License</span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="py-4 text-right">
-                        <div className="inline-flex items-center space-x-1 bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-full text-xs font-medium mb-1">
-                          <CheckCircle size={10} />
-                          <span>Approved</span>
-                        </div>
-                        <p className="text-xs text-gray-500">
-                          {driver.approvalDate ? new Date(driver.approvalDate).toLocaleDateString() : 'N/A'}
-                        </p>
-                      </td>
+            <div>
+              {/* Desktop view */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full min-w-[700px] lg:min-w-0">
+                  <thead>
+                    <tr className="border-b border-white/5">
+                      <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Chauffeur</th>
+                      <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Contact</th>
+                      <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Vehicle / License No.</th>
+                      <th className="text-left text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Verification Documents</th>
+                      <th className="text-right text-xs text-gray-500 uppercase tracking-wider pb-3 font-medium">Status / Approved On</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {approvedDriversList.map((driver) => (
+                      <tr key={driver._id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-4">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-8 h-8 rounded-full bg-[#d4af37]/10 flex items-center justify-center text-[#d4af37] text-sm font-medium">
+                              {driver.fullName.charAt(0)}
+                            </div>
+                            <div>
+                              <span className="text-sm text-white font-medium block">{driver.fullName}</span>
+                              <span className="text-xs text-gray-500">ID: {driver._id.substring(18)}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4">
+                          <p className="text-sm text-white">{driver.email}</p>
+                          <p className="text-xs text-gray-500">{driver.phone}</p>
+                        </td>
+                        <td className="py-4">
+                          <p className="text-sm text-gray-300 font-mono">Vehicle: {driver.vehicleNumber}</p>
+                          <p className="text-xs text-gray-500 font-mono">License: {driver.licenseNumber}</p>
+                        </td>
+                        <td className="py-4">
+                          <div className="flex items-center space-x-2">
+                            {driver.rcDocument ? (
+                              <button
+                                onClick={() => setSelectedDoc({
+                                  docData: driver.rcDocument,
+                                  docTitle: 'RC Document (Vehicle Registration)',
+                                  driverName: driver.fullName
+                                })}
+                                className="flex items-center space-x-1 text-xs bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/20 px-2.5 py-1.5 rounded-lg transition-colors"
+                              >
+                                <Eye size={12} />
+                                <span>View RC Copy</span>
+                              </button>
+                            ) : (
+                              <span className="text-xs text-gray-600 italic">No RC Document</span>
+                            )}
+                            {driver.licenseDocument ? (
+                              <button
+                                onClick={() => setSelectedDoc({
+                                  docData: driver.licenseDocument,
+                                  docTitle: 'Chauffeur Driving License',
+                                  driverName: driver.fullName
+                                })}
+                                className="flex items-center space-x-1 text-xs bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/20 px-2.5 py-1.5 rounded-lg transition-colors"
+                              >
+                                <Eye size={12} />
+                                <span>View License</span>
+                              </button>
+                            ) : (
+                              <span className="text-xs text-gray-600 italic">No License</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-4 text-right">
+                          <div className="inline-flex items-center space-x-1 bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-full text-xs font-medium mb-1">
+                            <CheckCircle size={10} />
+                            <span>Approved</span>
+                          </div>
+                          <p className="text-xs text-gray-500">
+                            {driver.approvalDate ? new Date(driver.approvalDate).toLocaleDateString() : 'N/A'}
+                          </p>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Mobile view */}
+              <div className="md:hidden space-y-4">
+                {approvedDriversList.map((driver) => (
+                  <div key={driver._id} className="bg-[#161c2a] border border-white/5 rounded-2xl p-5 space-y-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-9 h-9 rounded-full bg-[#d4af37]/10 flex items-center justify-center text-[#d4af37] text-sm font-medium">
+                        {driver.fullName.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium text-white">{driver.fullName}</h4>
+                        <span className="text-[10px] text-gray-500">ID: {driver._id.substring(18)}</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5">
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Contact</p>
+                        <p className="text-xs text-white break-all">{driver.email}</p>
+                        <p className="text-xs text-gray-400 mt-0.5">{driver.phone}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-0.5">Credentials</p>
+                        <p className="text-xs text-gray-300 font-mono">Vehicle: {driver.vehicleNumber}</p>
+                        <p className="text-xs text-gray-400 font-mono mt-0.5">License: {driver.licenseNumber}</p>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-white/5">
+                      <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Documents</p>
+                      <div className="flex flex-wrap gap-2">
+                        {driver.rcDocument ? (
+                          <button
+                            onClick={() => setSelectedDoc({
+                              docData: driver.rcDocument,
+                              docTitle: 'RC Document (Vehicle Registration)',
+                              driverName: driver.fullName
+                            })}
+                            className="flex items-center space-x-1 text-[11px] bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/20 px-2.5 py-1.5 rounded-lg transition-colors"
+                          >
+                            <Eye size={12} />
+                            <span>RC Copy</span>
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-600 italic">No RC Document</span>
+                        )}
+                        {driver.licenseDocument ? (
+                          <button
+                            onClick={() => setSelectedDoc({
+                              docData: driver.licenseDocument,
+                              docTitle: 'Chauffeur Driving License',
+                              driverName: driver.fullName
+                            })}
+                            className="flex items-center space-x-1 text-[11px] bg-[#d4af37]/10 border border-[#d4af37]/20 text-[#d4af37] hover:bg-[#d4af37]/20 px-2.5 py-1.5 rounded-lg transition-colors"
+                          >
+                            <Eye size={12} />
+                            <span>License</span>
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-600 italic">No License</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between pt-3 border-t border-white/5">
+                      <div className="flex items-center space-x-1 bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full text-xs font-medium">
+                        <CheckCircle size={10} />
+                        <span>Approved</span>
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        Approved on: {driver.approvalDate ? new Date(driver.approvalDate).toLocaleDateString() : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </motion.div>
