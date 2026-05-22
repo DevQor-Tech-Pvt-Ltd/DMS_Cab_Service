@@ -44,7 +44,13 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cookieParser());
-app.use(morgan('dev'));
+if (process.env.NODE_ENV === 'production') {
+  // Use 'combined' for production: outputs structured, single-line Apache-style logs
+  app.use(morgan('combined'));
+} else {
+  // Use 'dev' only for local development
+  app.use(morgan('dev'));
+}
 
 // Import specific rate limiters for app-level routes
 const { driverLocationLimiter, paymentLimiter } = require('./middlewares/rateLimiters');
