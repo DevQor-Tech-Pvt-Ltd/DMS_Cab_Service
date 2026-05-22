@@ -42,12 +42,13 @@ app.use(
                 : ['http://localhost:5173', 'http://localhost:4173'];
 
             const isAllowed = list.some(allowed => origin === allowed) ||
+                              origin.endsWith('.vercel.app') ||
                               process.env.NODE_ENV === 'development';
 
             if (isAllowed) {
                 callback(null, true);
             } else {
-                callback(new Error('Not allowed by CORS'));
+                callback(null, false);
             }
         },
         credentials: true,
@@ -57,6 +58,18 @@ app.use(
 app.use(globalLimiter);
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
+
+// Express 5 req.query read-only bypass for express-mongo-sanitize & hpp compatibility
+app.use((req, res, next) => {
+    Object.defineProperty(req, 'query', {
+        value: { ...req.query },
+        writable: true,
+        configurable: true,
+        enumerable: true,
+    });
+    next();
+});
+
 app.use(mongoSanitize());
 app.use(hpp());
 app.use(compression());
