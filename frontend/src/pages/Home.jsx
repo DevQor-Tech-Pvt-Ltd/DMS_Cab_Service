@@ -44,7 +44,7 @@ const Home = () => {
 
   return (
     <div className="bg-[#060a11]">
-      <div className="relative min-h-screen overflow-hidden flex flex-col justify-between pt-28">
+      <div className="relative min-h-screen overflow-x-hidden flex flex-col justify-between pt-20 md:pt-28 pb-8 md:pb-0">
         {/* Background Image with Overlay */}
         <div
           className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
@@ -56,15 +56,15 @@ const Home = () => {
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-grow flex items-center">
-          <div className="max-w-2xl mt-12 md:mt-0">
+          <div className="max-w-2xl mt-6 md:mt-0">
             {/* Subtitle */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              className="flex items-center space-x-4 mb-6"
+              className="flex items-center space-x-2 sm:space-x-4 mb-4 md:mb-6"
             >
-              <div className="w-12 h-[1px] bg-[#d4af37]"></div>
-              <span className="text-[#d4af37] text-sm font-semibold tracking-[0.2em] uppercase">Premium Chauffeur Service</span>
+              <div className="w-8 sm:w-12 h-[1px] bg-[#d4af37]"></div>
+              <span className="text-[#d4af37] text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase">Premium Chauffeur Service</span>
             </motion.div>
 
             {/* Main Heading */}
@@ -72,7 +72,7 @@ const Home = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="text-4xl sm:text-5xl md:text-7xl font-serif text-[#d4af37] leading-[1.1] mb-6"
+              className="text-3xl sm:text-5xl md:text-7xl font-serif text-[#d4af37] leading-[1.1] mb-4 md:mb-6"
             >
               Executive Rides,<br />On Your Schedule
             </motion.h1>
@@ -82,7 +82,7 @@ const Home = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="text-gray-300 text-lg md:text-xl max-w-xl mb-10 font-light leading-relaxed"
+              className="text-gray-300 text-base md:text-xl max-w-xl mb-6 md:mb-10 font-light leading-relaxed"
             >
               Book your premium chauffeur minimum 12 hours in advance and travel with comfort, class and complete peace of mind.
             </motion.p>
@@ -92,27 +92,27 @@ const Home = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="grid grid-cols-2 md:flex md:flex-wrap gap-4 mb-12"
+              className="grid grid-cols-2 md:flex md:flex-wrap gap-3 sm:gap-4 mb-8 md:mb-12"
             >
               {/* Feature 1 */}
-              <div className="flex items-center space-x-3 bg-white/5 border border-white/10 rounded-xl p-3 px-4 backdrop-blur-sm">
-                <User className="text-[#d4af37]" size={20} strokeWidth={1.5} />
-                <span className="text-xs text-gray-300 leading-tight">Professional<br />Chauffeurs</span>
+              <div className="flex items-center space-x-2 sm:space-x-3 bg-white/5 border border-white/10 rounded-xl p-2.5 px-3 sm:p-3 sm:px-4 backdrop-blur-sm">
+                <User className="text-[#d4af37] w-4 h-4 sm:w-5 sm:h-5" size={20} strokeWidth={1.5} />
+                <span className="text-[10px] sm:text-xs text-gray-300 leading-tight">Professional<br />Chauffeurs</span>
               </div>
               {/* Feature 2 */}
-              <div className="flex items-center space-x-3 bg-white/5 border border-white/10 rounded-xl p-3 px-4 backdrop-blur-sm">
-                <ShieldCheck className="text-[#d4af37]" size={20} strokeWidth={1.5} />
-                <span className="text-xs text-gray-300 leading-tight">Safety &<br />Reliability</span>
+              <div className="flex items-center space-x-2 sm:space-x-3 bg-white/5 border border-white/10 rounded-xl p-2.5 px-3 sm:p-3 sm:px-4 backdrop-blur-sm">
+                <ShieldCheck className="text-[#d4af37] w-4 h-4 sm:w-5 sm:h-5" size={20} strokeWidth={1.5} />
+                <span className="text-[10px] sm:text-xs text-gray-300 leading-tight">Safety &<br />Reliability</span>
               </div>
               {/* Feature 3 */}
-              <div className="flex items-center space-x-3 bg-white/5 border border-white/10 rounded-xl p-3 px-4 backdrop-blur-sm">
-                <Car className="text-[#d4af37]" size={20} strokeWidth={1.5} />
-                <span className="text-xs text-gray-300 leading-tight">Luxury<br />Vehicles</span>
+              <div className="flex items-center space-x-2 sm:space-x-3 bg-white/5 border border-white/10 rounded-xl p-2.5 px-3 sm:p-3 sm:px-4 backdrop-blur-sm">
+                <Car className="text-[#d4af37] w-4 h-4 sm:w-5 sm:h-5" size={20} strokeWidth={1.5} />
+                <span className="text-[10px] sm:text-xs text-gray-300 leading-tight">Luxury<br />Vehicles</span>
               </div>
               {/* Feature 4 */}
-              <div className="flex items-center space-x-3 bg-white/5 border border-white/10 rounded-xl p-3 px-4 backdrop-blur-sm">
-                <Clock className="text-[#d4af37]" size={20} strokeWidth={1.5} />
-                <span className="text-xs text-gray-300 leading-tight">Punctual<br />& On-Time</span>
+              <div className="flex items-center space-x-2 sm:space-x-3 bg-white/5 border border-white/10 rounded-xl p-2.5 px-3 sm:p-3 sm:px-4 backdrop-blur-sm">
+                <Clock className="text-[#d4af37] w-4 h-4 sm:w-5 sm:h-5" size={20} strokeWidth={1.5} />
+                <span className="text-[10px] sm:text-xs text-gray-300 leading-tight">Punctual<br />& On-Time</span>
               </div>
             </motion.div>
 
@@ -120,20 +120,20 @@ const Home = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="flex flex-col sm:flex-row items-start sm:items-center gap-6 sm:gap-8"
+              className="flex flex-row items-center gap-4 sm:gap-8 flex-wrap"
             >
               {shouldShowBooking() ? (
-                <Link to="/get-started" className="flex items-center justify-center space-x-2 bg-[#ffe392] text-black px-8 py-3.5 rounded-lg hover:bg-[#e6c87a] transition-colors font-semibold w-full sm:w-auto">
+                <Link to="/get-started" className="flex items-center justify-center space-x-2 bg-[#ffe392] text-black px-5 py-3 sm:px-8 sm:py-3.5 rounded-lg hover:bg-[#e6c87a] transition-colors font-semibold text-sm sm:text-base w-auto">
                   <span>Get Started</span>
                   <ChevronRight size={18} strokeWidth={2.5} />
                 </Link>
               ) : (
-                <Link to={getDashboardPath()} className="flex items-center justify-center space-x-2 bg-[#ffe392] text-black px-8 py-3.5 rounded-lg hover:bg-[#e6c87a] transition-colors font-semibold w-full sm:w-auto">
+                <Link to={getDashboardPath()} className="flex items-center justify-center space-x-2 bg-[#ffe392] text-black px-5 py-3 sm:px-8 sm:py-3.5 rounded-lg hover:bg-[#e6c87a] transition-colors font-semibold text-sm sm:text-base w-auto">
                   <span>Go to Dashboard</span>
                   <ChevronRight size={18} strokeWidth={2.5} />
                 </Link>
               )}
-              <Link to="/learn-more" className="flex items-center justify-center space-x-2 text-[#d4af37] hover:text-[#ffe392] transition-colors font-medium self-start sm:self-auto py-2">
+              <Link to="/learn-more" className="flex items-center justify-center space-x-2 text-[#d4af37] hover:text-[#ffe392] transition-colors font-medium text-sm sm:text-base py-2">
                 <span>Learn More</span>
                 <ChevronRight size={18} />
               </Link>
@@ -146,45 +146,45 @@ const Home = () => {
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pb-8 pt-16"
+          className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pb-8 pt-8 md:pt-16"
         >
-          <div className="bg-[#111620]/80 backdrop-blur-md border border-white/5 rounded-2xl p-6 md:p-8 grid grid-cols-2 md:flex md:flex-row justify-between items-center gap-8 md:gap-4 shadow-2xl">
+          <div className="bg-[#111620]/80 backdrop-blur-md border border-white/5 rounded-2xl p-4 sm:p-6 md:p-8 grid grid-cols-2 md:flex md:flex-row justify-between items-center gap-6 sm:gap-8 md:gap-4 shadow-2xl">
             {/* Stat 1 */}
-            <div className="flex items-center space-x-3 sm:space-x-4 justify-start md:justify-start">
-              <Users className="text-[#d4af37]" size={36} strokeWidth={1.5} />
+            <div className="flex items-center space-x-2 sm:space-x-4 justify-start md:justify-start">
+              <Users className="text-[#d4af37] w-7 h-7 sm:w-9 sm:h-9" size={28} strokeWidth={1.5} />
               <div>
-                <div className="text-2xl font-serif text-[#d4af37] mb-0.5">10K+</div>
-                <div className="text-xs text-gray-400">Happy Clients</div>
+                <div className="text-xl sm:text-2xl font-serif text-[#d4af37] mb-0.5">10K+</div>
+                <div className="text-[10px] sm:text-xs text-gray-400">Happy Clients</div>
               </div>
             </div>
             {/* Divider */}
             <div className="hidden md:block w-px h-12 bg-white/10"></div>
             {/* Stat 2 */}
-            <div className="flex items-center space-x-3 sm:space-x-4 justify-start md:justify-center">
-              <Car className="text-[#d4af37]" size={36} strokeWidth={1.5} />
+            <div className="flex items-center space-x-2 sm:space-x-4 justify-start md:justify-center">
+              <Car className="text-[#d4af37] w-7 h-7 sm:w-9 sm:h-9" size={28} strokeWidth={1.5} />
               <div>
-                <div className="text-2xl font-serif text-[#d4af37] mb-0.5">500+</div>
-                <div className="text-xs text-gray-400">Premium Vehicles</div>
+                <div className="text-xl sm:text-2xl font-serif text-[#d4af37] mb-0.5">500+</div>
+                <div className="text-[10px] sm:text-xs text-gray-400">Premium Vehicles</div>
               </div>
             </div>
             {/* Divider */}
             <div className="hidden md:block w-px h-12 bg-white/10"></div>
             {/* Stat 3 */}
-            <div className="flex items-center space-x-3 sm:space-x-4 justify-start md:justify-center">
-              <ShieldCheck className="text-[#d4af37]" size={36} strokeWidth={1.5} />
+            <div className="flex items-center space-x-2 sm:space-x-4 justify-start md:justify-center">
+              <ShieldCheck className="text-[#d4af37] w-7 h-7 sm:w-9 sm:h-9" size={28} strokeWidth={1.5} />
               <div>
-                <div className="text-2xl font-serif text-[#d4af37] mb-0.5">99.9%</div>
-                <div className="text-xs text-gray-400">Safety Record</div>
+                <div className="text-xl sm:text-2xl font-serif text-[#d4af37] mb-0.5">99.9%</div>
+                <div className="text-[10px] sm:text-xs text-gray-400">Safety Record</div>
               </div>
             </div>
             {/* Divider */}
             <div className="hidden md:block w-px h-12 bg-white/10"></div>
             {/* Stat 4 */}
-            <div className="flex items-center space-x-3 sm:space-x-4 justify-start md:justify-end">
-              <Clock className="text-[#d4af37]" size={36} strokeWidth={1.5} />
+            <div className="flex items-center space-x-2 sm:space-x-4 justify-start md:justify-end">
+              <Clock className="text-[#d4af37] w-7 h-7 sm:w-9 sm:h-9" size={28} strokeWidth={1.5} />
               <div>
-                <div className="text-2xl font-serif text-[#d4af37] mb-0.5">24/7</div>
-                <div className="text-xs text-gray-400">Customer Support</div>
+                <div className="text-xl sm:text-2xl font-serif text-[#d4af37] mb-0.5">24/7</div>
+                <div className="text-[10px] sm:text-xs text-gray-400">Customer Support</div>
               </div>
             </div>
           </div>
