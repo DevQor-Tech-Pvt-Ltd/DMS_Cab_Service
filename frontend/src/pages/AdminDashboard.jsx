@@ -10,11 +10,8 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate } from 'react-router-dom';
 import { getDashboardStats, getPendingDrivers, approveDriver, rejectDriver, getApprovedDrivers } from '../services/adminService';
 
-const StatCard = ({ icon: Icon, label, value, trend, color, delay }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay }}
+const StatCard = ({ icon: Icon, label, value, trend, color }) => (
+  <div
     className="bg-[#111620] border border-white/5 rounded-2xl p-6 hover:border-[#d4af37]/20 transition-all duration-300 group"
   >
     <div className="flex items-start justify-between mb-4">
@@ -31,7 +28,7 @@ const StatCard = ({ icon: Icon, label, value, trend, color, delay }) => (
     </div>
     <p className="text-3xl font-bold text-white mb-1">{value}</p>
     <p className="text-sm text-gray-400">{label}</p>
-  </motion.div>
+  </div>
 );
 
 const StatCardSkeleton = () => (
@@ -416,12 +413,7 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-[#060a11] pt-28 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-10"
-        >
+        <div className="mb-10">
           <div className="flex items-center space-x-3 mb-2">
             <div className="w-10 h-10 rounded-xl bg-[#d4af37]/10 flex items-center justify-center">
               <Shield size={20} className="text-[#d4af37]" />
@@ -431,7 +423,7 @@ const AdminDashboard = () => {
           <p className="text-gray-400 ml-[52px]">
             Welcome back, <span className="text-[#d4af37]">{user.fullName}</span>. Here's your command center.
           </p>
-        </motion.div>
+        </div>
 
         {/* Notifications */}
         {statsError && (
@@ -464,8 +456,8 @@ const AdminDashboard = () => {
               <StatCardSkeleton />
             </>
           ) : statsData ? (
-            stats.map((stat, index) => (
-              <StatCard key={stat.label} {...stat} delay={index * 0.1} />
+            stats.map((stat) => (
+              <StatCard key={stat.label} {...stat} />
             ))
           ) : null}
         </div>
@@ -555,12 +547,7 @@ const AdminDashboard = () => {
         ) : statsData ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Recent Activity */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.4 }}
-              className="lg:col-span-2 bg-[#111620] border border-white/5 rounded-2xl p-6"
-            >
+            <div className="lg:col-span-2 bg-[#111620] border border-white/5 rounded-2xl p-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center space-x-2">
                   <Activity size={20} className="text-[#d4af37]" />
@@ -602,15 +589,10 @@ const AdminDashboard = () => {
                   })
                 )}
               </div>
-            </motion.div>
+            </div>
 
             {/* Quick Stats Sidebar */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.5 }}
-              className="bg-[#111620] border border-white/5 rounded-2xl p-6"
-            >
+            <div className="bg-[#111620] border border-white/5 rounded-2xl p-6">
               <div className="flex items-center space-x-2 mb-6">
                 <BarChart3 size={20} className="text-[#d4af37]" />
                 <h2 className="text-lg font-serif text-white">Chauffeur Quality Index</h2>
@@ -659,17 +641,12 @@ const AdminDashboard = () => {
                   </div>
                 </div>
               </div>
-            </motion.div>
+            </div>
           </div>
         ) : null}
 
         {/* Pending Driver Approvals */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
-          className="mt-6 bg-[#111620] border border-white/5 rounded-2xl p-6"
-        >
+        <div className="mt-6 bg-[#111620] border border-white/5 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
               <AlertTriangle size={20} className="text-amber-400" />
@@ -856,15 +833,10 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
-        </motion.div>
+        </div>
 
         {/* Approved Chauffeurs */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.7 }}
-          className="mt-8 bg-[#111620] border border-white/5 rounded-2xl p-6"
-        >
+        <div className="mt-8 bg-[#111620] border border-white/5 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center space-x-2">
               <UserCheck size={20} className="text-[#d4af37]" />
@@ -1046,7 +1018,7 @@ const AdminDashboard = () => {
               </div>
             </div>
           )}
-        </motion.div>
+        </div>
       </div>
 
       {/* Document Preview Modal */}
