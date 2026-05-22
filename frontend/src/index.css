@@ -103,3 +103,57 @@ input[type="reset"] {
   scrollbar-width: none;  /* Firefox */
 }
 
+/* Mobile GPU Performance Optimization Overrides */
+@media (max-width: 768px) {
+  /* Disable expensive backdrop filtering globally on mobile to prevent compositor colored-noise bands and flickering layers */
+  *, *::before, *::after {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    filter: none !important;
+  }
+
+  /* Make translucent cards/containers opaque for high readability and premium design styling */
+  .glass,
+  .backdrop-blur-sm,
+  .backdrop-blur-md,
+  .backdrop-blur-lg,
+  .backdrop-blur-xl,
+  [class*="backdrop-blur"] {
+    background-color: rgba(10, 10, 10, 0.95) !important;
+    border-color: rgba(212, 175, 55, 0.15) !important;
+  }
+
+  /* Enforce stable scrolling backgrounds to resolve viewport duplications on Android */
+  body, .bg-cover, [style*="backgroundImage"], [style*="background-image"] {
+    background-attachment: scroll !important;
+    background-repeat: no-repeat !important;
+    background-size: cover !important;
+  }
+
+  /* Optimize card shadows by switching to hardware-light static shadows */
+  .shadow-2xl, .shadow-xl, .shadow-lg, .shadow-md, [class*="shadow-"] {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5) !important;
+  }
+
+  /* Optimize input element focus styling to prevent keyboard rendering lag and repaint cycles */
+  input, select, textarea {
+    box-shadow: none !important;
+    transition: border-color 0.15s ease-in-out !important;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--color-gold-500) !important;
+    box-shadow: 0 0 0 1px var(--color-gold-500) !important;
+    outline: none !important;
+  }
+
+  /* Prevent translation/scrolling layout loops */
+  html, body {
+    overflow-x: hidden;
+    position: relative;
+    width: 100vw;
+    height: auto;
+  }
+}
+
+

@@ -6,49 +6,49 @@ const homeFleetData = [
   {
     id: 1,
     name: 'MERCEDES-BENZ S-CLASS',
-    image: "/Mercedes-Benz S-Class.png",
+    image: "/Mercedes-Benz S-Class.webp",
     seats: 3
   },
   {
     id: 2,
     name: 'RANGE ROVER AUTOBIOGRAPHY',
-    image: "/Range Rover Autobiography.png",
+    image: "/Range Rover Autobiography.webp",
     seats: 4
   },
   {
     id: 3,
     name: 'MERCEDES-BENZ V-CLASS',
-    image: "/Mercedes-Benz V-Class.png",
+    image: "/Mercedes-Benz V-Class.webp",
     seats: 6
   },
   {
     id: 4,
     name: 'BMW X7',
-    image: "/Mercedes-Benz S-Class.png",
+    image: "/Mercedes-Benz S-Class.webp",
     seats: 6
   },
   {
     id: 5,
     name: 'ROLLS ROYCE PHANTOM',
-    image: "/Mercedes-Benz V-Class.png",
+    image: "/Mercedes-Benz V-Class.webp",
     seats: 3
   },
   {
     id: 6,
     name: 'BENTLEY FLYING SPUR',
-    image: "/Range Rover Autobiography.png",
+    image: "/Range Rover Autobiography.webp",
     seats: 3
   },
   {
     id: 7,
     name: 'CADILLAC ESCALADE',
-    image: "/Mercedes-Benz V-Class.png",
+    image: "/Mercedes-Benz V-Class.webp",
     seats: 6
   },
   {
     id: 8,
     name: 'AUDI A8 L',
-    image: "/Mercedes-Benz S-Class.png",
+    image: "/Mercedes-Benz S-Class.webp",
     seats: 3
   }
 ];

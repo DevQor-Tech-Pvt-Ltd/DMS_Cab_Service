@@ -11,6 +11,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import TrackingMap from '../components/TrackingMap';
 import io from 'socket.io-client';
 import axios from 'axios';
+import { isMobile } from '../utils/motion';
 
 const StatCardSkeleton = () => (
   <div className="bg-[#111620] border border-white/5 rounded-2xl p-6 relative overflow-hidden animate-pulse">
@@ -25,9 +26,9 @@ const StatCardSkeleton = () => (
 
 const StatCard = ({ icon: Icon, label, value, sub, color, delay }) => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
+    initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay }}
+    transition={isMobile ? { duration: 0 } : { duration: 0.5, delay }}
     className="bg-[#111620] border border-white/5 rounded-2xl p-6 hover:border-[#d4af37]/20 transition-all duration-300"
   >
     <div className="flex items-start justify-between mb-4">
@@ -319,9 +320,9 @@ const ClientDashboard = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <motion.div
-          initial={{ opacity: 0, y: -10 }}
+          initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
+          transition={isMobile ? { duration: 0 } : { duration: 0.4 }}
           className="mb-10"
         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -379,9 +380,9 @@ const ClientDashboard = () => {
 
         {/* Live Trip tracking */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
+          transition={isMobile ? { duration: 0 } : { duration: 0.5, delay: 0.3 }}
           className="mb-10 bg-[#111620] border border-white/5 rounded-2xl p-6"
         >
           <div className="flex items-center space-x-2 mb-4">
@@ -395,9 +396,9 @@ const ClientDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* Upcoming Rides */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
+            transition={isMobile ? { duration: 0 } : { duration: 0.5, delay: 0.4 }}
             className="lg:col-span-2 bg-[#111620] border border-white/5 rounded-2xl p-6"
           >
             <div className="flex items-center justify-between mb-6">
@@ -433,7 +434,7 @@ const ClientDashboard = () => {
                 <p>No upcoming rides. Book your next journey!</p>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-4" style={{ contain: 'layout paint' }}>
                 {upcomingRides.map((ride) => (
                   <div
                     key={ride.id}
@@ -549,9 +550,9 @@ const ClientDashboard = () => {
 
           {/* Saved Addresses */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
+            transition={isMobile ? { duration: 0 } : { duration: 0.5, delay: 0.5 }}
             className="bg-[#111620] border border-white/5 rounded-2xl p-6"
           >
             <div className="flex items-center space-x-2 mb-6">
@@ -609,9 +610,9 @@ const ClientDashboard = () => {
 
         {/* Ride History */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.6 }}
+          transition={isMobile ? { duration: 0 } : { duration: 0.5, delay: 0.6 }}
           className="bg-[#111620] border border-white/5 rounded-2xl p-6"
         >
           <div className="flex items-center justify-between mb-6">
@@ -644,7 +645,7 @@ const ClientDashboard = () => {
               <p className="text-sm">No completed journeys yet.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto" style={{ contain: 'layout paint' }}>
               <table className="w-full min-w-[650px] lg:min-w-0">
                 <thead>
                   <tr className="border-b border-white/5">
@@ -701,8 +702,9 @@ const ClientDashboard = () => {
       {showRatingModal && (
         <div className="fixed inset-0 z-50 bg-[#060a11]/90 backdrop-blur-md flex items-center justify-center p-4">
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
+            initial={isMobile ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
+            transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
             className="w-full max-w-md bg-[#111620] border border-[#d4af37]/30 rounded-2xl p-6 shadow-2xl relative overflow-hidden"
           >
             {/* Visual Gold Bar at top */}

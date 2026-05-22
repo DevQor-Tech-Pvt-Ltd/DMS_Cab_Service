@@ -4,6 +4,7 @@ import { User, ShieldCheck, Car, Clock, ChevronRight, Users } from '../utils/ico
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import LazyViewportSection from '../components/LazyViewportSection';
+import { isMobile } from '../utils/motion';
 
 // Lazy load below-the-fold components to accelerate initial paint (FCP/LCP)
 const HomeAbout = lazy(() => import('../components/HomeAbout'));
@@ -59,8 +60,9 @@ const Home = () => {
           <div className="max-w-2xl mt-6 md:mt-0">
             {/* Subtitle */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 20 }}
+              animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+              transition={isMobile ? { duration: 0 } : { duration: 0.5 }}
               className="flex items-center space-x-2 sm:space-x-4 mb-4 md:mb-6"
             >
               <div className="w-8 sm:w-12 h-[1px] bg-[#d4af37]"></div>
@@ -69,9 +71,9 @@ const Home = () => {
 
             {/* Main Heading */}
             <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
+              initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 20 }}
+              animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+              transition={isMobile ? { duration: 0 } : { delay: 0.1, duration: 0.5 }}
               className="text-3xl sm:text-5xl md:text-7xl font-serif text-[#d4af37] leading-[1.1] mb-4 md:mb-6"
             >
               Executive Rides,<br />On Your Schedule
@@ -79,9 +81,9 @@ const Home = () => {
 
             {/* Description */}
             <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
+              initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 20 }}
+              animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+              transition={isMobile ? { duration: 0 } : { delay: 0.2, duration: 0.5 }}
               className="text-gray-300 text-base md:text-xl max-w-xl mb-6 md:mb-10 font-light leading-relaxed"
             >
               Book your premium chauffeur minimum 12 hours in advance and travel with comfort, class and complete peace of mind.
@@ -89,9 +91,9 @@ const Home = () => {
 
             {/* Feature Icons Grid */}
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
+              initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 20 }}
+              animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+              transition={isMobile ? { duration: 0 } : { delay: 0.3, duration: 0.5 }}
               className="grid grid-cols-2 md:flex md:flex-wrap gap-3 sm:gap-4 mb-8 md:mb-12"
             >
               {/* Feature 1 */}
@@ -117,9 +119,9 @@ const Home = () => {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4 }}
+              initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 20 }}
+              animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+              transition={isMobile ? { duration: 0 } : { delay: 0.4, duration: 0.5 }}
               className="flex flex-row items-center gap-4 sm:gap-8 flex-wrap"
             >
               {shouldShowBooking() ? (
@@ -143,9 +145,9 @@ const Home = () => {
 
         {/* Bottom Stats Bar */}
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
+          initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 30 }}
+          animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+          transition={isMobile ? { duration: 0 } : { delay: 0.5, duration: 0.5 }}
           className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pb-8 pt-8 md:pt-16"
         >
           <div className="bg-[#111620]/80 backdrop-blur-md border border-white/5 rounded-2xl p-4 sm:p-6 md:p-8 grid grid-cols-2 md:flex md:flex-row justify-between items-center gap-6 sm:gap-8 md:gap-4 shadow-2xl">

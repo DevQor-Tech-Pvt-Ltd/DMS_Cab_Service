@@ -13,12 +13,13 @@ import TrackingMap from '../components/TrackingMap';
 import DriverOtpVerification from '../components/DriverOtpVerification';
 import io from 'socket.io-client';
 import axios from 'axios';
+import { isMobile } from '../utils/motion';
 
 const StatCard = ({ icon: Icon, label, value, sub, color, delay }) => (
   <motion.div
-    initial={{ opacity: 0, y: 20 }}
+    initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    transition={{ duration: 0.5, delay }}
+    transition={isMobile ? { duration: 0 } : { duration: 0.5, delay }}
     className="bg-[#111620] border border-white/5 rounded-2xl p-6 hover:border-[#d4af37]/20 transition-all duration-300"
   >
     <div className="flex items-start justify-between mb-4">
@@ -504,12 +505,12 @@ const DriverDashboard = () => {
     <div className="min-h-screen bg-[#060a11] pt-28 pb-16 px-4 sm:px-6 lg:px-8">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4 }}
-          className="mb-10"
-        >
+         <motion.div
+           initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: -10 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={isMobile ? { duration: 0 } : { duration: 0.4 }}
+           className="mb-10"
+         >
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
               <div className="flex items-center space-x-3 mb-2">
@@ -544,9 +545,10 @@ const DriverDashboard = () => {
         <AnimatePresence>
           {rideCancelStatus && (
             <motion.div
-              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: -20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              exit={isMobile ? { opacity: 0 } : { opacity: 0, y: -20, scale: 0.95 }}
+              transition={isMobile ? { duration: 0 } : undefined}
               className="mb-6 p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 flex items-center justify-center space-x-2 text-sm font-bold uppercase tracking-wider"
             >
               <span>{rideCancelStatus}</span>
@@ -561,9 +563,10 @@ const DriverDashboard = () => {
             return (
               <motion.div
                 key={ride._id}
-                initial={{ opacity: 0, y: -20, scale: 0.95 }}
+                initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: -20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                exit={isMobile ? { opacity: 0 } : { opacity: 0, y: 20, scale: 0.95 }}
+                transition={isMobile ? { duration: 0 } : undefined}
                 className={`mb-6 p-6 rounded-2xl border backdrop-blur-md shadow-2xl relative overflow-hidden transition-all duration-300 ${
                   status === 'booking has taken'
                     ? 'bg-red-500/10 border-red-500/20 text-red-300'
@@ -670,9 +673,9 @@ const DriverDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
           {/* Current Active Ride */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.4 }}
+            transition={isMobile ? { duration: 0 } : { duration: 0.5, delay: 0.4 }}
             className="lg:col-span-2 bg-[#111620] border border-white/5 rounded-2xl p-6"
           >
             <div className="flex items-center justify-between mb-6">
@@ -859,9 +862,9 @@ const DriverDashboard = () => {
 
           {/* Upcoming Assignments */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.5 }}
+            transition={isMobile ? { duration: 0 } : { duration: 0.5, delay: 0.5 }}
             className="bg-[#111620] border border-white/5 rounded-2xl p-6"
           >
             <div className="flex items-center space-x-2 mb-6">
@@ -871,7 +874,7 @@ const DriverDashboard = () => {
                 {upcomingAssignments.length}
               </span>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-3" style={{ contain: 'layout paint' }}>
               {upcomingAssignments.length === 0 ? (
                 <div className="text-center py-12 text-gray-500 text-sm bg-[#0a0f18] border border-dashed border-white/5 rounded-xl font-sans">
                   <CalendarCheck size={28} className="mx-auto mb-2 text-[#d4af37]/40" />
@@ -909,9 +912,9 @@ const DriverDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Weekly Earnings Chart */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.6 }}
+            transition={isMobile ? { duration: 0 } : { duration: 0.5, delay: 0.6 }}
             className="bg-[#111620] border border-white/5 rounded-2xl p-6"
           >
             <div className="flex items-center justify-between mb-6">
@@ -948,9 +951,9 @@ const DriverDashboard = () => {
 
           {/* Recent Reviews */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.7 }}
+            transition={isMobile ? { duration: 0 } : { duration: 0.5, delay: 0.7 }}
             className="bg-[#111620] border border-white/5 rounded-2xl p-6"
           >
             <div className="flex items-center justify-between mb-6">
@@ -964,7 +967,7 @@ const DriverDashboard = () => {
                 <span className="text-xs text-gray-500">({ratedRides.length})</span>
               </div>
             </div>
-            <div className="space-y-4">
+            <div className="space-y-4" style={{ contain: 'layout paint' }}>
               {recentReviews.length === 0 ? (
                 <div className="text-center py-8 text-gray-500 text-sm bg-[#0a0f18] border border-dashed border-white/5 rounded-xl">
                   <Star className="mx-auto mb-2 text-gray-600 animate-pulse" size={24} />

@@ -8,12 +8,13 @@ import {
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { isMobile } from '../utils/motion';
 
 const fleetOptions = [
   {
     name: 'Mercedes-Benz S-Class',
     category: 'Executive Sedan',
-    image: 'Mercedes-Benz S-Class.png',
+    image: 'Mercedes-Benz S-Class.webp',
     passengers: 3,
     luggage: 2,
     baseFare: 1501,
@@ -23,7 +24,7 @@ const fleetOptions = [
   {
     name: 'Range Rover Autobiography',
     category: 'Luxury SUV',
-    image: 'Range Rover Autobiography.png',
+    image: 'Range Rover Autobiography.webp',
     passengers: 4,
     luggage: 4,
     baseFare: 1,
@@ -33,7 +34,7 @@ const fleetOptions = [
   {
     name: 'Mercedes-Benz V-Class',
     category: 'Premium Van',
-    image: 'Mercedes-Benz V-Class.png',
+    image: 'Mercedes-Benz V-Class.webp',
     passengers: 7,
     luggage: 6,
     baseFare: 1,
@@ -283,8 +284,9 @@ const GetStartedPage = () => {
         {/* Header */}
         <div className="text-center mb-10">
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+            animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            transition={isMobile ? { duration: 0 } : { duration: 0.5 }}
             className="flex items-center justify-center space-x-4 mb-3"
           >
             <div className="w-12 h-[1px] bg-[#d4af37]"></div>
@@ -292,17 +294,17 @@ const GetStartedPage = () => {
             <div className="w-12 h-[1px] bg-[#d4af37]"></div>
           </motion.div>
           <motion.h1
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.05 }}
+            initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 15 }}
+            animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            transition={isMobile ? { duration: 0 } : { delay: 0.05, duration: 0.5 }}
             className="text-3xl sm:text-4xl md:text-5xl font-serif text-white mb-2"
           >
             {bookingSuccess ? 'Booking Confirmed' : 'Book Your Journey'}
           </motion.h1>
           <motion.p
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1 }}
+            initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 15 }}
+            animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            transition={isMobile ? { duration: 0 } : { delay: 0.1, duration: 0.5 }}
             className="text-gray-400 text-sm"
           >
             {bookingSuccess ? 'Your premium chauffeur has been notified' : 'Experience the pinnacle of luxury transportation.'}
@@ -312,8 +314,9 @@ const GetStartedPage = () => {
         {/* Success Screen */}
         {bookingSuccess ? (
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={isMobile ? { opacity: 1 } : { opacity: 0, scale: 0.98 }}
+            animate={isMobile ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+            transition={isMobile ? { duration: 0 } : { duration: 0.4 }}
             className="bg-[#0a0f18] border border-[#d4af37]/20 rounded-2xl p-8 text-center shadow-2xl space-y-6"
           >
             <div className="w-20 h-20 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-400 mx-auto border border-emerald-500/20">
@@ -370,9 +373,9 @@ const GetStartedPage = () => {
         ) : (
           /* Multi-step Widget */
           <motion.div
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.15 }}
+            initial={isMobile ? { opacity: 1 } : { opacity: 0, scale: 0.98 }}
+            animate={isMobile ? { opacity: 1 } : { opacity: 1, scale: 1 }}
+            transition={isMobile ? { duration: 0 } : { delay: 0.1, duration: 0.4 }}
             className="bg-[#0a0f18] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden"
           >
             {/* Progress Steps */}

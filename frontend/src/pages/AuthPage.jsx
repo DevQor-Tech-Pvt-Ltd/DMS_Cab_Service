@@ -4,6 +4,7 @@ import { Mail, Lock, User, Phone, ArrowRight, Briefcase, Eye, EyeOff, Car, Credi
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { login as loginRequest, register as registerRequest } from '../services/authService.js';
+import { isMobile } from '../utils/motion';
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -131,7 +132,7 @@ const AuthPage = () => {
     <div className="min-h-screen bg-[#060a11] flex flex-col lg:flex-row">
       <div className="hidden lg:flex lg:fixed lg:inset-y-0 lg:left-0 lg:w-1/2 relative bg-black overflow-hidden">
         <img
-          src="/dms-bg.png"
+          src="/dms-bg.avif"
           alt="Luxury Chauffeur Interior"
           loading="lazy"
           className="w-full h-full object-cover opacity-60"
@@ -161,9 +162,9 @@ const AuthPage = () => {
 
         <div className="w-full max-w-md">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
+            initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 20 }}
+            animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+            transition={isMobile ? { duration: 0 } : { duration: 0.5 }}
           >
             <div className="mb-10 text-center lg:text-left">
               <h2 className="text-3xl font-serif text-white mb-2">
@@ -178,7 +179,7 @@ const AuthPage = () => {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {!isLogin && (
-                <motion.div layout>
+                <motion.div layout={!isMobile}>
                   <label className="block text-sm text-gray-400 mb-2 font-medium">Full Name</label>
                   <div className="relative">
                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={20} />
@@ -194,7 +195,7 @@ const AuthPage = () => {
                 </motion.div>
               )}
 
-              <motion.div layout>
+              <motion.div layout={!isMobile}>
                 <label className="block text-sm text-gray-400 mb-2 font-medium">Email Address</label>
                 <div className="relative">
                   <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={20} />
@@ -210,7 +211,7 @@ const AuthPage = () => {
               </motion.div>
 
               {!isLogin && (
-                <motion.div layout>
+                <motion.div layout={!isMobile}>
                   <label className="block text-sm text-gray-400 mb-2 font-medium">Mobile Number</label>
                   <div className="relative">
                     <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={20} />
@@ -227,7 +228,7 @@ const AuthPage = () => {
               )}
 
               {!isLogin && (
-                <motion.div layout>
+                <motion.div layout={!isMobile}>
                   <label className="block text-sm text-gray-400 mb-2 font-medium">Account Role</label>
                   <div className="relative">
                     <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={20} />
@@ -246,7 +247,12 @@ const AuthPage = () => {
 
               {!isLogin && role === 'driver' && (
                 <>
-                  <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+                  <motion.div
+                    layout={!isMobile}
+                    initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                    animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                    transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                  >
                     <label className="block text-sm text-gray-400 mb-2 font-medium">Vehicle Number</label>
                     <div className="relative">
                       <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={20} />
@@ -261,7 +267,12 @@ const AuthPage = () => {
                     </div>
                   </motion.div>
 
-                  <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+                  <motion.div
+                    layout={!isMobile}
+                    initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                    animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                    transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                  >
                     <label className="block text-sm text-gray-400 mb-2 font-medium">License Number</label>
                     <div className="relative">
                       <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={20} />
@@ -276,7 +287,12 @@ const AuthPage = () => {
                     </div>
                   </motion.div>
 
-                  <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+                  <motion.div
+                    layout={!isMobile}
+                    initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                    animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                    transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                  >
                     <label className="block text-sm text-gray-400 mb-2 font-medium">RC File (Vehicle Registration Document)</label>
                     <div className="relative">
                       <input
@@ -299,7 +315,12 @@ const AuthPage = () => {
                     </div>
                   </motion.div>
 
-                  <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
+                  <motion.div
+                    layout={!isMobile}
+                    initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                    animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                    transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                  >
                     <label className="block text-sm text-gray-400 mb-2 font-medium">License Document</label>
                     <div className="relative">
                       <input
@@ -324,7 +345,7 @@ const AuthPage = () => {
                 </>
               )}
 
-              <motion.div layout>
+              <motion.div layout={!isMobile}>
                 <label className="block text-sm text-gray-400 mb-2 font-medium">Password</label>
                 <div className="relative">
                   <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={20} />
@@ -348,7 +369,7 @@ const AuthPage = () => {
               </motion.div>
 
               {!isLogin && (
-                <motion.div layout>
+                <motion.div layout={!isMobile}>
                   <label className="block text-sm text-gray-400 mb-2 font-medium">Confirm Password</label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={20} />
