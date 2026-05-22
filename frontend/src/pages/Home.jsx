@@ -64,7 +64,7 @@ const Home = () => {
               className="flex items-center space-x-2 sm:space-x-4 mb-4 md:mb-6"
             >
               <div className="w-8 sm:w-12 h-[1px] bg-[#d4af37]"></div>
-              <span className="text-[#d4af37] text-xs sm:text-sm font-semibold tracking-[0.2em] uppercase">Premium Chauffeur Service</span>
+              <span className="text-[#d4af37] text-[10px] sm:text-xs md:text-sm font-semibold tracking-[0.1em] sm:tracking-[0.2em] uppercase">Premium Chauffeur Service</span>
             </motion.div>
 
             {/* Main Heading */}
