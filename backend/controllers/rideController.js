@@ -123,7 +123,7 @@ exports.acceptRide = async (req, res) => {
     const { sendOtpEmail } = require('../utils/emailService');
 
     // Securely generate a 4-digit OTP
-    const secureOtp = crypto.randomInt(100000, 1000000).toString();
+    const secureOtp = crypto.randomInt(1000, 10000).toString();
     // Hash OTP before storing
     const hashedOtp = await bcrypt.hash(secureOtp, 10)
     // Expiry time 5 minutes window
@@ -353,10 +353,16 @@ exports.resendOtp = async (req, res) => {
     const crypto = require('crypto');
     const { sendOtpEmail } = require('../utils/emailService');
 
-    const ride = await Ride.findOne({
-      _id: req.params.id || req.params.rideId,
-      driver: req.user._id
-    });
+    const query = { _id: req.params.id || req.params.rideId };
+    if (req.user.role === 'driver') {
+      query.driver = req.user._id;
+    } else if (req.user.role === 'client') {
+      query.client = req.user._id;
+    } else {
+      return res.status(403).json({ success: false, message: 'Unauthorized role.' });
+    }
+
+    const ride = await Ride.findOne(query);
     if (!ride) {
       return res.status(404).json({ success: false, message: 'Booking not found.' });
     }
@@ -375,8 +381,8 @@ exports.resendOtp = async (req, res) => {
       message: 'Please wait before requesting another OTP.'
     });
   }
-    // Generate fresh secure 6-digit code
-    const freshOtp = crypto.randomInt(100000, 1000000).toString();
+    // Generate fresh secure 4-digit code
+    const freshOtp = crypto.randomInt(1000, 10000).toString();
     
     ride.rideOtpHash = await bcrypt.hash(freshOtp, 10);
     ride.otpAttempts = 0;

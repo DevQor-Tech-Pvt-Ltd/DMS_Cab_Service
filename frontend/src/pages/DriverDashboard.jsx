@@ -868,7 +868,9 @@ const DriverDashboard = () => {
                   {/* Ride Live Tracking Map */}
                   <div className="mt-6 border-t border-slate-100 pt-6">
                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-3">Live Route Tracking Map</p>
-                    <TrackingMap role="driver" />
+                    <div className="relative bg-slate-50 border border-slate-200 rounded-2xl h-80 overflow-hidden shadow-inner">
+                      <TrackingMap role="driver" />
+                    </div>
                   </div>
 
                   {/* Action Buttons */}
