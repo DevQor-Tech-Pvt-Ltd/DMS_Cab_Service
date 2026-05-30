@@ -17,6 +17,15 @@ const transporter = nodemailer.createTransport({
   },
 });
 
+// Verify SMTP connection on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('[SMTP VERIFICATION ERROR] Connection failed:', error);
+  } else {
+    console.log('[SMTP VERIFICATION SUCCESS] Server is ready to take our messages');
+  }
+});
+
 /**
  * Send booking confirmation and invoice email to client
  */
@@ -38,7 +47,7 @@ exports.sendInvoiceEmail = async (ride) => {
     <html>
       <head>
         <meta charset="utf-8">
-        <title>Invoice - DMS Cab Servicese Booking #${bookingId}</title>
+        <title>Invoice - DMS Cab Services Booking #${bookingId}</title>
         <style>
           body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -195,7 +204,7 @@ exports.sendInvoiceEmail = async (ride) => {
       <body>
         <div class="container">
           <div class="header">
-            <h1>DMS Cab ServicesE</h1>
+            <h1>DMS Cab Services</h1>
             <p>Pinnacle Chauffeur Reservation</p>
           </div>
           <div class="content">
@@ -212,7 +221,7 @@ exports.sendInvoiceEmail = async (ride) => {
             
             <p style="font-size: 14px; color: #8f9cae; line-height: 1.6; margin-top: 0;">
               Dear ${ride.passengerDetails.fullName},<br><br>
-              Thank you for reserving a luxury journey with DMS Cab Servicese. Your reservation details and billing statement are verified below.
+              Thank you for reserving a luxury journey with DMS Cab Services. Your reservation details and billing statement are verified below.
             </p>
 
             <div class="grid">
@@ -289,7 +298,7 @@ exports.sendInvoiceEmail = async (ride) => {
             </p>
           </div>
           <div class="footer">
-            <p>DMS Cab Servicese Chauffeurs | Kolkata, West Bengal</p>
+            <p>DMS Cab Services Chauffeurs | Kolkata, West Bengal</p>
             <p style="margin-top: 5px;">Need help? Email us at <a href="mailto:engineering@devqor.in">engineering@devqor.in</a></p>
           </div>
         </div>
@@ -298,9 +307,9 @@ exports.sendInvoiceEmail = async (ride) => {
     `;
 
     const mailOptions = {
-      from: `"DMS Cab Servicese" <${smtpUser}>`,
+      from: `"DMS Cab Services" <${smtpUser}>`,
       to,
-      subject: `Luxury Booking Invoice - #${bookingId} [DMS Cab Servicese]`,
+      subject: `Luxury Booking Invoice - #${bookingId} [DMS Cab Services]`,
       html: htmlContent,
     };
 
@@ -319,7 +328,7 @@ exports.sendInvoiceEmail = async (ride) => {
 exports.sendEmail = async ({ to, subject, html }) => {
   try {
     const mailOptions = {
-      from: `"DMS Cab Servicese" <${smtpUser}>`,
+      from: `"DMS Cab Services" <${smtpUser}>`,
       to,
       subject,
       html,
@@ -345,7 +354,7 @@ exports.sendOtpEmail = async (ride, otp, driverName) => {
     <html>
       <head>
         <meta charset="utf-8">
-        <title>Ride Verification Code - DMS Cab Servicese</title>
+        <title>Ride Verification Code - DMS Cab Services</title>
         <style>
           body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -419,7 +428,7 @@ exports.sendOtpEmail = async (ride, otp, driverName) => {
       <body>
         <div class="container">
           <div class="header">
-            <h1>DMS Cab ServicesE</h1>
+            <h1>DMS Cab Services</h1>
           </div>
           <div class="content">
             <h2 style="font-family: 'Georgia', serif; color: #ffffff; margin-top: 0; font-size: 20px;">Your Ride Start OTP</h2>
@@ -439,7 +448,7 @@ exports.sendOtpEmail = async (ride, otp, driverName) => {
             </div>
           </div>
           <div class="footer">
-            <p>DMS Cab Servicese Chauffeurs | Kolkata, West Bengal</p>
+            <p>DMS Cab Services Chauffeurs | Kolkata, West Bengal</p>
           </div>
         </div>
       </body>
@@ -448,7 +457,7 @@ exports.sendOtpEmail = async (ride, otp, driverName) => {
 
     await exports.sendEmail({
       to,
-      subject: `[OTP] Ride Verification Code: ${otp} - DMS Cab Servicese`,
+      subject: `Ride Verification Code - DMS Cab Services`,
       html: htmlContent,
     });
     console.log(`[OTP EMAIL SUCCESS] Sent to client: ${to}`);
@@ -472,7 +481,7 @@ exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, 
     <html>
       <head>
         <meta charset="utf-8">
-        <title>New Contact Inquiry - DMS Cab Servicese</title>
+        <title>New Contact Inquiry - DMS Cab Services</title>
         <style>
           body {
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
@@ -549,7 +558,7 @@ exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, 
       <body>
         <div class="container">
           <div class="header">
-            <h1>DMS Cab ServicesE</h1>
+            <h1>DMS Cab Services</h1>
             <p style="color: #8f9cae; font-size: 11px; margin: 5px 0 0; text-transform: uppercase; letter-spacing: 2px;">New Contact Inquiry</p>
           </div>
           <div class="content">
@@ -580,7 +589,7 @@ exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, 
             </div>
           </div>
           <div class="footer">
-            <p>DMS Cab Servicese Chauffeurs | Kolkata, West Bengal</p>
+            <p>DMS Cab Services Chauffeurs | Kolkata, West Bengal</p>
           </div>
         </div>
       </body>
@@ -588,7 +597,7 @@ exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, 
     `;
 
     const mailOptions = {
-      from: `"${fullName} via DMS Cab Servicese" <${smtpUser}>`,
+      from: `"${fullName} via DMS Cab Services" <${smtpUser}>`,
       to,
       replyTo: email,
       subject: `New Inquiry: ${subject.toUpperCase()} from ${fullName}`,

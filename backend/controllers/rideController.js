@@ -173,14 +173,15 @@ exports.acceptRide = async (req, res) => {
       });
     }
 
-    // Send Ride Start OTP via Nodemailer in background
-    sendOtpEmail(ride, secureOtp, req.user.fullName).catch(err => 
-      console.error('Failed to send Ride Start OTP email:', err)
-    );
+    // Send Ride Start OTP via Nodemailer
+    const emailSent = await sendOtpEmail(ride, secureOtp, req.user.fullName);
 
     return res.status(200).json({
       success: true,
-      message: 'You have accepted the ride. Ride verification OTP has been emailed to the client.',
+      message: emailSent
+        ? 'You have accepted the ride. Ride verification OTP has been emailed to the client.'
+        : 'You have accepted the ride. However, we could not send the verification OTP email to the client. Please try resending the OTP.',
+      emailSent,
       ride,
     });
   } catch (error) {
@@ -402,10 +403,15 @@ exports.resendOtp = async (req, res) => {
       });
     }
 
-    // Dispatch email template asynchronously
-    sendOtpEmail(ride, freshOtp, ride.driver ? ride.driver.fullName : 'Chauffeur').catch(err => 
-      console.error('Failed to resend Ride Start OTP email:', err)
-    );
+    // Dispatch email template
+    const emailSent = await sendOtpEmail(ride, freshOtp, ride.driver ? ride.driver.fullName : 'Chauffeur');
+
+    if (!emailSent) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send the verification code email. Please check your email configuration or try again.'
+      });
+    }
 
     return res.status(200).json({
       success: true,

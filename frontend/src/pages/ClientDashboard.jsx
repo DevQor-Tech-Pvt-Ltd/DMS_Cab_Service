@@ -674,6 +674,11 @@ const ClientDashboard = () => {
   const totalSpentAmount = completedRides.reduce((sum, r) => sum + (r.fare || 0), 0);
   const loyaltyPoints = Math.floor(totalSpentAmount / 20);
 
+  // Active ride to track
+  const activeRide = ridesList.find(
+    r => ['pending', 'driver_assigned', 'driver_arrived', 'ride_started'].includes(r.status)
+  );
+
   // ----------------------------------------------------
   // MOBILE SCREEN RENDERERS (Page 1 & 2)
   // ----------------------------------------------------
@@ -709,7 +714,7 @@ const ClientDashboard = () => {
 
         {/* Map */}
         <div className="relative bg-slate-50 border border-slate-200 rounded-2xl h-80 overflow-hidden shadow-inner">
-          <TrackingMap role="client" />
+          <TrackingMap role="client" rideId={activeRide?._id} />
         </div>
 
         {/* Bottom sheet layout "Where to?" */}
@@ -1033,7 +1038,7 @@ const ClientDashboard = () => {
           {/* Map & Go Home/Office shortcut buttons */}
           <div className="lg:col-span-8 space-y-6">
             <div className="relative bg-slate-50 border border-slate-200 rounded-2xl h-96 overflow-hidden">
-              <TrackingMap role="client" />
+              <TrackingMap role="client" rideId={activeRide?._id} />
             </div>
 
             <div className="grid grid-cols-2 gap-4">

@@ -4,7 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import io from 'socket.io-client';
 import { MapPin, Navigation, Compass, AlertCircle, CheckCircle2 } from '../utils/icons';
 
-const TrackingMap = ({ role = 'client' }) => {
+const TrackingMap = ({ role = 'client', rideId = null }) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
@@ -17,24 +17,28 @@ const TrackingMap = ({ role = 'client' }) => {
   const [activeUsersCount, setActiveUsersCount] = useState(1);
 
   useEffect(() => {
-    // 1. Initialize Socket.io connection
-    const socketUrl = import.meta.env.VITE_API_URL
-      ? import.meta.env.VITE_API_URL.replace('/api/v1', '')
-      : 'http://localhost:5000';
+    // 1. Initialize Socket.io connection (only if rideId is present)
+    let socket = null;
+    if (rideId) {
+      const socketUrl = import.meta.env.VITE_API_URL
+        ? import.meta.env.VITE_API_URL.replace('/api/v1', '')
+        : 'http://localhost:5000';
 
-    const socket = io(socketUrl, {
-      transports: ['websocket', 'polling'],
-    });
-    socketRef.current = socket;
+      socket = io(socketUrl, {
+        transports: ['websocket', 'polling'],
+      });
+      socketRef.current = socket;
 
-    socket.on('connect', () => {
-      setIsConnected(true);
-      console.log('Socket connected:', socket.id);
-    });
+      socket.on('connect', () => {
+        setIsConnected(true);
+        console.log('Socket connected:', socket.id);
+        socket.emit('join-ride', { rideId });
+      });
 
-    socket.on('disconnect', () => {
-      setIsConnected(false);
-    });
+      socket.on('disconnect', () => {
+        setIsConnected(false);
+      });
+    }
 
     // 2. Initialize Leaflet Map centered at Kolkata with Zoom 15
     if (!mapRef.current && mapContainerRef.current) {
@@ -85,47 +89,49 @@ const TrackingMap = ({ role = 'client' }) => {
       iconAnchor: [16, 16],
     });
 
-    // 3. Setup Socket Receivers
-    // When receiving location data via the socket, extract id, latitude, and longitude
-    socket.on('receive-location', (data) => {
-      const { id, latitude, longitude } = data;
+    // 3. Setup Socket Receivers if connected
+    if (socket) {
+      // When receiving location data via the socket, extract id, latitude, and longitude
+      socket.on('receive-location', (data) => {
+        const { id, latitude, longitude } = data;
 
-      // Self location is already tracked and rendered locally
-      if (id === socket.id) {
-        return;
-      }
+        // Self location is already tracked and rendered locally
+        if (id === socket.id) {
+          return;
+        }
 
-      // If a marker for the id exists, update its position, otherwise create a new marker
-      if (markersRef.current[id]) {
-        markersRef.current[id].setLatLng([latitude, longitude]);
-      } else {
-        const marker = L.marker([latitude, longitude], {
-          icon: otherIcon,
-        }).addTo(map);
+        // If a marker for the id exists, update its position, otherwise create a new marker
+        if (markersRef.current[id]) {
+          markersRef.current[id].setLatLng([latitude, longitude]);
+        } else {
+          const marker = L.marker([latitude, longitude], {
+            icon: otherIcon,
+          }).addTo(map);
 
-        // Bind a custom premium tooltip/popup
-        marker.bindPopup(`
-          <div class="p-1 text-black font-sans text-xs">
-            <p class="font-bold text-[#aa8c2c]">Active Partner</p>
-            <p class="text-[10px] text-gray-500 font-mono">ID: ${id.substring(0, 8)}...</p>
-          </div>
-        `);
+          // Bind a custom premium tooltip/popup
+          marker.bindPopup(`
+            <div class="p-1 text-black font-sans text-xs">
+              <p class="font-bold text-[#aa8c2c]">${role === 'driver' ? 'Client' : 'Chauffeur'}</p>
+              <p class="text-[10px] text-gray-500 font-mono">ID: ${id.substring(0, 8)}...</p>
+            </div>
+          `);
 
-        markersRef.current[id] = marker;
-      }
+          markersRef.current[id] = marker;
+        }
 
-      // Calculate total active tracked users
-      setActiveUsersCount(Object.keys(markersRef.current).length);
-    });
+        // Calculate total active tracked users
+        setActiveUsersCount(Object.keys(markersRef.current).length);
+      });
 
-    // When a user disconnects, remove their marker from the map and delete it from markers
-    socket.on('user-disconnected', (id) => {
-      if (markersRef.current[id]) {
-        map.removeLayer(markersRef.current[id]);
-        delete markersRef.current[id];
-      }
-      setActiveUsersCount(Object.keys(markersRef.current).length);
-    });
+      // When a user disconnects, remove their marker from the map and delete it from markers
+      socket.on('user-disconnected', (id) => {
+        if (markersRef.current[id]) {
+          map.removeLayer(markersRef.current[id]);
+          delete markersRef.current[id];
+        }
+        setActiveUsersCount(Object.keys(markersRef.current).length);
+      });
+    }
 
     // 4. Geolocation continuous watching with High-Accuracy fallback
     const startTracking = (highAccuracy = true) => {
@@ -173,7 +179,9 @@ const TrackingMap = ({ role = 'client' }) => {
           }
 
           // Emit location to other active participants
-          socket.emit('send-location', { latitude, longitude });
+          if (rideId && socket) {
+            socket.emit('send-location', { rideId, latitude, longitude });
+          }
         },
         (error) => {
           console.error(`Geolocation Error (highAccuracy=${highAccuracy}):`, error);
@@ -195,12 +203,15 @@ const TrackingMap = ({ role = 'client' }) => {
 
     startTracking(true);
 
-    // Cleanup on component unmount
+    // Cleanup on component unmount or when rideId changes
     return () => {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
       if (socketRef.current) {
+        if (rideId) {
+          socketRef.current.emit('leave-ride', { rideId });
+        }
         socketRef.current.disconnect();
       }
       // Remove markers
@@ -216,7 +227,7 @@ const TrackingMap = ({ role = 'client' }) => {
         mapRef.current = null;
       }
     };
-  }, []);
+  }, [rideId]);
 
   // Handler to center map to user's own location
   const handleRecenter = () => {
@@ -232,9 +243,9 @@ const TrackingMap = ({ role = 'client' }) => {
       <div className="absolute top-4 left-4 right-4 z-[1000] flex flex-wrap gap-2 items-center justify-between pointer-events-none">
         {/* Status Indicator */}
         <div className="pointer-events-auto flex items-center space-x-2 bg-[#0e131f]/95 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-md shadow-lg">
-          <span className={`w-2.5 h-2.5 rounded-full ${isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
+          <span className={`w-2.5 h-2.5 rounded-full ${!rideId ? 'bg-blue-500' : isConnected ? 'bg-emerald-500 animate-pulse' : 'bg-amber-500'}`}></span>
           <span className="text-xs font-semibold text-gray-200">
-            {isConnected ? 'Real-time Connected' : 'Connecting...'}
+            {!rideId ? 'Map Active' : isConnected ? 'Real-time Connected' : 'Connecting...'}
           </span>
         </div>
 

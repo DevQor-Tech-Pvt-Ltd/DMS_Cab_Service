@@ -38,21 +38,50 @@ const startServer = async () => {
   io.on('connection', (socket) => {
     console.log('New client connected:', socket.id);
 
+    // Join a specific ride room
+    socket.on('join-ride', (data) => {
+      const { rideId } = data;
+      if (rideId) {
+        socket.join(`ride_${rideId}`);
+        console.log(`Socket ${socket.id} joined room: ride_${rideId}`);
+      }
+    });
+
+    // Leave a specific ride room
+    socket.on('leave-ride', (data) => {
+      const { rideId } = data;
+      if (rideId) {
+        socket.leave(`ride_${rideId}`);
+        console.log(`Socket ${socket.id} left room: ride_${rideId}`);
+      }
+    });
+
     // Listen for real-time location sent from driver/client
     socket.on('send-location', (data) => {
-      // Broadcast location to all clients (including sender or excluding)
-      // Since markers need to be drawn on all clients, we emit to everyone
-      io.emit('receive-location', {
-        id: socket.id,
-        latitude: data.latitude,
-        longitude: data.longitude
+      const { rideId, latitude, longitude } = data;
+      if (rideId) {
+        // Broadcast location only to clients in the specific ride room
+        io.to(`ride_${rideId}`).emit('receive-location', {
+          id: socket.id,
+          latitude,
+          longitude,
+          rideId
+        });
+      }
+    });
+
+    socket.on('disconnecting', () => {
+      console.log('Client disconnecting:', socket.id);
+      // Notify other clients in the same ride room(s) to remove the marker
+      socket.rooms.forEach((room) => {
+        if (room.startsWith('ride_')) {
+          socket.to(room).emit('user-disconnected', socket.id);
+        }
       });
     });
 
     socket.on('disconnect', () => {
       console.log('Client disconnected:', socket.id);
-      // Let other clients know to remove the marker
-      io.emit('user-disconnected', socket.id);
     });
   });
 
