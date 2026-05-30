@@ -1,4 +1,4 @@
-// Centralized, production-optimized icons registry for DMS Luxe.
+// Centralized, production-optimized icons registry for DMS Cab Servicese.
 // Direct ESM imports prevent parsing/loading the entire Lucide dictionary, ensuring 99%+ tree-shaking efficacy.
 
 import User from "lucide-react/dist/esm/icons/user";
@@ -59,6 +59,10 @@ import CalendarDays from "lucide-react/dist/esm/icons/calendar-days";
 import Building from "lucide-react/dist/esm/icons/building";
 import Gem from "lucide-react/dist/esm/icons/gem";
 import Loader2 from "lucide-react/dist/esm/icons/loader-2";
+import LogOut from "lucide-react/dist/esm/icons/log-out";
+import Smile from "lucide-react/dist/esm/icons/smile";
+import Headphones from "lucide-react/dist/esm/icons/headphones";
+import Tag from "lucide-react/dist/esm/icons/tag";
 
 export {
   User,
@@ -118,5 +122,9 @@ export {
   CalendarDays,
   Building,
   Gem,
-  Loader2
+  Loader2,
+  LogOut,
+  Smile,
+  Headphones,
+  Tag
 };

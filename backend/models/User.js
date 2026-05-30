@@ -30,9 +30,24 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Password is required'],
       minlength: [8, 'Password must be at least 8 characters'],
+      validate: {
+        validator: function (v) {
+          // If the password starts with $2a$ or $2b$, it is a bcrypt hash (e.g. from seed/admin creation)
+          if (v && (v.startsWith('$2a$') || v.startsWith('$2b$'))) {
+            return true;
+          }
+          // Must contain at least one letter and one number
+          return /^(?=.*[a-zA-Z])(?=.*\d)/.test(v);
+        },
+        message: 'Password must be alphanumeric (contain both letters and numbers)',
+      },
       select: false,
     },
     isApproved: {
+      type: Boolean,
+      default: true,
+    },
+    isActive: {
       type: Boolean,
       default: true,
     },

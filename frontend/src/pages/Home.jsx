@@ -1,10 +1,23 @@
 import React, { lazy, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, ShieldCheck, Car, Clock, ChevronRight, Users } from '../utils/icons';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext.jsx';
 import LazyViewportSection from '../components/LazyViewportSection';
-import { isMobile } from '../utils/motion';
+import {
+  Calendar,
+  Phone,
+  ShieldCheck,
+  User,
+  Car,
+  Clock,
+  Plane,
+  Star,
+  Briefcase,
+  Users,
+  Tag,
+  Smile,
+  MapPin,
+  Headphones
+} from '../utils/icons';
 
 // Lazy load below-the-fold components to accelerate initial paint (FCP/LCP)
 const HomeAbout = lazy(() => import('../components/HomeAbout'));
@@ -29,166 +42,303 @@ const SectionSkeleton = () => (
   </div>
 );
 
+// Custom, premium front-facing car icon matching the mockup
+const CarFrontIcon = ({ size = 24, className }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="m21 8-2 2-1.5-3.7A2 2 0 0 0 15.65 5H8.35a2 2 0 0 0-1.85 1.3L5 10l-2-2" />
+    <path d="M17 14h.01" />
+    <path d="M7 14h.01" />
+    <path d="M12 18H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h18a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H12Z" />
+    <path d="M5 18v2a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-2" />
+    <path d="M14 18v2a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-2" />
+  </svg>
+);
+
+// Custom, premium 24/7 Availability clock icon matching the mockup
+const Availability247Icon = ({ size = 24, className }) => (
+  <svg
+    width={size}
+    height={size}
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className={className}
+  >
+    <path d="M21.5 2v6h-6" />
+    <path d="M21.34 15.57a10 10 0 1 1-.57-8.38l.73-1.19" />
+    <text
+      x="50%"
+      y="58%"
+      dominantBaseline="middle"
+      textAnchor="middle"
+      fontSize="6.2"
+      fontWeight="900"
+      fill="currentColor"
+      letterSpacing="-0.2"
+    >
+      24/7
+    </text>
+  </svg>
+);
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { y: 20, opacity: 0 },
+  visible: {
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: 'spring',
+      stiffness: 100,
+      damping: 15
+    }
+  }
+};
+
 const Home = () => {
-  const { user } = useAuth();
+  const navigate = useNavigate();
 
-  const getDashboardPath = () => {
-    if (!user) return '/';
-    if (user.role === 'admin') return '/admin/dashboard';
-    if (user.role === 'driver') return '/driver/dashboard';
-    return '/client/dashboard';
-  };
+  const trustItems = [
+    {
+      id: 'safety',
+      title: 'Safe & Secure',
+      description: 'Your safety is our top priority',
+      icon: ShieldCheck
+    },
+    {
+      id: 'drivers',
+      title: 'Professional Drivers',
+      description: 'Experienced, courteous & reliable chauffeurs',
+      icon: User
+    },
+    {
+      id: 'fleet',
+      title: 'Luxury Fleet',
+      description: 'Premium vehicles for maximum comfort',
+      icon: CarFrontIcon
+    },
+    {
+      id: 'availability',
+      title: '24/7 Availability',
+      description: 'Round-the-clock service at your convenience',
+      icon: Availability247Icon
+    }
+  ];
 
-  const shouldShowBooking = () => {
-    return !user || user.role === 'client';
-  };
+  const offers = [
+    {
+      id: 'airport',
+      title: 'Airport Transfers',
+      description: 'Seamless pick-up and drop-off to/from any airport.',
+      image: '/about_car.avif',
+      icon: Plane
+    },
+    {
+      id: 'vip',
+      title: 'VIP Protection',
+      description: 'Discreet and professional security for your peace of mind.',
+      image: '/car-homeContact.png',
+      icon: Star
+    },
+    {
+      id: 'corporate',
+      title: 'Corporate Travel',
+      description: 'Reliable and punctual travel for your business needs.',
+      image: '/Mercedes-Benz S-Class.webp',
+      icon: Briefcase
+    },
+    {
+      id: 'hourly',
+      title: 'Hourly Chauffeur',
+      description: 'Hire by the hour for meetings, events, and more.',
+      image: '/Mercedes-Benz V-Class.webp',
+      icon: Users
+    },
+    {
+      id: 'special',
+      title: 'Special Occasions',
+      description: 'Make every occasion memorable with our luxury services.',
+      image: '/Range Rover Autobiography.webp',
+      icon: Tag
+    }
+  ];
+
+  const stats = [
+    {
+      id: 'clients',
+      value: '10K+',
+      label: 'Happy Clients',
+      icon: Smile
+    },
+    {
+      id: 'vehicles',
+      value: '500+',
+      label: 'Luxury Vehicles',
+      icon: Car
+    },
+    {
+      id: 'cities',
+      value: '50+',
+      label: 'Cities Covered',
+      icon: MapPin
+    },
+    {
+      id: 'support',
+      value: '24/7',
+      label: 'Customer Support',
+      icon: Headphones
+    }
+  ];
 
   return (
-    <div className="bg-[#060a11]">
-      <div className="relative min-h-screen overflow-x-hidden flex flex-col justify-between pt-20 md:pt-28 pb-8 md:pb-0">
-        {/* Background Image with Overlay */}
+    <div className="bg-white text-[#0F172A] min-h-screen relative font-sans overflow-x-hidden">
+      {/* Hero Section */}
+      <section
+        className="relative h-[600px] flex items-center overflow-hidden pt-12"
+        style={{
+          backgroundImage: "url('/homebg.png')",
+          backgroundRepeat: "no-repeat",
+          backgroundSize: "cover",
+          backgroundPosition: "right center",
+          backgroundColor: "#ffffff"
+        }}
+      >
+        {/* Mobile/Tablet solid light overlay to guarantee high text contrast */}
+        <div className="absolute inset-0 z-0 bg-white/94 md:bg-white/88 lg:hidden pointer-events-none" />
+
+        {/* Desktop premium custom gradient overlay */}
         <div
-          className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: "url('/dms-bg.avif')" }}
-        >
-          {/* Gradient Overlay to darken the left side and bottom */}
-          <div className="absolute inset-0 bg-gradient-to-r from-[#060a11] via-[#060a11]/80 to-transparent"></div>
-          <div className="absolute inset-0 bg-gradient-to-t from-[#060a11] via-[#060a11]/60 to-transparent"></div>
-        </div>
+          className="hidden lg:block absolute inset-0 z-0 pointer-events-none"
+          style={{
+            background:
+              "linear-gradient(90deg,rgba(255,255,255,0.98) 0%,rgba(255,255,255,0.96) 22%,rgba(255,255,255,0.80) 30%,rgba(255,255,255,0.25) 40%,rgba(255,255,255,0.05) 48%,rgba(255,255,255,0) 55%)"
+          }}
+        />
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex-grow flex items-center">
-          <div className="max-w-2xl mt-6 md:mt-0">
-            {/* Subtitle */}
+        {/* Car Layer Animation */}
+        <motion.div
+          className="hidden lg:block absolute right-[-30px] bottom-[40px] z-[5] pointer-events-none"
+          initial={{ x: 500, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}>
+          <img
+            src="/carbg.png"
+            alt="Luxury Car"
+            className="w-[820px] xl:w-[900px] max-w-none object-contain" />
+        </motion.div>
+
+        <div className="relative z-10 max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 w-full flex items-center h-full">
+          <div className="grid grid-cols-1 lg:grid-cols-[34%_66%] w-full items-center">
+
+            {/* Left Column: Heading, Subheading & Actions (40% Width) */}
             <motion.div
-              initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 20 }}
-              animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
-              transition={isMobile ? { duration: 0 } : { duration: 0.5 }}
-              className="flex items-center space-x-2 sm:space-x-4 mb-4 md:mb-6"
+              // className="w-full space-y-5 text-left relative z-10 max-w-[470px] -mt-4 pl-10"
+              className="w-full space-y-5 text-left relative z-10 max-w-[420px] -mt-6"
+              initial={{ opacity: 0, x: -50 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, ease: 'easeOut' }}
             >
-              <div className="w-8 sm:w-12 h-[1px] bg-[#d4af37]"></div>
-              <span className="text-[#d4af37] text-[10px] sm:text-xs md:text-sm font-semibold tracking-[0.1em] sm:tracking-[0.2em] uppercase">Premium Chauffeur Service</span>
+              {/* Premium Capsule */}
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-[2px] bg-[#FFC107]" />
+                <span className="text-[#FFC107] font-bold text-[12px] tracking-[3px] uppercase">
+                  Premium. Comfort. Trust.
+                </span>
+              </div>
+
+              {/* World-Class Chauffeur Services */}
+              <h1
+                className="text-[52px] xl:text-[58px] font-extrabold leading-[0.95] tracking-[-2px] text-[#0B3D91]"
+                style={{ fontWeight: 800 }}
+              >
+                <span className="whitespace-nowrap">World-Class</span><br />
+                Chauffeur<br />
+                <span className="text-[#FFC107]">Services</span>
+              </h1>
+
+              <p className="text-slate-600 text-[17px] font-normal leading-[1.8] max-w-[390px] mb-2">
+                From airport transfers to VIP protection, explore our comprehensive range of luxury transportation solutions designed for your utmost comfort and security.
+              </p>
+
+              {/* Action Buttons */}
+              {/* <div className="flex flex-wrap items-center gap-[20px] pt-4"> */}
+              <div className="flex flex-wrap items-center gap-[16px] pt-0">
+                <button
+                  onClick={() => navigate('/get-started')}
+                  className="h-[54px] bg-[#0B3D91] hover:bg-[#093073] text-white px-[24px] rounded-[12px] font-bold text-[16px] tracking-wide transition-colors flex items-center space-x-2 cursor-pointer"
+                >
+                  <Calendar size={18} />
+                  <span>Book a Ride</span>
+                </button>
+
+                <button
+                  onClick={() => navigate('/contact')}
+                  className="h-[54px] bg-white border-2 border-[#0B3D91] text-[#0B3D91] hover:bg-[#0B3D91]/5 px-[24px] rounded-[12px] font-bold text-[16px] tracking-wide transition-colors flex items-center space-x-2 cursor-pointer"
+                >
+                  <Phone size={18} />
+                  <span>Contact Us</span>
+                </button>
+              </div>
             </motion.div>
 
-            {/* Main Heading */}
-            <motion.h1
-              initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 20 }}
-              animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
-              transition={isMobile ? { duration: 0 } : { delay: 0.1, duration: 0.5 }}
-              className="text-3xl sm:text-5xl md:text-7xl font-serif text-[#d4af37] leading-[1.1] mb-4 md:mb-6"
-            >
-              Executive Rides,<br />On Your Schedule
-            </motion.h1>
+            {/* Right Column: Empty spacer (60% Width) to reveal background car and skyline */}
+            <div className="hidden lg:block min-h-[400px]" />
 
-            {/* Description */}
-            <motion.p
-              initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 20 }}
-              animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
-              transition={isMobile ? { duration: 0 } : { delay: 0.2, duration: 0.5 }}
-              className="text-gray-300 text-base md:text-xl max-w-xl mb-6 md:mb-10 font-light leading-relaxed"
-            >
-              Book your premium chauffeur minimum 12 hours in advance and travel with comfort, class and complete peace of mind.
-            </motion.p>
-
-            {/* Feature Icons Grid */}
-            <motion.div
-              initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 20 }}
-              animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
-              transition={isMobile ? { duration: 0 } : { delay: 0.3, duration: 0.5 }}
-              className="grid grid-cols-2 md:flex md:flex-wrap gap-3 sm:gap-4 mb-8 md:mb-12"
-            >
-              {/* Feature 1 */}
-              <div className="flex items-center space-x-2 sm:space-x-3 bg-white/5 border border-white/10 rounded-xl p-2.5 px-3 sm:p-3 sm:px-4 backdrop-blur-sm">
-                <User className="text-[#d4af37] w-4 h-4 sm:w-5 sm:h-5" size={20} strokeWidth={1.5} />
-                <span className="text-[10px] sm:text-xs text-gray-300 leading-tight">Professional<br />Chauffeurs</span>
-              </div>
-              {/* Feature 2 */}
-              <div className="flex items-center space-x-2 sm:space-x-3 bg-white/5 border border-white/10 rounded-xl p-2.5 px-3 sm:p-3 sm:px-4 backdrop-blur-sm">
-                <ShieldCheck className="text-[#d4af37] w-4 h-4 sm:w-5 sm:h-5" size={20} strokeWidth={1.5} />
-                <span className="text-[10px] sm:text-xs text-gray-300 leading-tight">Safety &<br />Reliability</span>
-              </div>
-              {/* Feature 3 */}
-              <div className="flex items-center space-x-2 sm:space-x-3 bg-white/5 border border-white/10 rounded-xl p-2.5 px-3 sm:p-3 sm:px-4 backdrop-blur-sm">
-                <Car className="text-[#d4af37] w-4 h-4 sm:w-5 sm:h-5" size={20} strokeWidth={1.5} />
-                <span className="text-[10px] sm:text-xs text-gray-300 leading-tight">Luxury<br />Vehicles</span>
-              </div>
-              {/* Feature 4 */}
-              <div className="flex items-center space-x-2 sm:space-x-3 bg-white/5 border border-white/10 rounded-xl p-2.5 px-3 sm:p-3 sm:px-4 backdrop-blur-sm">
-                <Clock className="text-[#d4af37] w-4 h-4 sm:w-5 sm:h-5" size={20} strokeWidth={1.5} />
-                <span className="text-[10px] sm:text-xs text-gray-300 leading-tight">Punctual<br />& On-Time</span>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 20 }}
-              animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
-              transition={isMobile ? { duration: 0 } : { delay: 0.4, duration: 0.5 }}
-              className="flex flex-row items-center gap-4 sm:gap-8 flex-wrap"
-            >
-              {shouldShowBooking() ? (
-                <Link to="/get-started" className="flex items-center justify-center space-x-2 bg-[#ffe392] text-black px-5 py-3 sm:px-8 sm:py-3.5 rounded-lg hover:bg-[#e6c87a] transition-colors font-semibold text-sm sm:text-base w-auto">
-                  <span>Get Started</span>
-                  <ChevronRight size={18} strokeWidth={2.5} />
-                </Link>
-              ) : (
-                <Link to={getDashboardPath()} className="flex items-center justify-center space-x-2 bg-[#ffe392] text-black px-5 py-3 sm:px-8 sm:py-3.5 rounded-lg hover:bg-[#e6c87a] transition-colors font-semibold text-sm sm:text-base w-auto">
-                  <span>Go to Dashboard</span>
-                  <ChevronRight size={18} strokeWidth={2.5} />
-                </Link>
-              )}
-              <Link to="/learn-more" className="flex items-center justify-center space-x-2 text-[#d4af37] hover:text-[#ffe392] transition-colors font-medium text-sm sm:text-base py-2">
-                <span>Learn More</span>
-                <ChevronRight size={18} />
-              </Link>
-            </motion.div>
           </div>
         </div>
 
-        {/* Bottom Stats Bar */}
+      </section>
+
+      {/* Floating Trust proposition bar container */}
+      <div className="relative z-20 -mt-[42px] max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
-          initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 30 }}
-          animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
-          transition={isMobile ? { duration: 0 } : { delay: 0.5, duration: 0.5 }}
-          className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full pb-8 pt-8 md:pt-16"
+          className="bg-white rounded-[18px] border border-[#E2E8F0] py-7 px-8"
+          style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.08)" }}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <div className="bg-[#111620]/80 backdrop-blur-md border border-white/5 rounded-2xl p-4 sm:p-6 md:p-8 grid grid-cols-2 md:flex md:flex-row justify-between items-center gap-6 sm:gap-8 md:gap-4 shadow-2xl">
-            {/* Stat 1 */}
-            <div className="flex items-center space-x-2 sm:space-x-4 justify-start md:justify-start">
-              <Users className="text-[#d4af37] w-7 h-7 sm:w-9 sm:h-9" size={28} strokeWidth={1.5} />
-              <div>
-                <div className="text-xl sm:text-2xl font-serif text-[#d4af37] mb-0.5">10K+</div>
-                <div className="text-[10px] sm:text-xs text-gray-400">Happy Clients</div>
-              </div>
-            </div>
-            {/* Divider */}
-            <div className="hidden md:block w-px h-12 bg-white/10"></div>
-            {/* Stat 2 */}
-            <div className="flex items-center space-x-2 sm:space-x-4 justify-start md:justify-center">
-              <Car className="text-[#d4af37] w-7 h-7 sm:w-9 sm:h-9" size={28} strokeWidth={1.5} />
-              <div>
-                <div className="text-xl sm:text-2xl font-serif text-[#d4af37] mb-0.5">500+</div>
-                <div className="text-[10px] sm:text-xs text-gray-400">Premium Vehicles</div>
-              </div>
-            </div>
-            {/* Divider */}
-            <div className="hidden md:block w-px h-12 bg-white/10"></div>
-            {/* Stat 3 */}
-            <div className="flex items-center space-x-2 sm:space-x-4 justify-start md:justify-center">
-              <ShieldCheck className="text-[#d4af37] w-7 h-7 sm:w-9 sm:h-9" size={28} strokeWidth={1.5} />
-              <div>
-                <div className="text-xl sm:text-2xl font-serif text-[#d4af37] mb-0.5">99.9%</div>
-                <div className="text-[10px] sm:text-xs text-gray-400">Safety Record</div>
-              </div>
-            </div>
-            {/* Divider */}
-            <div className="hidden md:block w-px h-12 bg-white/10"></div>
-            {/* Stat 4 */}
-            <div className="flex items-center space-x-2 sm:space-x-4 justify-start md:justify-end">
-              <Clock className="text-[#d4af37] w-7 h-7 sm:w-9 sm:h-9" size={28} strokeWidth={1.5} />
-              <div>
-                <div className="text-xl sm:text-2xl font-serif text-[#d4af37] mb-0.5">24/7</div>
-                <div className="text-[10px] sm:text-xs text-gray-400">Customer Support</div>
-              </div>
-            </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8 divide-y sm:divide-y-0 lg:divide-x divide-slate-100">
+            {trustItems.map((item, idx) => {
+              const Icon = item.icon;
+              return (
+                <div
+                  key={item.id}
+                  className={`flex items-center space-x-4 text-left ${idx > 0 ? 'sm:pt-4 md:pt-0 lg:pl-8' : ''}`}
+                >
+                  <div className="w-[62px] h-[62px] rounded-full bg-[#0B3D91] text-white flex items-center justify-center shrink-0 shadow-md">
+                    <Icon size={24} className="text-white" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-[#0F172A] text-[18px] leading-snug">{item.title}</h3>
+                    <p className="text-[#64748B] text-[14px] mt-1 leading-snug">{item.description}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </motion.div>
       </div>

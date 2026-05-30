@@ -14,7 +14,7 @@ const globalLimiter = require('./middleware/globalRateLimiter');
 const app = express();
 
 const haltOnTimedout = (req, res, next) => {
-  if (!req.timedout) next();
+    if (!req.timedout) next();
 };
 
 app.disable('x-powered-by');
@@ -26,9 +26,9 @@ app.set('trust proxy', 1);
 // app.use(helmet());
 app.use(
     helmet({
-    crossOriginResourcePolicy: {
-        policy: 'cross-origin',
-    },
+        crossOriginResourcePolicy: {
+            policy: 'cross-origin',
+        },
     })
 );
 app.use(
@@ -36,14 +36,14 @@ app.use(
         origin: (origin, callback) => {
             // Allow requests with no origin (like mobile apps or curl requests)
             if (!origin) return callback(null, true);
-            
+
             const list = process.env.CLIENT_URL
                 ? process.env.CLIENT_URL.split(',').map(url => url.trim())
                 : ['http://localhost:5173', 'http://localhost:4173'];
 
             const isAllowed = list.some(allowed => origin === allowed) ||
-                              origin.endsWith('.vercel.app') ||
-                              process.env.NODE_ENV === 'development';
+                origin.endsWith('.vercel.app') ||
+                process.env.NODE_ENV === 'development';
 
             if (isAllowed) {
                 callback(null, true);
@@ -79,11 +79,11 @@ app.use(timeout('15s'));
 app.use(haltOnTimedout);
 
 if (process.env.NODE_ENV === 'production') {
-  // Use 'combined' for production: outputs structured, single-line Apache-style logs
-  app.use(morgan('combined'));
+    // Use 'combined' for production: outputs structured, single-line Apache-style logs
+    app.use(morgan('combined'));
 } else {
-  // Use 'dev' only for local development
-  app.use(morgan('dev'));
+    // Use 'dev' only for local development
+    app.use(morgan('dev'));
 }
 
 // Import specific rate limiters for app-level routes
@@ -94,6 +94,9 @@ app.use('/api/v1/auth', haltOnTimedout, require('./routes/authRoutes'));
 app.use('/api/v1/admin', haltOnTimedout, require('./routes/adminRoutes'));
 app.use('/api/v1/rides', haltOnTimedout, require('./routes/rideRoutes'));
 
+// Secured Enterprise API Routes (RBAC + Input Validation + IDOR Protection)
+app.use('/api', haltOnTimedout, require('./routes/apiRoutes'));
+
 // Driver Location & Payment API Stubs protected by their respective route-specific limiters
 app.post('/api/v1/drivers/location', driverLocationLimiter, (req, res) => {
     res.status(200).json({ success: true, message: 'Driver location updated successfully (Stub)' });
@@ -103,22 +106,22 @@ app.use('/api/v1/payment', paymentLimiter, haltOnTimedout, require('./routes/pay
 
 // Basic route
 app.get('/', (req, res) => {
-    res.send('DMS Luxe API is running');
+    res.send('DMS Cab Services API is running');
 });
 
 app.get('/api/v1', (req, res) => {
-    res.status(200).json({ success: true, message: 'DMS Luxe API v1 is running' });
+    res.status(200).json({ success: true, message: 'DMS Cab Services API v1 is running' });
 });
 
 app.use((err, req, res, next) => {
-  if (err && err.timeout) {
-    return res.status(503).json({
-      success: false,
-      message: 'Request timeout. Please try again later.',
-    });
-  }
+    if (err && err.timeout) {
+        return res.status(503).json({
+            success: false,
+            message: 'Request timeout. Please try again later.',
+        });
+    }
 
-  next(err);
+    next(err);
 });
 
 // Error handling middleware
@@ -127,9 +130,9 @@ app.use((err, req, res, next) => {
     res.status(err.status || 500).json({
         success: false,
         message:
-                process.env.NODE_ENV === 'development'
-                    ? err.message
-                    : 'Internal Server Error',
+            process.env.NODE_ENV === 'development'
+                ? err.message
+                : 'Internal Server Error',
     });
 });
 

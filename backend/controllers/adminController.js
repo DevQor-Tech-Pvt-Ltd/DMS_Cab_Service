@@ -331,3 +331,85 @@ exports.getDashboardStats = async (req, res) => {
     });
   }
 };
+
+// Get all rides (admin only)
+exports.getAllRides = async (req, res) => {
+  try {
+    const rides = await Ride.find()
+      .populate('client', 'fullName email phone')
+      .populate('driver', 'fullName phone vehicleNumber vehicleType')
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({ 
+      success: true, 
+      count: rides.length,
+      rides 
+    });
+  } catch (error) {
+    console.error('Get all rides error:', error);
+    return res.status(500).json({ success: false, message: 'Unable to fetch rides' });
+  }
+};
+
+// Get all drivers (admin only) - combines pending, approved, and rejected
+exports.getAllDrivers = async (req, res) => {
+  try {
+    const drivers = await User.find({ role: 'driver' })
+      .select('-password')
+      .populate('approvedBy', 'fullName email')
+      .sort({ createdAt: -1 });
+
+    const stats = {
+      total: drivers.length,
+      pending: drivers.filter(d => d.status === 'pending').length,
+      approved: drivers.filter(d => d.status === 'approved').length,
+      rejected: drivers.filter(d => d.status === 'rejected').length,
+    };
+
+    return res.status(200).json({ 
+      success: true, 
+      stats,
+      drivers 
+    });
+  } catch (error) {
+    console.error('Get all drivers error:', error);
+    return res.status(500).json({ success: false, message: 'Unable to fetch drivers' });
+  }
+};
+
+// Delete a user (admin only) - soft delete deactivation
+exports.deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    // Prevent admin from deleting themselves
+    if (user._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({ success: false, message: 'You cannot delete your own account' });
+    }
+
+    // Prevent deleting other admins
+    if (user.role === 'admin') {
+      return res.status(403).json({ success: false, message: 'Cannot delete an admin account' });
+    }
+
+    user.isActive = false;
+    const timestamp = Date.now();
+    const originalEmail = user.email;
+    user.email = `deactivated_${timestamp}_${user.email}`;
+    user.phone = `deactivated_${timestamp}_${user.phone}`;
+    await user.save();
+
+    return res.status(200).json({ 
+      success: true, 
+      message: `User ${user.fullName} (${originalEmail}) has been deactivated successfully` 
+    });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    return res.status(500).json({ success: false, message: 'Unable to delete user' });
+  }
+};

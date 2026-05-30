@@ -18,7 +18,7 @@ export const setAuthToken = (token) => {
   }
 };
 
-const storedToken = localStorage.getItem('dms_luxe_token');
+const storedToken = sessionStorage.getItem('dms_luxe_token');
 if (storedToken) {
   setAuthToken(storedToken);
 }
@@ -45,4 +45,5 @@ export const logout = () => api.post('/auth/logout').then((res) => {
 export const getMe = () => api.get('/auth/me').then((res) => res.data);
 
 export const updateProfile = (payload) => api.put('/auth/update-profile', payload).then((res) => res.data);
+export const deleteAccount = () => api.delete('/auth/delete-account').then((res) => res.data);
 export const submitContactInquiry = (payload) => api.post('/auth/contact-inquiry', payload).then((res) => res.data);

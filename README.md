@@ -1,6 +1,6 @@
-# DMS Luxe - Luxury Chauffeur Reservation Platform
+# DMS Cab Servicese - Luxury Chauffeur Reservation Platform
 
-DMS Luxe is a premium, high-end chauffeur reservation platform designed to offer passengers an elite booking experience. Users can reserve vehicles from a curated luxury fleet (including executive sedans and SUVs), manage their trips through a dedicated command dashboard, process payments securely, and receive automatic digital invoices. The system also supports driver profiles, admin-mediated chauffeur approvals, and live dispatching of pending rides to approved drivers.
+DMS Cab Servicese is a premium, high-end chauffeur reservation platform designed to offer passengers an elite booking experience. Users can reserve vehicles from a curated luxury fleet (including executive sedans and SUVs), manage their trips through a dedicated command dashboard, process payments securely, and receive automatic digital invoices. The system also supports driver profiles, admin-mediated chauffeur approvals, and live dispatching of pending rides to approved drivers.
 
 ---
 

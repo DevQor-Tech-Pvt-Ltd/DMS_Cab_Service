@@ -123,6 +123,11 @@ const EditProfileModal = ({ isOpen, onClose }) => {
         setError('New password must be at least 8 characters long.');
         return;
       }
+      const isAlphanumeric = /^(?=.*[a-zA-Z])(?=.*\d)/.test(newPassword);
+      if (!isAlphanumeric) {
+        setError('New password must be alphanumeric (contain both letters and numbers).');
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -161,7 +166,7 @@ const EditProfileModal = ({ isOpen, onClose }) => {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4 overflow-y-auto">
           {/* Modal Backdrop overlay click to close */}
           <div className="absolute inset-0 cursor-default" onClick={onClose}></div>
           
@@ -170,26 +175,26 @@ const EditProfileModal = ({ isOpen, onClose }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
             transition={{ duration: 0.3, ease: 'easeOut' }}
-            className="bg-[#0b0e14] border border-[#d4af37]/30 rounded-2xl p-6 sm:p-8 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto z-10 scrollbar-thin scrollbar-thumb-white/10"
+            className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 w-full max-w-lg shadow-2xl relative max-h-[90vh] overflow-y-auto z-10"
           >
             {/* Close Button */}
             <button
               onClick={onClose}
-              className="absolute top-4 right-4 text-gray-400 hover:text-[#d4af37] transition-colors p-1.5 hover:bg-white/5 rounded-full"
+              className="absolute top-4 right-4 text-slate-400 hover:text-[#003893] transition-colors p-1.5 hover:bg-slate-100 rounded-full"
             >
               <X size={20} />
             </button>
 
             <div className="mb-6">
-              <h2 className="text-2xl font-serif text-white mb-1.5">Edit Profile</h2>
-              <p className="text-gray-400 text-sm">Update your personal and vehicle information details below.</p>
+              <h2 className="text-2xl font-serif text-slate-800 mb-1.5 font-bold">Edit Profile</h2>
+              <p className="text-slate-500 text-sm">Update your personal and vehicle information details below.</p>
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Profile Picture Upload Section */}
               <div className="flex flex-col items-center mb-6 pt-2">
                 <div className="relative group">
-                  <div className="w-20 h-20 rounded-full overflow-hidden border border-[#d4af37]/40 bg-[#111620] flex items-center justify-center relative">
+                  <div className="w-20 h-20 rounded-full overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center relative">
                     {profilePicture ? (
                       <img
                         src={profilePicture}
@@ -197,14 +202,14 @@ const EditProfileModal = ({ isOpen, onClose }) => {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <User className="text-gray-500 w-10 h-10" />
+                      <User className="text-slate-400 w-10 h-10" />
                     )}
                     {/* Hover Overlay */}
                     <label
                       htmlFor="profile-pic-upload"
-                      className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-center p-1"
+                      className="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer text-center p-1"
                     >
-                      <Upload className="text-[#d4af37] w-4 h-4 mb-0.5" />
+                      <Upload className="text-[#003893] w-4 h-4 mb-0.5" />
                       <span className="text-[9px] text-white font-medium uppercase tracking-wider">Change</span>
                     </label>
                   </div>
@@ -219,27 +224,27 @@ const EditProfileModal = ({ isOpen, onClose }) => {
                     <button
                       type="button"
                       onClick={() => setProfilePicture('')}
-                      className="absolute -top-1 -right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow-lg transition-colors border border-[#0b0e14]"
+                      className="absolute -top-1 -right-1 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 shadow-lg transition-colors border border-white"
                       title="Remove Photo"
                     >
                       <X size={10} />
                     </button>
                   )}
                 </div>
-                <p className="text-[10px] text-gray-500 mt-2">Recommended: Square image, max 2MB</p>
+                <p className="text-[10px] text-slate-400 mt-2">Recommended: Square image, max 2MB</p>
               </div>
 
               {/* Name */}
               <div>
-                <label className="block text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wider">Full Name</label>
+                <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Full Name</label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={18} />
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                   <input
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     required
-                    className="w-full bg-[#111620] border border-white/10 rounded-lg py-2.5 pl-11 pr-4 text-sm text-white focus:border-[#d4af37] focus:outline-none transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
                     placeholder="John Doe"
                   />
                 </div>
@@ -247,15 +252,15 @@ const EditProfileModal = ({ isOpen, onClose }) => {
 
               {/* Email */}
               <div>
-                <label className="block text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wider">Email Address</label>
+                <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={18} />
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full bg-[#111620] border border-white/10 rounded-lg py-2.5 pl-11 pr-4 text-sm text-white focus:border-[#d4af37] focus:outline-none transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
                     placeholder="john@example.com"
                   />
                 </div>
@@ -263,15 +268,15 @@ const EditProfileModal = ({ isOpen, onClose }) => {
 
               {/* Phone */}
               <div>
-                <label className="block text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wider">Mobile Number</label>
+                <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Mobile Number</label>
                 <div className="relative">
-                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={18} />
+                  <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     required
-                    className="w-full bg-[#111620] border border-white/10 rounded-lg py-2.5 pl-11 pr-4 text-sm text-white focus:border-[#d4af37] focus:outline-none transition-colors"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
                     placeholder="+1 (555) 000-0000"
                   />
                 </div>
@@ -279,20 +284,20 @@ const EditProfileModal = ({ isOpen, onClose }) => {
 
               {/* Driver Fields */}
               {user?.role === 'driver' && (
-                <div className="pt-2 border-t border-white/5 space-y-4">
-                  <h3 className="text-sm font-serif text-[#d4af37] tracking-wide">Vehicle & License Details</h3>
+                <div className="pt-2 border-t border-slate-100 space-y-4">
+                  <h3 className="text-sm font-serif text-[#003893] tracking-wide font-bold">Vehicle & License Details</h3>
                   
                   {/* Vehicle Number */}
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wider">Vehicle Number</label>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Vehicle Number</label>
                     <div className="relative">
-                      <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={18} />
+                      <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                       <input
                         type="text"
                         value={vehicleNumber}
                         onChange={(e) => setVehicleNumber(e.target.value)}
                         required
-                        className="w-full bg-[#111620] border border-white/10 rounded-lg py-2.5 pl-11 pr-4 text-sm text-white focus:border-[#d4af37] focus:outline-none transition-colors"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
                         placeholder="WB-02-AB-1234"
                       />
                     </div>
@@ -300,15 +305,15 @@ const EditProfileModal = ({ isOpen, onClose }) => {
 
                   {/* License Number */}
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wider">License Number</label>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">License Number</label>
                     <div className="relative">
-                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={18} />
+                      <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                       <input
                         type="text"
                         value={licenseNumber}
                         onChange={(e) => setLicenseNumber(e.target.value)}
                         required
-                        className="w-full bg-[#111620] border border-white/10 rounded-lg py-2.5 pl-11 pr-4 text-sm text-white focus:border-[#d4af37] focus:outline-none transition-colors"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
                         placeholder="DL-1234567890"
                       />
                     </div>
@@ -316,7 +321,7 @@ const EditProfileModal = ({ isOpen, onClose }) => {
 
                   {/* RC Document */}
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wider">RC Document</label>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">RC Document</label>
                     <div className="relative">
                       <input
                         type="file"
@@ -327,20 +332,20 @@ const EditProfileModal = ({ isOpen, onClose }) => {
                       />
                       <label
                         htmlFor="modal-rc-upload"
-                        className="flex items-center space-x-3 w-full bg-[#111620] border border-white/10 hover:border-[#d4af37]/50 rounded-lg py-2.5 px-4 text-white cursor-pointer transition-colors"
+                        className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-lg py-2.5 px-4 text-slate-800 cursor-pointer transition-colors"
                       >
-                        <Upload className="text-[#d4af37] shrink-0" size={18} />
-                        <span className="text-gray-400 truncate flex-1 text-sm">
+                        <Upload className="text-[#003893] shrink-0" size={18} />
+                        <span className="text-slate-500 truncate flex-1 text-sm">
                           {rcFileName || 'Upload New RC File...'}
                         </span>
-                        {rcFileName && <FileText className="text-emerald-400" size={16} />}
+                        {rcFileName && <FileText className="text-emerald-500" size={16} />}
                       </label>
                     </div>
                   </div>
 
                   {/* License Document */}
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wider">License Document</label>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">License Document</label>
                     <div className="relative">
                       <input
                         type="file"
@@ -351,13 +356,13 @@ const EditProfileModal = ({ isOpen, onClose }) => {
                       />
                       <label
                         htmlFor="modal-license-upload"
-                        className="flex items-center space-x-3 w-full bg-[#111620] border border-white/10 hover:border-[#d4af37]/50 rounded-lg py-2.5 px-4 text-white cursor-pointer transition-colors"
+                        className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-lg py-2.5 px-4 text-slate-800 cursor-pointer transition-colors"
                       >
-                        <Upload className="text-[#d4af37] shrink-0" size={18} />
-                        <span className="text-gray-400 truncate flex-1 text-sm">
+                        <Upload className="text-[#003893] shrink-0" size={18} />
+                        <span className="text-slate-500 truncate flex-1 text-sm">
                           {licenseFileName || 'Upload New License File...'}
                         </span>
-                        {licenseFileName && <FileText className="text-emerald-400" size={16} />}
+                        {licenseFileName && <FileText className="text-emerald-500" size={16} />}
                       </label>
                     </div>
                   </div>
@@ -365,25 +370,25 @@ const EditProfileModal = ({ isOpen, onClose }) => {
               )}
 
               {/* Password Fields */}
-              <div className="pt-2 border-t border-white/5 space-y-4">
-                <h3 className="text-sm font-serif text-[#d4af37] tracking-wide">Change Password (Optional)</h3>
+              <div className="pt-2 border-t border-slate-100 space-y-4">
+                <h3 className="text-sm font-serif text-[#003893] tracking-wide font-bold">Change Password (Optional)</h3>
                 
                 {/* Current Password */}
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wider">Current Password</label>
+                  <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Current Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={18} />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                     <input
                       type={showCurrentPassword ? 'text' : 'password'}
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full bg-[#111620] border border-white/10 rounded-lg py-2.5 pl-11 pr-11 text-sm text-white focus:border-[#d4af37] focus:outline-none transition-colors"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-11 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
                       placeholder="Current Password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#d4af37] transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#003893] transition-colors"
                     >
                       {showCurrentPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -392,20 +397,20 @@ const EditProfileModal = ({ isOpen, onClose }) => {
 
                 {/* New Password */}
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wider">New Password</label>
+                  <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">New Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={18} />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                     <input
                       type={showNewPassword ? 'text' : 'password'}
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
-                      className="w-full bg-[#111620] border border-white/10 rounded-lg py-2.5 pl-11 pr-11 text-sm text-white focus:border-[#d4af37] focus:outline-none transition-colors"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-11 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
                       placeholder="At least 8 characters"
                     />
                     <button
                       type="button"
                       onClick={() => setShowNewPassword(!showNewPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#d4af37] transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#003893] transition-colors"
                     >
                       {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -414,20 +419,20 @@ const EditProfileModal = ({ isOpen, onClose }) => {
 
                 {/* Confirm Password */}
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1.5 font-medium uppercase tracking-wider">Confirm New Password</label>
+                  <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Confirm New Password</label>
                   <div className="relative">
-                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#d4af37]" size={18} />
+                    <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                     <input
                       type={showConfirmNewPassword ? 'text' : 'password'}
                       value={confirmNewPassword}
                       onChange={(e) => setConfirmNewPassword(e.target.value)}
-                      className="w-full bg-[#111620] border border-white/10 rounded-lg py-2.5 pl-11 pr-11 text-sm text-white focus:border-[#d4af37] focus:outline-none transition-colors"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-11 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
                       placeholder="Repeat new password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-[#d4af37] transition-colors"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#003893] transition-colors"
                     >
                       {showConfirmNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
@@ -437,14 +442,14 @@ const EditProfileModal = ({ isOpen, onClose }) => {
 
               {/* Error Alert */}
               {error && (
-                <div className="rounded-xl bg-[#3d1717]/80 border border-red-600/50 px-4 py-2.5 text-xs text-red-300">
+                <div className="rounded-xl bg-red-50 border border-red-200 px-4 py-2.5 text-xs text-red-600">
                   {error}
                 </div>
               )}
 
               {/* Success Alert */}
               {success && (
-                <div className="rounded-xl bg-[#143d24]/80 border border-emerald-600/50 px-4 py-2.5 text-xs text-emerald-300">
+                <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5 text-xs text-emerald-600">
                   {success}
                 </div>
               )}
@@ -455,14 +460,14 @@ const EditProfileModal = ({ isOpen, onClose }) => {
                   type="button"
                   onClick={onClose}
                   disabled={isSubmitting}
-                  className="flex-1 border border-white/10 hover:bg-white/5 text-white font-medium py-2.5 rounded-lg text-sm transition-colors"
+                  className="flex-1 border border-slate-200 hover:bg-slate-50 text-slate-600 font-medium py-2.5 rounded-lg text-sm transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 bg-[#ffe392] text-black hover:bg-[#e6c87a] disabled:opacity-50 font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-lg shadow-[#ffe392]/5"
+                  className="flex-1 bg-[#003893] text-white hover:bg-[#002d72] disabled:opacity-50 font-semibold py-2.5 rounded-lg text-sm transition-colors shadow-lg shadow-[#003893]/15"
                 >
                   {isSubmitting ? 'Saving...' : 'Save Changes'}
                 </button>

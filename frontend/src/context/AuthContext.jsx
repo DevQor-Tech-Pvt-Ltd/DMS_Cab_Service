@@ -10,21 +10,46 @@ const AuthContext = createContext({
 });
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(() => {
-    try {
-      const storedUser = localStorage.getItem('dms_luxe_user');
-      return storedUser ? JSON.parse(storedUser) : null;
-    } catch (error) {
-      console.error('Error parsing stored user:', error);
-      return null;
+  // Sync and validate tab session before initializing state
+  const getInitialAuthState = () => {
+    const tabId = window.name;
+    const sessionTabId = sessionStorage.getItem('dms_luxe_tab_id');
+    const storedToken = sessionStorage.getItem('dms_luxe_token');
+    
+    if (storedToken && (!tabId || tabId !== sessionTabId)) {
+      // Non-matching tab/window context, clear copied session for security
+      sessionStorage.removeItem('dms_luxe_token');
+      sessionStorage.removeItem('dms_luxe_user');
+      sessionStorage.removeItem('dms_luxe_tab_id');
+      return { token: null, user: null, loading: false };
     }
-  });
-  const [token, setToken] = useState(() => localStorage.getItem('dms_luxe_token'));
-  const [loading, setLoading] = useState(() => !!localStorage.getItem('dms_luxe_token'));
+
+    let storedUser = null;
+    if (storedToken) {
+      try {
+        const userJson = sessionStorage.getItem('dms_luxe_user');
+        storedUser = userJson ? JSON.parse(userJson) : null;
+      } catch (e) {
+        console.error('Error parsing stored user:', e);
+      }
+    }
+
+    return {
+      token: storedToken || null,
+      user: storedUser || null,
+      // If we have token but no user object, we must load. Otherwise, we can render immediately.
+      loading: !!storedToken && !storedUser
+    };
+  };
+
+  const initialState = getInitialAuthState();
+  const [user, setUser] = useState(initialState.user);
+  const [token, setToken] = useState(initialState.token);
+  const [loading, setLoading] = useState(initialState.loading);
 
   useEffect(() => {
     const verifySession = async () => {
-      const storedToken = localStorage.getItem('dms_luxe_token');
+      const storedToken = sessionStorage.getItem('dms_luxe_token');
       if (!storedToken) {
         setLoading(false);
         return;
@@ -34,13 +59,15 @@ export const AuthProvider = ({ children }) => {
         setAuthToken(storedToken);
         const response = await getMe();
         setUser(response.user);
-        localStorage.setItem('dms_luxe_user', JSON.stringify(response.user));
+        sessionStorage.setItem('dms_luxe_user', JSON.stringify(response.user));
       } catch (error) {
         console.warn('Session verification failed, logging out:', error);
         setUser(null);
         setToken(null);
-        localStorage.removeItem('dms_luxe_token');
-        localStorage.removeItem('dms_luxe_user');
+        sessionStorage.removeItem('dms_luxe_token');
+        sessionStorage.removeItem('dms_luxe_user');
+        sessionStorage.removeItem('dms_luxe_tab_id');
+        window.name = '';
         setAuthToken(null);
       } finally {
         setLoading(false);
@@ -51,8 +78,13 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = (userData, authToken) => {
-    localStorage.setItem('dms_luxe_token', authToken);
-    localStorage.setItem('dms_luxe_user', JSON.stringify(userData));
+    // Generate unique tab ID and bind it to window.name and sessionStorage
+    const tabId = 'tab_' + Math.random().toString(36).substring(2, 9);
+    window.name = tabId;
+    sessionStorage.setItem('dms_luxe_tab_id', tabId);
+
+    sessionStorage.setItem('dms_luxe_token', authToken);
+    sessionStorage.setItem('dms_luxe_user', JSON.stringify(userData));
     setAuthToken(authToken);
     setUser(userData);
     setToken(authToken);
@@ -65,17 +97,20 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.warn('Logout failed:', error);
     }
-    localStorage.removeItem('dms_luxe_token');
-    localStorage.removeItem('dms_luxe_user');
+    sessionStorage.removeItem('dms_luxe_token');
+    sessionStorage.removeItem('dms_luxe_user');
+    sessionStorage.removeItem('dms_luxe_tab_id');
+    window.name = '';
     setAuthToken(null);
     setUser(null);
     setToken(null);
     setLoading(false);
+    window.location.replace('/');
   };
 
   const updateUser = (updatedUserData) => {
     setUser(updatedUserData);
-    localStorage.setItem('dms_luxe_user', JSON.stringify(updatedUserData));
+    sessionStorage.setItem('dms_luxe_user', JSON.stringify(updatedUserData));
   };
 
   return (

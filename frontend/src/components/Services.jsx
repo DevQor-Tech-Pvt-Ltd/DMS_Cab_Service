@@ -118,45 +118,44 @@ const Services = () => {
   const [visibleCount, setVisibleCount] = useState(2);
 
   return (
-    <section className="bg-[#060a11] py-24 relative z-20">
+    <section className="bg-white py-24 relative z-20">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-        {/* Section Header - Purged framer-motion elements */}
+        {/* Section Header */}
         <div className="text-center mb-16">
-          <h4 className="text-[#d4af37] text-sm font-bold tracking-widest uppercase mb-4">
+          <h4 className="text-[#003893] text-sm font-bold tracking-widest uppercase mb-4">
             What We Offer
           </h4>
-          <h2 className="text-4xl md:text-5xl font-serif text-white mb-6">
+          <h2 className="text-4xl md:text-5xl font-serif text-slate-900 mb-6">
             Exceptional Services For Every Occasion
           </h2>
 
           {/* Decorative Divider */}
           <div className="flex items-center justify-center space-x-2">
-            <div className="h-[1px] w-12 bg-[#d4af37]"></div>
-            <div className="w-2 h-2 rotate-45 border border-[#d4af37]"></div>
-            <div className="h-[1px] w-12 bg-[#d4af37]"></div>
+            <div className="h-[1px] w-12 bg-[#003893]/30"></div>
+            <div className="w-2 h-2 rotate-45 border border-[#003893]"></div>
+            <div className="h-[1px] w-12 bg-[#003893]/30"></div>
           </div>
         </div>
 
-        {/* Services Grid - GPU accelerated pure CSS scale effects */}
+        {/* Services Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {services.map((service, index) => (
             <div
               key={index}
-              className={`${
-                index >= visibleCount ? 'hidden lg:block' : 'block'
-              } bg-[#0a0f18] border border-white/5 rounded-2xl p-8 text-center hover:border-[#d4af37]/30 hover:bg-[#0c131e] transition-all duration-300 group transform hover:-translate-y-1`}
+              className={`${index >= visibleCount ? 'hidden lg:block' : 'block'
+                } bg-slate-50 border border-slate-200/60 rounded-2xl p-8 text-center hover:border-[#003893]/40 hover:bg-slate-100/50 hover:shadow-md transition-all duration-300 group transform hover:-translate-y-1`}
             >
-              <div className="w-16 h-16 mx-auto rounded-full border border-[#d4af37] flex items-center justify-center mb-6 group-hover:bg-[#d4af37]/10 transition-colors">
-                <service.icon className="text-[#d4af37]" size={28} strokeWidth={1.5} />
+              <div className="w-16 h-16 mx-auto rounded-full border border-[#003893]/30 flex items-center justify-center mb-6 group-hover:bg-[#003893]/10 transition-colors">
+                <service.icon className="text-[#003893]" size={28} strokeWidth={1.5} />
               </div>
-              <h3 className="text-xl font-serif text-white mb-4">{service.title}</h3>
-              <p className="text-gray-400 text-sm leading-relaxed mb-8 font-light">
+              <h3 className="text-xl font-serif text-slate-900 mb-4">{service.title}</h3>
+              <p className="text-slate-600 text-sm leading-relaxed mb-8 font-light">
                 {service.description}
               </p>
               <button
                 onClick={() => setSelectedService(service)}
-                className="text-[#d4af37] text-sm font-semibold flex items-center justify-center mx-auto space-x-2 group/btn cursor-pointer"
+                className="text-[#003893] hover:text-[#002d72] text-sm font-semibold flex items-center justify-center mx-auto space-x-2 group/btn cursor-pointer"
               >
                 <span>Learn More</span>
                 <ArrowRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
@@ -170,7 +169,7 @@ const Services = () => {
           <div className="flex justify-center mb-20 lg:hidden">
             <button
               onClick={() => setVisibleCount(prev => prev + 2)}
-              className="px-8 py-3.5 border border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37] hover:text-black rounded-lg transition-all duration-300 font-semibold flex items-center space-x-2 cursor-pointer group"
+              className="px-8 py-3.5 border border-[#003893] text-[#003893] hover:bg-[#003893] hover:text-white rounded-lg transition-all duration-300 font-semibold flex items-center space-x-2 cursor-pointer group"
             >
               <span>Show More Services</span>
               <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
@@ -179,7 +178,7 @@ const Services = () => {
         )}
 
         {/* Bottom CTA Banner */}
-        <div className="bg-[#0a0f18] border border-white/5 rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-2xl">
+        <div className="bg-slate-50 border border-slate-200 rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-lg">
           {/* Image Side */}
           <div className="md:w-5/12 h-64 md:h-auto relative">
             <img
@@ -189,34 +188,34 @@ const Services = () => {
               loading="lazy"
             />
             {/* Gradient Overlay for blending */}
-            <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-l from-[#0a0f18] to-transparent"></div>
+            {/* <div className="absolute inset-0 bg-gradient-to-t md:bg-gradient-to-l from-slate-50 to-transparent"></div> */}
           </div>
 
           {/* Content Side */}
           <div className="md:w-7/12 p-8 md:p-12 flex flex-col justify-center">
-            <h3 className="text-3xl font-serif text-[#d4af37] mb-4">
+            <h3 className="text-3xl font-serif text-[#003893] mb-4">
               Ready To Experience Luxury?
             </h3>
-            <p className="text-gray-300 mb-8 max-w-xl text-sm md:text-base font-light">
+            <p className="text-slate-650 mb-8 max-w-xl text-sm md:text-base font-light">
               Book your premium chauffeur service today and travel in comfort, style and complete peace of mind.
             </p>
 
             <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
               <a
                 href="/get-started"
-                className="bg-[#ffe392] text-black px-8 py-3.5 rounded-lg hover:bg-[#e6c87a] transition-colors font-semibold flex items-center justify-center space-x-2 w-full sm:w-auto"
+                className="bg-[#f2b705] text-[#003893] hover:bg-[#e5ad04] px-8 py-3.5 rounded-lg transition-colors font-extrabold flex items-center justify-center space-x-2 w-full sm:w-auto shadow-md"
               >
                 <span>Book Your Ride Now</span>
                 <ArrowRight size={18} />
               </a>
 
               <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 rounded-full border border-[#d4af37] flex items-center justify-center">
-                  <Phone className="text-[#d4af37]" size={20} />
+                <div className="w-12 h-12 rounded-full border border-[#003893]/30 flex items-center justify-center">
+                  <Phone className="text-[#003893]" size={20} />
                 </div>
                 <div>
-                  <div className="text-xs text-gray-400 mb-1">Call Us Anytime</div>
-                  <div className="text-white font-semibold">+91 7439885351</div>
+                  <div className="text-xs text-slate-500 mb-1">Call Us Anytime</div>
+                  <div className="text-slate-900 font-semibold">+91 7439885351</div>
                 </div>
               </div>
             </div>
@@ -227,39 +226,39 @@ const Services = () => {
 
       {/* Service Detail Modal */}
       {selectedService && createPortal(
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/85 backdrop-blur-sm p-4 animate-fadeIn">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4 animate-fadeIn">
           <div className="absolute inset-0 cursor-default" onClick={() => setSelectedService(null)}></div>
-          
-          <div className="bg-[#0b0e14] border border-[#d4af37]/30 rounded-2xl p-6 sm:p-8 w-full max-w-lg shadow-2xl relative z-10 animate-scaleUp max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 translate-y-6 md:translate-y-8">
+
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 w-full max-w-lg shadow-2xl relative z-10 animate-scaleUp max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-200 translate-y-6 md:translate-y-8">
             {/* Close Button */}
             <button
               onClick={() => setSelectedService(null)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-[#d4af37] transition-colors p-1.5 hover:bg-white/5 rounded-full cursor-pointer"
+              className="absolute top-4 right-4 text-slate-400 hover:text-red-500 transition-colors p-1.5 hover:bg-slate-100 rounded-full cursor-pointer"
             >
               <X size={20} />
             </button>
 
             {/* Icon & Title */}
             <div className="flex items-center space-x-4 mb-6">
-              <div className="w-14 h-14 rounded-full border border-[#d4af37]/40 flex items-center justify-center bg-[#d4af37]/5 shrink-0">
-                <selectedService.icon className="text-[#d4af37]" size={24} />
+              <div className="w-14 h-14 rounded-full border border-[#003893]/30 flex items-center justify-center bg-[#003893]/5 shrink-0">
+                <selectedService.icon className="text-[#003893]" size={24} />
               </div>
               <div>
-                <h3 className="text-2xl font-serif text-white">{selectedService.title}</h3>
-                <span className="text-xs text-[#d4af37] tracking-wider uppercase font-semibold">Premium Inclusion</span>
+                <h3 className="text-2xl font-serif text-slate-900">{selectedService.title}</h3>
+                <span className="text-xs text-[#003893] tracking-wider uppercase font-semibold">Premium Inclusion</span>
               </div>
             </div>
 
             {/* Detailed Description / Inclusions */}
-            <div className="space-y-4 text-gray-300 text-sm mb-8 leading-relaxed">
+            <div className="space-y-4 text-slate-700 text-sm mb-8 leading-relaxed">
               <p className="font-light">{selectedService.extendedDescription}</p>
-              
-              <div className="bg-[#111620] border border-white/5 rounded-xl p-5 mt-4">
-                <h4 className="text-xs font-semibold uppercase text-[#d4af37] tracking-wider mb-3">Key Features:</h4>
-                <ul className="space-y-2.5 text-xs text-gray-400">
+
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 mt-4">
+                <h4 className="text-xs font-semibold uppercase text-[#003893] tracking-wider mb-3">Key Features:</h4>
+                <ul className="space-y-2.5 text-xs text-slate-650">
                   {selectedService.features.map((feature, i) => (
                     <li key={i} className="flex items-center space-x-3">
-                      <span className="w-1.5 h-1.5 rounded-full bg-[#d4af37] shrink-0"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#f2b705] shrink-0"></span>
                       <span>{feature}</span>
                     </li>
                   ))}
@@ -271,13 +270,13 @@ const Services = () => {
             <div className="flex space-x-4">
               <button
                 onClick={() => setSelectedService(null)}
-                className="flex-1 border border-white/10 hover:bg-white/5 text-white font-medium py-2.5 rounded-lg text-sm transition-colors cursor-pointer"
+                className="flex-1 border border-slate-200 hover:bg-slate-50 text-slate-750 font-medium py-2.5 rounded-lg text-sm transition-colors cursor-pointer"
               >
                 Close
               </button>
               <a
                 href="/get-started"
-                className="flex-1 bg-[#ffe392] text-black hover:bg-[#e6c87a] font-semibold py-2.5 rounded-lg text-sm text-center transition-colors shadow-lg shadow-[#ffe392]/5 flex items-center justify-center"
+                className="flex-1 bg-[#f2b705] text-[#003893] hover:bg-[#e5ad04] font-semibold py-2.5 rounded-lg text-sm text-center transition-colors shadow-md flex items-center justify-center"
               >
                 Book Service
               </a>

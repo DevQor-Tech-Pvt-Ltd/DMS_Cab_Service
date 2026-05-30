@@ -8,8 +8,26 @@ const createToken = (user) => {
   }
   return jwt.sign(
     {
-      id: user._id,
+      userId: user._id.toString(),
+      id: user._id.toString(),
       email: user.email,
+      role: user.role,
+    },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: '15m',
+    }
+  );
+};
+
+const createRefreshToken = (user) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET environment variable is not configured. Server cannot issue tokens.');
+  }
+  return jwt.sign(
+    {
+      userId: user._id.toString(),
+      id: user._id.toString(),
       role: user.role,
     },
     process.env.JWT_SECRET,
@@ -21,20 +39,23 @@ const createToken = (user) => {
 
 const sendToken = (res, user) => {
   const token = createToken(user);
+  const refreshToken = createRefreshToken(user);
   const isProduction = process.env.NODE_ENV === 'production';
   const cookieOptions = {
     httpOnly: true,
     secure: isProduction,
     sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin Vercel↔Render
-    maxAge: 7 * 24 * 60 * 60 * 1000,
     path: '/',
   };
 
-  res.cookie('token', token, cookieOptions);
+  res.cookie('token', token, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
+  res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
+
   res.status(200).json({ 
     success: true, 
     user: user.toJSON ? user.toJSON() : user, 
     token,
+    refreshToken,
     role: user.role 
   });
 };
@@ -50,6 +71,11 @@ exports.register = async (req, res, next) => {
 
     if (password !== confirmPassword) {
       return res.status(400).json({ success: false, message: 'Passwords do not match' });
+    }
+
+    const isAlphanumeric = /^(?=.*[a-zA-Z])(?=.*\d)/.test(password);
+    if (!isAlphanumeric) {
+      return res.status(400).json({ success: false, message: 'Password must be alphanumeric (contain both letters and numbers)' });
     }
 
     // Only 'client' and 'driver' roles are allowed via public registration
@@ -123,6 +149,11 @@ exports.login = async (req, res, next) => {
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
+    // Check if user is active
+    if (user.isActive === false) {
+      return res.status(403).json({ success: false, message: 'This account has been deactivated/deleted.' });
+    }
+
     // Check if driver is approved
     if (user.role === 'driver' && user.status !== 'approved') {
       return res.status(403).json({ 
@@ -153,6 +184,13 @@ exports.logout = async (req, res, next) => {
   try {
     const isProduction = process.env.NODE_ENV === 'production';
     res.cookie('token', '', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      expires: new Date(0),
+      path: '/',
+    });
+    res.cookie('refreshToken', '', {
       httpOnly: true,
       secure: isProduction,
       sameSite: isProduction ? 'none' : 'lax',
@@ -211,6 +249,10 @@ exports.updateProfile = async (req, res, next) => {
       if (newPassword.length < 8) {
         return res.status(400).json({ success: false, message: 'New password must be at least 8 characters long' });
       }
+      const isAlphanumeric = /^(?=.*[a-zA-Z])(?=.*\d)/.test(newPassword);
+      if (!isAlphanumeric) {
+        return res.status(400).json({ success: false, message: 'New password must be alphanumeric (contain both letters and numbers)' });
+      }
       user.password = newPassword;
     }
 
@@ -248,5 +290,48 @@ exports.contactInquiry = async (req, res, next) => {
   } catch (error) {
     console.error('Contact inquiry controller error:', error);
     return res.status(500).json({ success: false, message: 'Failed to submit inquiry. Please try again.' });
+  }
+};
+
+exports.deleteAccount = async (req, res, next) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    user.isActive = false;
+    
+    // Anonymize email and phone to release them for potential new registrations
+    const timestamp = Date.now();
+    user.email = `deactivated_${timestamp}_${user.email}`;
+    user.phone = `deactivated_${timestamp}_${user.phone}`;
+    
+    await user.save();
+
+    // Clear authentication cookies
+    const isProduction = process.env.NODE_ENV === 'production';
+    res.cookie('token', '', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      expires: new Date(0),
+      path: '/',
+    });
+    res.cookie('refreshToken', '', {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'none' : 'lax',
+      expires: new Date(0),
+      path: '/',
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Your account has been deleted successfully. You have been logged out.',
+    });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to delete account. Please try again.' });
   }
 };

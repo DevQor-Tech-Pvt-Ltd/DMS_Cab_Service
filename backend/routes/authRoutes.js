@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, getMe, logout, updateProfile, contactInquiry } = require('../controllers/authController');
+const { register, login, getMe, logout, updateProfile, contactInquiry, deleteAccount } = require('../controllers/authController');
 const { protect, isApproved } = require('../middleware/authMiddleware');
 const { loginLimiter, signupLimiter, otpVerificationLimiter } = require('../middlewares/rateLimiters');
 
@@ -10,6 +10,7 @@ router.post('/login', loginLimiter, login);
 router.get('/me', protect, getMe);
 router.post('/logout', logout);
 router.put('/update-profile', protect, updateProfile);
+router.delete('/delete-account', protect, deleteAccount);
 router.post('/contact-inquiry', contactInquiry);
 
 // OTP Verification Stub - Ready for production integration

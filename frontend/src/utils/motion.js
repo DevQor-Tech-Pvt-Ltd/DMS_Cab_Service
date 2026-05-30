@@ -1,4 +1,4 @@
-// Mobile animation performance utility for DMS Luxe.
+// Mobile animation performance utility for DMS Cab Servicese.
 // Helps disable or downgrade expensive Framer Motion animations on mobile viewports (< 768px).
 
 export const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;

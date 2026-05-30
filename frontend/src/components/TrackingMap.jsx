@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import io from 'socket.io-client';
 import { MapPin, Navigation, Compass, AlertCircle, CheckCircle2 } from '../utils/icons';
 
@@ -35,21 +36,28 @@ const TrackingMap = ({ role = 'client' }) => {
       setIsConnected(false);
     });
 
-    // 2. Initialize Leaflet Map centered at (0, 0) with Zoom 15
+    // 2. Initialize Leaflet Map centered at Kolkata with Zoom 15
     if (!mapRef.current && mapContainerRef.current) {
       const map = L.map(mapContainerRef.current, {
         zoomControl: false, // Custom placed for luxury styling
-      }).setView([0, 0], 15);
+      }).setView([22.5726, 88.3639], 15);
 
       // Add OpenStreetMap tile layer
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap contributors',
+        attribution: '© DMS Cab Service',
       }).addTo(map);
 
       // Add zoom control in a better looking position
       L.control.zoom({ position: 'bottomright' }).addTo(map);
 
       mapRef.current = map;
+
+      // Force recalculation of container size after initial render/mount
+      setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize();
+        }
+      }, 250);
     }
 
     const map = mapRef.current;
@@ -86,6 +94,7 @@ const TrackingMap = ({ role = 'client' }) => {
       if (id === socket.id) {
         map.setView([latitude, longitude]);
         setCoords({ latitude, longitude });
+        map.invalidateSize();
       }
 
       // If a marker for the id exists, update its position, otherwise create a new marker
@@ -135,7 +144,12 @@ const TrackingMap = ({ role = 'client' }) => {
       watchIdRef.current = navigator.geolocation.watchPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          setErrorMsg(null);
+          // Update local state and map immediately for instant visual feedback
+          setCoords({ latitude, longitude });
+          if (mapRef.current) {
+            mapRef.current.setView([latitude, longitude]);
+            mapRef.current.invalidateSize();
+          }
 
           // Emit the latitude and longitude via a socket with "send-location"
           socket.emit('send-location', { latitude, longitude });
@@ -180,11 +194,12 @@ const TrackingMap = ({ role = 'client' }) => {
   const handleRecenter = () => {
     if (coords && mapRef.current) {
       mapRef.current.setView([coords.latitude, coords.longitude], 16);
+      mapRef.current.invalidateSize();
     }
   };
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden border border-white/10 bg-[#0c1017] shadow-xl">
+    <div className="relative z-10 w-full h-full rounded-2xl overflow-hidden border border-white/10 bg-[#0c1017] shadow-xl">
       {/* Map Header Status Bar */}
       <div className="absolute top-4 left-4 right-4 z-[1000] flex flex-wrap gap-2 items-center justify-between pointer-events-none">
         {/* Status Indicator */}
@@ -216,7 +231,7 @@ const TrackingMap = ({ role = 'client' }) => {
       )}
 
       {/* Actual Map element */}
-      <div ref={mapContainerRef} className="w-full h-[380px] sm:h-[450px]" style={{ zIndex: 1 }} />
+      <div ref={mapContainerRef} className="w-full h-full relative overflow-hidden" style={{ zIndex: 1 }} />
 
       {/* Coordinates / Map Controls overlay */}
       <div className="absolute bottom-4 left-4 z-[1000] flex flex-col gap-2">

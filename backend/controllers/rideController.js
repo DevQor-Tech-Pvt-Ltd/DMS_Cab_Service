@@ -130,8 +130,9 @@ exports.acceptRide = async (req, res) => {
     const otpExpiryTime = new Date(Date.now() + 5 * 60 * 1000); 
 
     // Atomically find the ride and update status to driver_assigned
+    const rideId = req.params.id || req.params.rideId;
     const ride = await Ride.findOneAndUpdate(
-      { _id: req.params.id, status: 'pending' },
+      { _id: rideId, status: 'pending' },
       { 
         driver: req.user._id, 
         status: 'driver_assigned',
@@ -198,7 +199,7 @@ exports.acceptRide = async (req, res) => {
 // Driver Arrived at client pickup location
 exports.driverArrived = async (req, res) => {
   try {
-    const ride = await Ride.findOne({ _id: req.params.id, driver: req.user._id });
+    const ride = await Ride.findOne({ _id: req.params.id || req.params.rideId, driver: req.user._id });
 
     if (!ride) {
       return res.status(404).json({ success: false, message: 'Active booking not found for this chauffeur.' });
@@ -244,14 +245,15 @@ exports.driverArrived = async (req, res) => {
 exports.verifyOtp = async (req, res) => {
   try {
     const { bookingId, otp } = req.body;
+    const resolvedRideId = bookingId || req.params.id || req.params.rideId;
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || 'unknown';
 
-    if (!bookingId || !otp) {
+    if (!resolvedRideId || !otp) {
       return res.status(400).json({ success: false, message: 'Booking ID and OTP code are required.' });
     }
 
     const ride = await Ride.findOne({
-      _id: bookingId,
+      _id: resolvedRideId,
       driver: req.user._id
     });
     if (!ride) {
@@ -352,7 +354,7 @@ exports.resendOtp = async (req, res) => {
     const { sendOtpEmail } = require('../utils/emailService');
 
     const ride = await Ride.findOne({
-      _id: req.params.id,
+      _id: req.params.id || req.params.rideId,
       driver: req.user._id
     });
     if (!ride) {
@@ -419,7 +421,7 @@ exports.resendOtp = async (req, res) => {
 // Complete an active ride booking
 exports.completeRide = async (req, res) => {
   try {
-    const ride = await Ride.findOne({ _id: req.params.id, driver: req.user._id });
+    const ride = await Ride.findOne({ _id: req.params.id || req.params.rideId, driver: req.user._id });
 
     if (!ride) {
       return res.status(404).json({ success: false, message: 'Ride not found.' });
@@ -473,7 +475,7 @@ exports.rateRide = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide a valid rating between 1 and 5.' });
     }
 
-    const ride = await Ride.findOne({ _id: req.params.id, client: req.user._id });
+    const ride = await Ride.findOne({ _id: req.params.id || req.params.rideId, client: req.user._id });
 
     if (!ride) {
       return res.status(404).json({ success: false, message: 'Ride booking not found.' });
@@ -518,7 +520,7 @@ exports.rateRide = async (req, res) => {
 exports.cancelRide = async (req, res) => {
   try {
     const ride = await Ride.findOne({
-      _id: req.params.id,
+      _id: req.params.id || req.params.rideId,
       driver: req.user._id
     });
 
@@ -591,6 +593,84 @@ exports.getRides = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Failed to fetch rides',
+      error:
+            process.env.NODE_ENV === 'development'
+              ? error.message
+              : 'Internal Server Error'
+              });
+  }
+};
+
+// Get a single ride by ID (ownership is enforced by ownershipMiddleware)
+exports.getRideById = async (req, res) => {
+  try {
+    const ride = await Ride.findById(req.params.id || req.params.rideId)
+      .populate('client', 'fullName email phone')
+      .populate('driver', 'fullName phone vehicleNumber vehicleType');
+
+    if (!ride) {
+      return res.status(404).json({ success: false, message: 'Ride booking not found.' });
+    }
+
+    // IDOR protection: verify ownership based on role
+    if (req.user.role === 'client' && ride.client._id.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ success: false, message: 'Forbidden: You do not own this ride booking' });
+    }
+    if (req.user.role === 'driver') {
+      const isAssigned = ride.driver && ride.driver._id.toString() === req.user._id.toString();
+      const isPending = ride.status === 'pending';
+      if (!isAssigned && !isPending) {
+        return res.status(403).json({ success: false, message: 'Forbidden: You are not assigned to this ride booking' });
+      }
+    }
+
+    return res.status(200).json({ success: true, ride });
+  } catch (error) {
+    console.error('Error fetching ride by ID:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to fetch ride details',
+      error:
+            process.env.NODE_ENV === 'development'
+              ? error.message
+              : 'Internal Server Error'
+              });
+  }
+};
+
+// Delete a pending ride booking (client only, must own the ride)
+exports.deleteRide = async (req, res) => {
+  try {
+    const ride = await Ride.findOne({
+      _id: req.params.id || req.params.rideId,
+      client: req.user._id,
+    });
+
+    if (!ride) {
+      return res.status(404).json({ success: false, message: 'Ride booking not found or you do not have permission to delete it.' });
+    }
+
+    if (ride.status !== 'pending') {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Cannot delete a ride that is already ${ride.status}. Only pending rides can be deleted.` 
+      });
+    }
+
+    await Ride.findByIdAndDelete(ride._id);
+
+    // Broadcast deletion event
+    const io = req.app.get('io');
+    if (io) {
+      io.emit('ride-deleted', { rideId: ride._id });
+    }
+
+    return res.status(200).json({ success: true, message: 'Ride booking deleted successfully.' });
+  } catch (error) {
+    console.error('Error deleting ride:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to delete ride booking',
       error:
             process.env.NODE_ENV === 'development'
               ? error.message

@@ -1,5 +1,5 @@
 /**
- * DMS LUXE - Professional Rate Limiting Architecture
+ * DMS Cab ServicesE - Professional Rate Limiting Architecture
  * 
  * WHY ROUTE-SPECIFIC LIMITERS EXIST:
  * - Traditional global rate limiting blocks essential low-bandwidth real-time traffic (like driver GPS polling)

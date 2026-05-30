@@ -72,7 +72,7 @@ const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, o
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('dms_luxe_token');
+      const token = sessionStorage.getItem('dms_luxe_token');
       const response = await axios.post(
         `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides/verify-otp`,
         { bookingId, otp: fullOtp },
@@ -109,27 +109,27 @@ const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, o
   };
 
   return (
-    <div className="bg-[#0a0f18] border border-white/5 rounded-2xl p-6 md:p-8 max-w-md mx-auto shadow-2xl relative overflow-hidden">
+    <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 max-w-md mx-auto shadow-2xl relative overflow-hidden">
       {/* Decorative luxury gradient outline */}
-      <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent via-[#d4af37] to-transparent"></div>
+      <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent via-[#003893] to-transparent"></div>
 
       <div className="text-center mb-6">
-        <div className="w-14 h-14 bg-[#d4af37]/10 rounded-full flex items-center justify-center text-[#d4af37] mx-auto mb-4 border border-[#d4af37]/20">
+        <div className="w-14 h-14 bg-[#003893]/10 rounded-full flex items-center justify-center text-[#003893] mx-auto mb-4 border border-[#003893]/20">
           <ShieldCheck size={28} />
         </div>
-        <h3 className="text-xl font-serif text-white font-semibold">Start Luxury Journey</h3>
-        <p className="text-gray-400 text-xs mt-1">
-          Verify the 4-digit code provided by <span className="text-[#d4af37] font-semibold">{clientName}</span> to start route navigation.
+        <h3 className="text-xl font-serif text-slate-800 font-semibold">Start Luxury Journey</h3>
+        <p className="text-slate-500 text-xs mt-1">
+          Verify the 4-digit code provided by <span className="text-[#003893] font-semibold">{clientName}</span> to start route navigation.
         </p>
       </div>
 
       {success ? (
         <div className="text-center py-6 animate-in fade-in zoom-in duration-300">
-          <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-400 mx-auto mb-3 border border-emerald-500/20">
+          <div className="w-12 h-12 bg-emerald-500/10 rounded-full flex items-center justify-center text-emerald-500 mx-auto mb-3 border border-emerald-500/20">
             <CheckCircle size={24} className="animate-pulse" />
           </div>
-          <h4 className="text-lg text-white font-medium">OTP Verified</h4>
-          <p className="text-gray-400 text-xs mt-1">Starting ride and initiating billing track...</p>
+          <h4 className="text-lg text-slate-800 font-medium">OTP Verified</h4>
+          <p className="text-slate-500 text-xs mt-1">Starting ride and initiating billing track...</p>
         </div>
       ) : (
         <form onSubmit={handleVerify} className="space-y-6">
@@ -144,26 +144,26 @@ const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, o
                 onChange={(e) => handleChange(idx, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(idx, e)}
                 disabled={loading}
-                className="w-14 h-16 text-center text-2xl font-bold bg-[#111620] text-white border border-white/10 rounded-xl focus:border-[#d4af37] focus:outline-none transition-colors"
+                className="w-14 h-16 text-center text-2xl font-bold bg-slate-50 text-slate-900 border border-slate-200 rounded-xl focus:border-[#003893] focus:outline-none transition-colors"
                 placeholder="-"
               />
             ))}
           </div>
 
-          <div className="flex items-center justify-between text-xs text-gray-400 px-1">
+          <div className="flex items-center justify-between text-xs text-slate-500 px-1">
             <div className="flex items-center space-x-1.5">
-              <Timer size={14} className={timeLeft < 180 ? "text-red-400" : "text-[#d4af37]"} />
-              <span className={timeLeft < 180 ? "text-red-400 font-semibold" : ""}>
+              <Timer size={14} className={timeLeft < 180 ? "text-red-500" : "text-[#003893]"} />
+              <span className={timeLeft < 180 ? "text-red-500 font-semibold" : "text-slate-600 font-medium"}>
                 Expires in {formatTime(timeLeft)}
               </span>
             </div>
             <div>
-              Attempts remaining: <span className="text-white font-semibold">{attemptsRemaining}</span>
+              Attempts remaining: <span className="text-slate-800 font-semibold">{attemptsRemaining}</span>
             </div>
           </div>
 
           {error && (
-            <div className="bg-[#3d1717]/60 border border-red-500/20 rounded-xl p-3.5 flex items-start space-x-2.5 text-xs text-red-300">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3.5 flex items-start space-x-2.5 text-xs text-red-650">
               <AlertCircle size={16} className="shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
@@ -173,10 +173,10 @@ const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, o
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-[#d4af37] text-[#060a11] py-3.5 rounded-xl font-bold hover:bg-[#ffe392] transition-colors shadow-lg shadow-[#d4af37]/10 disabled:opacity-50 flex items-center justify-center space-x-2 cursor-pointer"
+              className="w-full bg-[#003893] text-white py-3.5 rounded-xl font-bold hover:bg-[#002d72] transition-colors shadow-lg shadow-[#003893]/15 disabled:opacity-50 flex items-center justify-center space-x-2 cursor-pointer"
             >
               {loading ? (
-                <div className="w-5 h-5 border-2 border-[#060a11] border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
               ) : (
                 <>
                   <span>Verify and Start Ride</span>
@@ -189,7 +189,7 @@ const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, o
               type="button"
               onClick={onCancel}
               disabled={loading}
-              className="w-full bg-transparent text-gray-400 hover:text-white py-2.5 rounded-xl text-xs font-semibold transition-colors"
+              className="w-full bg-transparent text-slate-500 hover:text-slate-800 py-2.5 rounded-xl text-xs font-semibold transition-colors"
             >
               Dismiss
             </button>
