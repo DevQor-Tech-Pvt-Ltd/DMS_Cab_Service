@@ -55,6 +55,36 @@ const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, o
     }
   };
 
+  const handleResendOtp = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const token = sessionStorage.getItem('dms_luxe_token');
+      const response = await axios.post(
+        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides/${bookingId}/resend-otp`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+      if (response.data.success) {
+        alert('A fresh verification OTP has been emailed to the client.');
+        setTimeLeft(900); // Reset timer to 15 minutes (900 seconds)
+        setOtp(['', '', '', '']); // Clear inputs
+        if (inputRefs.current[0]) {
+          inputRefs.current[0].focus();
+        }
+      }
+    } catch (err) {
+      console.error('Failed to resend OTP:', err);
+      setError(err.response?.data?.message || 'Failed to resend OTP. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleVerify = async (e) => {
     e.preventDefault();
     setError('');
@@ -160,6 +190,17 @@ const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, o
             <div>
               Attempts remaining: <span className="text-slate-800 font-semibold">{attemptsRemaining}</span>
             </div>
+          </div>
+
+          <div className="flex justify-center text-xs pt-1">
+            <button
+              type="button"
+              onClick={handleResendOtp}
+              disabled={loading}
+              className="text-[#003893] hover:text-[#002d72] hover:underline font-bold transition-colors disabled:opacity-40 cursor-pointer"
+            >
+              Client didn't get it? Resend OTP Email
+            </button>
           </div>
 
           {error && (

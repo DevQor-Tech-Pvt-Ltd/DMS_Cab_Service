@@ -836,6 +836,19 @@ const ClientDashboard = () => {
                     <p className="text-slate-600 truncate max-w-[240px]">{ride.dropoffLocation}</p>
                   </div>
                 </div>
+
+                {['driver_assigned', 'driver_arrived'].includes(ride.status) && (
+                  <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-[10px]">
+                    <span className="text-slate-400 font-medium">OTP Code sent via Email</span>
+                    <button
+                      onClick={() => handleResendOtp(ride._id)}
+                      disabled={resendingOtpId === ride._id}
+                      className="text-xs font-bold text-[#003893] hover:text-[#002d72] hover:underline disabled:opacity-50 cursor-pointer"
+                    >
+                      {resendingOtpId === ride._id ? 'Resending...' : 'Resend OTP Email'}
+                    </button>
+                  </div>
+                )}
               </div>
             ))
           )}

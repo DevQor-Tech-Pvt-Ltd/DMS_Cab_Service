@@ -200,6 +200,9 @@ exports.acceptRide = async (req, res) => {
 // Driver Arrived at client pickup location
 exports.driverArrived = async (req, res) => {
   try {
+    const crypto = require('crypto');
+    const { sendOtpEmail } = require('../utils/emailService');
+
     const ride = await Ride.findOne({ _id: req.params.id || req.params.rideId, driver: req.user._id });
 
     if (!ride) {
@@ -213,20 +216,41 @@ exports.driverArrived = async (req, res) => {
       });
     }
 
+    // Generate fresh secure 4-digit code
+    const secureOtp = crypto.randomInt(1000, 10000).toString();
+    const hashedOtp = await bcrypt.hash(secureOtp, 10);
+    const otpExpiryTime = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes window
+
     ride.status = 'driver_arrived';
+    ride.rideOtpHash = hashedOtp;
+    ride.otpAttempts = 0;
+    ride.otpExpiresAt = otpExpiryTime;
+    ride.otpLastSentAt = new Date();
     await ride.save();
+
+    // Populate client and driver details
+    await ride.populate('client', 'fullName email phone');
+    await ride.populate('driver', 'fullName phone vehicleNumber vehicleType');
 
     // Broadcast real-time status change to the client
     const io = req.app.get('io');
     if (io) {
       io.emit(`ride_status_${ride._id}`, {
-        status: 'driver_arrived'
+        status: 'driver_arrived',
+        otpSent: true,
+        otpExpiresAt: ride.otpExpiresAt
       });
     }
 
+    // Dispatch email template to client
+    const emailSent = await sendOtpEmail(ride, secureOtp, req.user.fullName);
+
     return res.status(200).json({
       success: true,
-      message: 'Status updated to Driver Arrived. Client has been notified.',
+      message: emailSent
+        ? 'Status updated to Driver Arrived. Ride verification OTP has been emailed to the client.'
+        : 'Status updated to Driver Arrived. However, we could not send the verification OTP email. Please try resending it.',
+      emailSent,
       ride
     });
   } catch (error) {
