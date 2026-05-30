@@ -90,26 +90,23 @@ const TrackingMap = ({ role = 'client' }) => {
     socket.on('receive-location', (data) => {
       const { id, latitude, longitude } = data;
 
-      // Center the map on the new coordinates (always center on current user's movement, or dynamically focus)
+      // Self location is already tracked and rendered locally
       if (id === socket.id) {
-        map.setView([latitude, longitude]);
-        setCoords({ latitude, longitude });
-        map.invalidateSize();
+        return;
       }
 
       // If a marker for the id exists, update its position, otherwise create a new marker
       if (markersRef.current[id]) {
         markersRef.current[id].setLatLng([latitude, longitude]);
       } else {
-        const isSelf = id === socket.id;
         const marker = L.marker([latitude, longitude], {
-          icon: isSelf ? selfIcon : otherIcon,
+          icon: otherIcon,
         }).addTo(map);
 
         // Bind a custom premium tooltip/popup
         marker.bindPopup(`
           <div class="p-1 text-black font-sans text-xs">
-            <p class="font-bold text-[#aa8c2c]">${isSelf ? 'Your Location' : 'Active Partner'}</p>
+            <p class="font-bold text-[#aa8c2c]">Active Partner</p>
             <p class="text-[10px] text-gray-500 font-mono">ID: ${id.substring(0, 8)}...</p>
           </div>
         `);
@@ -130,13 +127,18 @@ const TrackingMap = ({ role = 'client' }) => {
       setActiveUsersCount(Object.keys(markersRef.current).length);
     });
 
-    // 4. Geolocation continuous watching
-    // Check if the browser supports geolocation
-    if (navigator.geolocation) {
-      // Set options for high accuracy, a 5-second timeout, and no caching
+    // 4. Geolocation continuous watching with High-Accuracy fallback
+    const startTracking = (highAccuracy = true) => {
+      if (!navigator.geolocation) {
+        const errMsg = 'Geolocation is not supported by this browser.';
+        console.error(errMsg);
+        setErrorMsg(errMsg);
+        return;
+      }
+
       const geoOptions = {
-        enableHighAccuracy: true,
-        timeout: 5000,
+        enableHighAccuracy: highAccuracy,
+        timeout: highAccuracy ? 6000 : 12000,
         maximumAge: 0,
       };
 
@@ -144,28 +146,54 @@ const TrackingMap = ({ role = 'client' }) => {
       watchIdRef.current = navigator.geolocation.watchPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          // Update local state and map immediately for instant visual feedback
+          
+          setErrorMsg(null); // Clear any errors when location is acquired
           setCoords({ latitude, longitude });
+
           if (mapRef.current) {
             mapRef.current.setView([latitude, longitude]);
             mapRef.current.invalidateSize();
+
+            // Draw/update self marker locally immediately
+            const selfId = 'self';
+            if (markersRef.current[selfId]) {
+              markersRef.current[selfId].setLatLng([latitude, longitude]);
+            } else {
+              const marker = L.marker([latitude, longitude], {
+                icon: selfIcon,
+              }).addTo(mapRef.current);
+
+              marker.bindPopup(`
+                <div class="p-1 text-black font-sans text-xs">
+                  <p class="font-bold text-blue-500">Your Location</p>
+                </div>
+              `);
+              markersRef.current[selfId] = marker;
+            }
           }
 
-          // Emit the latitude and longitude via a socket with "send-location"
+          // Emit location to other active participants
           socket.emit('send-location', { latitude, longitude });
         },
         (error) => {
-          // Log any errors to the console
-          console.error('Geolocation Error:', error);
-          setErrorMsg(`Failed to track location: ${error.message}`);
+          console.error(`Geolocation Error (highAccuracy=${highAccuracy}):`, error);
+          
+          // Fallback to low accuracy if high accuracy fails or times out
+          if (highAccuracy && (error.code === error.TIMEOUT || error.code === error.POSITION_UNAVAILABLE)) {
+            console.log('Retrying location tracking with standard accuracy...');
+            if (watchIdRef.current !== null) {
+              navigator.geolocation.clearWatch(watchIdRef.current);
+            }
+            startTracking(false);
+          } else {
+            setErrorMsg(`Failed to track location: ${error.message}`);
+          }
         },
         geoOptions
       );
-    } else {
-      const errMsg = 'Geolocation is not supported by this browser.';
-      console.error(errMsg);
-      setErrorMsg(errMsg);
-    }
+    };
+
+    startTracking(true);
 
     // Cleanup on component unmount
     return () => {
