@@ -14,6 +14,7 @@ import TrackingMap from '../components/TrackingMap';
 import EditProfileModal from '../components/EditProfileModal.jsx';
 import io from 'socket.io-client';
 import axios from 'axios';
+import { getApiUrl, getSocketUrl } from '../utils/urls';
 import { updateProfile, deleteAccount } from '../services/authService';
 import NotFoundPage from './NotFoundPage';
 
@@ -531,7 +532,7 @@ const ClientDashboard = () => {
       setRidesError(null);
       const token = sessionStorage.getItem('dms_luxe_token');
       const response = await axios.get(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides`,
+        `${getApiUrl()}/rides`,
         {
           headers: {
             Authorization: `Bearer ${token}`
@@ -561,10 +562,7 @@ const ClientDashboard = () => {
   useEffect(() => {
     if (!user || ridesList.length === 0) return;
 
-    const socketUrl = import.meta.env.VITE_API_URL
-      ? import.meta.env.VITE_API_URL.replace('/api/v1', '')
-      : 'http://localhost:5000';
-    const socket = io(socketUrl, { transports: ['websocket', 'polling'] });
+    const socket = io(getSocketUrl(), { transports: ['websocket', 'polling'] });
 
     ridesList.forEach(ride => {
       socket.on(`ride_status_${ride._id}`, (data) => {
@@ -595,7 +593,7 @@ const ClientDashboard = () => {
     try {
       const token = sessionStorage.getItem('dms_luxe_token');
       const response = await axios.patch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides/${selectedRideId}/rate`,
+        `${getApiUrl()}/rides/${selectedRideId}/rate`,
         {
           rating: userRating,
           feedback: feedbackText
@@ -627,7 +625,7 @@ const ClientDashboard = () => {
     try {
       const token = sessionStorage.getItem('dms_luxe_token');
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides/${rideId}/resend-otp`,
+        `${getApiUrl()}/rides/${rideId}/resend-otp`,
         {},
         {
           headers: {
@@ -679,6 +677,142 @@ const ClientDashboard = () => {
     r => ['pending', 'driver_assigned', 'driver_arrived', 'ride_started'].includes(r.status)
   );
 
+  const renderActiveRideCard = (ride) => {
+    if (!ride) return null;
+
+    const isPending = ride.status === 'pending';
+    const isAssigned = ride.status === 'driver_assigned';
+    const isArrived = ride.status === 'driver_arrived';
+    const isStarted = ride.status === 'ride_started';
+
+    let statusText = 'Processing reservation...';
+    let statusDesc = 'We are locating an elite chauffeur near you.';
+    let progressPercent = 10;
+
+    if (isPending) {
+      statusText = 'Finding Chauffeur...';
+      statusDesc = 'Dispatching to nearby luxury vehicles.';
+      progressPercent = 25;
+    } else if (isAssigned) {
+      statusText = 'Chauffeur En Route';
+      statusDesc = 'Your chauffeur is traveling to your location.';
+      progressPercent = 50;
+    } else if (isArrived) {
+      statusText = 'Chauffeur Arrived';
+      statusDesc = 'Your vehicle has arrived at the pickup location.';
+      progressPercent = 75;
+    } else if (isStarted) {
+      statusText = 'En Route';
+      statusDesc = 'Enjoy your luxury journey to destination.';
+      progressPercent = 100;
+    }
+
+    return (
+      <div className="bg-[#0b1019] border border-[#d4af37]/35 text-white rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden text-left">
+        {/* Luxury top border highlight */}
+        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-[#d4af37] to-transparent"></div>
+
+        <div className="flex justify-between items-start">
+          <div className="space-y-1">
+            <span className="text-[9px] text-[#d4af37] font-bold uppercase tracking-wider">Live Journey Tracker</span>
+            <h4 className="text-base font-serif font-bold text-white">{statusText}</h4>
+            <p className="text-[10px] text-gray-400">{statusDesc}</p>
+          </div>
+          <div className="text-right">
+            <span className="inline-block text-[8px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider bg-white/10 text-white border border-white/20">
+              {ride.status.replace('_', ' ')}
+            </span>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
+          <div 
+            className="bg-gradient-to-r from-[#d4af37] to-[#b8962e] h-full transition-all duration-500 ease-out" 
+            style={{ width: `${progressPercent}%` }}
+          />
+        </div>
+
+        {/* Chauffeur Details */}
+        {!isPending && ride.driver && (
+          <div className="flex items-center justify-between bg-white/5 border border-white/10 p-3.5 rounded-xl">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 rounded-full bg-[#d4af37]/10 border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37] font-bold text-sm">
+                {ride.driver.fullName?.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="text-xs font-bold text-white">{ride.driver.fullName}</p>
+                <p className="text-[10px] text-gray-400 font-medium">{ride.driver.vehicleType || 'Luxury Class'}</p>
+                <p className="text-[9px] font-bold tracking-widest text-[#d4af37] uppercase mt-0.5">{ride.driver.vehicleNumber}</p>
+              </div>
+            </div>
+            
+            <a 
+              href={`tel:${ride.driver.phone || ''}`}
+              className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-all active:scale-95"
+            >
+              <Phone size={14} />
+            </a>
+          </div>
+        )}
+
+        {/* OTP Display Card (if assigned or arrived) */}
+        {(isAssigned || isArrived) && (
+          <div className="bg-gradient-to-r from-[#d4af37]/5 to-[#d4af37]/10 border border-[#d4af37]/20 p-4 rounded-xl flex flex-col items-center justify-center text-center space-y-2">
+            <span className="text-[9px] text-[#d4af37] font-bold uppercase tracking-wider">Start Verification Code</span>
+            
+            {ride.rideOtp ? (
+              <div className="text-2xl font-bold font-mono tracking-[4px] text-[#d4af37] bg-black/40 border border-[#d4af37]/30 px-6 py-1.5 rounded-lg shadow-inner">
+                {ride.rideOtp}
+              </div>
+            ) : (
+              <div className="text-xs text-gray-400 italic">
+                Generating verification code...
+              </div>
+            )}
+            
+            <p className="text-[10px] text-gray-400 max-w-[250px] leading-relaxed">
+              Tell this code to your chauffeur to authorize and start the journey.
+            </p>
+            
+            <button
+              onClick={() => handleResendOtp(ride._id)}
+              disabled={resendingOtpId === ride._id}
+              className="text-[10px] font-bold text-[#d4af37] hover:text-white uppercase tracking-wider transition-colors disabled:opacity-40 mt-1 cursor-pointer"
+            >
+              {resendingOtpId === ride._id ? 'Sending...' : 'Resend Code via Email'}
+            </button>
+          </div>
+        )}
+
+        {/* Action button */}
+        {isPending && (
+          <button
+            onClick={async () => {
+              if (window.confirm('Are you sure you want to cancel this booking?')) {
+                try {
+                  const token = sessionStorage.getItem('dms_luxe_token');
+                  const response = await axios.delete(`${getApiUrl()}/client/rides/${ride._id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                  });
+                  if (response.data.success) {
+                    alert('Booking cancelled successfully.');
+                    fetchRides(true);
+                  }
+                } catch (err) {
+                  alert(err.response?.data?.message || 'Failed to cancel booking.');
+                }
+              }
+            }}
+            className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer"
+          >
+            Cancel Booking
+          </button>
+        )}
+      </div>
+    );
+  };
+
   // ----------------------------------------------------
   // MOBILE SCREEN RENDERERS (Page 1 & 2)
   // ----------------------------------------------------
@@ -714,63 +848,65 @@ const ClientDashboard = () => {
 
         {/* Map */}
         <div className="relative bg-slate-50 border border-slate-200 rounded-2xl h-80 overflow-hidden shadow-inner">
-          <TrackingMap role="client" rideId={activeRide?._id} />
+          <TrackingMap role="client" rideId={activeRide?._id} userId={user?._id} />
         </div>
 
-        {/* Bottom sheet layout "Where to?" */}
-        <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
-          <div className="flex justify-between items-center">
-            <h3 className="text-slate-800 font-serif text-lg font-bold">Where to?</h3>
-            <button onClick={() => handleTabChange('activity')} className="text-xs text-[#003893] flex items-center space-x-1">
-              <Clock size={12} />
-              <span>History</span>
-            </button>
-          </div>
+        {/* Bottom sheet layout "Where to?" or "Active Ride" */}
+        {activeRide ? renderActiveRideCard(activeRide) : (
+          <div className="bg-white border border-slate-200 rounded-2xl p-5 space-y-4 shadow-sm">
+            <div className="flex justify-between items-center">
+              <h3 className="text-slate-800 font-serif text-lg font-bold">Where to?</h3>
+              <button onClick={() => handleTabChange('activity')} className="text-xs text-[#003893] flex items-center space-x-1">
+                <Clock size={12} />
+                <span>History</span>
+              </button>
+            </div>
 
-          <div className="relative">
-            <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-            <input
-              type="text"
-              readOnly
-              onClick={() => navigate('/get-started')}
-              placeholder="Enter destination"
-              className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 text-xs text-slate-800 cursor-pointer placeholder-slate-400"
-            />
-          </div>
+            <div className="relative">
+              <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input
+                type="text"
+                readOnly
+                onClick={() => navigate('/get-started')}
+                placeholder="Enter destination"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3.5 pl-11 pr-4 text-xs text-slate-800 cursor-pointer placeholder-slate-400"
+              />
+            </div>
 
-          {/* Preset location items */}
-          <div className="space-y-1">
-            {savedAddresses.map((addr) => {
-              const AddrIcon = getAddressIcon(addr.icon);
-              return (
-                <div
-                  key={addr.label}
-                  onClick={() => navigate('/get-started', { state: { pickupLocation: '', dropoffLocation: addr.address } })}
-                  className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 active:bg-slate-50 cursor-pointer group"
-                >
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-lg bg-[#003893]/10 flex items-center justify-center shrink-0">
-                      <AddrIcon size={14} className="text-[#003893]" />
+            {/* Preset location items */}
+            <div className="space-y-1">
+              {savedAddresses.map((addr) => {
+                const AddrIcon = getAddressIcon(addr.icon);
+                return (
+                  <div
+                    key={addr.label}
+                    onClick={() => navigate('/get-started', { state: { pickupLocation: '', dropoffLocation: addr.address } })}
+                    className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 active:bg-slate-50 cursor-pointer group"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="w-8 h-8 rounded-lg bg-[#003893]/10 flex items-center justify-center shrink-0">
+                        <AddrIcon size={14} className="text-[#003893]" />
+                      </div>
+                      <div className="text-left">
+                        <p className="text-xs font-semibold text-slate-800">{addr.label}</p>
+                        <p className="text-[10px] text-slate-400 truncate max-w-[200px]">{addr.address}</p>
+                      </div>
                     </div>
-                    <div className="text-left">
-                      <p className="text-xs font-semibold text-slate-800">{addr.label}</p>
-                      <p className="text-[10px] text-slate-400 truncate max-w-[200px]">{addr.address}</p>
-                    </div>
+                    <ChevronRight size={14} className="text-slate-400 group-hover:text-[#003893]" />
                   </div>
-                  <ChevronRight size={14} className="text-slate-400 group-hover:text-[#003893]" />
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
 
-          <Link
-            to="/get-started"
-            className="w-full bg-[#003893] text-white hover:bg-[#002d72] font-bold py-3.5 rounded-xl text-xs flex items-center justify-center space-x-2 transition-all shadow-md"
-          >
-            <span>Book a Ride Now</span>
-            <ChevronRight size={16} />
-          </Link>
-        </div>
+            <Link
+              to="/get-started"
+              className="w-full bg-[#003893] text-white hover:bg-[#002d72] font-bold py-3.5 rounded-xl text-xs flex items-center justify-center space-x-2 transition-all shadow-md"
+            >
+              <span>Book a Ride Now</span>
+              <ChevronRight size={16} />
+            </Link>
+          </div>
+        )}
       </div>
     );
   };
@@ -1051,42 +1187,44 @@ const ClientDashboard = () => {
           {/* Map & Go Home/Office shortcut buttons */}
           <div className="lg:col-span-8 space-y-6">
             <div className="relative bg-slate-50 border border-slate-200 rounded-2xl h-96 overflow-hidden">
-              <TrackingMap role="client" rideId={activeRide?._id} />
+              <TrackingMap role="client" rideId={activeRide?._id} userId={user?._id} />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => navigate('/get-started', { state: { pickupLocation: '', dropoffLocation: '221B, Southern Avenue, Kalighat' } })}
-                className="bg-slate-50 border border-slate-200 hover:border-[#003893]/30 p-5 rounded-2xl flex items-center justify-between text-left group transition-all"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-xl bg-[#003893]/10 flex items-center justify-center text-[#003893]">
-                    <Heart size={18} />
+            {activeRide ? renderActiveRideCard(activeRide) : (
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => navigate('/get-started', { state: { pickupLocation: '', dropoffLocation: '221B, Southern Avenue, Kalighat' } })}
+                  className="bg-slate-50 border border-slate-200 hover:border-[#003893]/30 p-5 rounded-2xl flex items-center justify-between text-left group transition-all"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#003893]/10 flex items-center justify-center text-[#003893]">
+                      <Heart size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-800">Go Home</h4>
+                      <p className="text-[10px] text-slate-400">221B, Southern Avenue, Kalighat</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-800">Go Home</h4>
-                    <p className="text-[10px] text-slate-400">221B, Southern Avenue, Kalighat</p>
-                  </div>
-                </div>
-                <ArrowRight size={18} className="text-slate-400 group-hover:text-[#003893] transition-all" />
-              </button>
+                  <ArrowRight size={18} className="text-slate-400 group-hover:text-[#003893] transition-all" />
+                </button>
 
-              <button
-                onClick={() => navigate('/get-started', { state: { pickupLocation: '', dropoffLocation: 'TCS Tower, Action Area II, New Town' } })}
-                className="bg-slate-50 border border-slate-200 hover:border-[#003893]/30 p-5 rounded-2xl flex items-center justify-between text-left group transition-all"
-              >
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
-                    <Navigation size={18} />
+                <button
+                  onClick={() => navigate('/get-started', { state: { pickupLocation: '', dropoffLocation: 'TCS Tower, Action Area II, New Town' } })}
+                  className="bg-slate-50 border border-slate-200 hover:border-[#003893]/30 p-5 rounded-2xl flex items-center justify-between text-left group transition-all"
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500">
+                      <Navigation size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-800">Office</h4>
+                      <p className="text-[10px] text-slate-400">TCS Tower, Action Area II, New Town</p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-slate-800">Office</h4>
-                    <p className="text-[10px] text-slate-400">TCS Tower, Action Area II, New Town</p>
-                  </div>
-                </div>
-                <ArrowRight size={18} className="text-slate-400 group-hover:text-[#003893] transition-all" />
-              </button>
-            </div>
+                  <ArrowRight size={18} className="text-slate-400 group-hover:text-[#003893] transition-all" />
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Swift Wallet card & Recent Activity & Refer block */}

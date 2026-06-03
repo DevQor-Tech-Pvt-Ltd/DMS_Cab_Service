@@ -136,6 +136,7 @@ exports.acceptRide = async (req, res) => {
       { 
         driver: req.user._id, 
         status: 'driver_assigned',
+        rideOtp: secureOtp,
         rideOtpHash: hashedOtp,
         otpVerified: false,
         otpExpiresAt: otpExpiryTime,
@@ -169,7 +170,8 @@ exports.acceptRide = async (req, res) => {
         status: 'driver_assigned',
         driver: ride.driver,
         otpSent: true,
-        otpExpiresAt: ride.otpExpiresAt
+        otpExpiresAt: ride.otpExpiresAt,
+        rideOtp: secureOtp
       });
     }
 
@@ -222,6 +224,7 @@ exports.driverArrived = async (req, res) => {
     const otpExpiryTime = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes window
 
     ride.status = 'driver_arrived';
+    ride.rideOtp = secureOtp;
     ride.rideOtpHash = hashedOtp;
     ride.otpAttempts = 0;
     ride.otpExpiresAt = otpExpiryTime;
@@ -238,7 +241,8 @@ exports.driverArrived = async (req, res) => {
       io.emit(`ride_status_${ride._id}`, {
         status: 'driver_arrived',
         otpSent: true,
-        otpExpiresAt: ride.otpExpiresAt
+        otpExpiresAt: ride.otpExpiresAt,
+        rideOtp: secureOtp
       });
     }
 
@@ -409,6 +413,7 @@ exports.resendOtp = async (req, res) => {
     // Generate fresh secure 4-digit code
     const freshOtp = crypto.randomInt(1000, 10000).toString();
     
+    ride.rideOtp = freshOtp;
     ride.rideOtpHash = await bcrypt.hash(freshOtp, 10);
     ride.otpAttempts = 0;
     ride.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // Reset for another 5 minutes
@@ -423,7 +428,8 @@ exports.resendOtp = async (req, res) => {
     if (io) {
       io.emit(`ride_status_${ride._id}`, {
         otpSent: true,
-        otpExpiresAt: ride.otpExpiresAt
+        otpExpiresAt: ride.otpExpiresAt,
+        rideOtp: freshOtp
       });
     }
 

@@ -69,6 +69,10 @@ const rideSchema = new mongoose.Schema(
       enum: ['pending', 'accepted', 'driver_assigned', 'driver_arrived', 'ride_started', 'completed', 'cancelled'],
       default: 'pending',
     },
+    rideOtp: {
+      type: String,
+      default: null,
+    },
     rideOtpHash: {
       type: String,
       default: null,

@@ -14,6 +14,7 @@ import TrackingMap from '../components/TrackingMap';
 import DriverOtpVerification from '../components/DriverOtpVerification';
 import io from 'socket.io-client';
 import axios from 'axios';
+import { getApiUrl, getSocketUrl } from '../utils/urls';
 import { isMobile } from '../utils/motion';
 import NotFoundPage from './NotFoundPage';
 import { deleteAccount, updateProfile } from '../services/authService';
@@ -123,11 +124,7 @@ const DriverDashboard = () => {
     // If the auth session is still loading/null, wait to prevent uncaught TypeErrors.
     if (!user) return;
 
-    const socketUrl = import.meta.env.VITE_API_URL
-      ? import.meta.env.VITE_API_URL.replace('/api/v1', '')
-      : 'http://localhost:5000';
-
-    const socket = io(socketUrl, {
+    const socket = io(getSocketUrl(), {
       transports: ['websocket', 'polling']
     });
     socketRef.current = socket;
@@ -206,7 +203,7 @@ const DriverDashboard = () => {
         setRidesError(null);
         const token = sessionStorage.getItem('dms_luxe_token');
         const response = await axios.get(
-          `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides`,
+          `${getApiUrl()}/rides`,
           {
             headers: {
               Authorization: `Bearer ${token}`
@@ -301,7 +298,7 @@ const DriverDashboard = () => {
     try {
       const token = sessionStorage.getItem('dms_luxe_token');
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides/${rideId}/accept`,
+        `${getApiUrl()}/rides/${rideId}/accept`,
         {},
         {
           headers: {
@@ -357,7 +354,7 @@ const DriverDashboard = () => {
     try {
       const token = sessionStorage.getItem('dms_luxe_token');
       const response = await axios.put(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides/${rideId}/cancel`,
+        `${getApiUrl()}/rides/${rideId}/cancel`,
         {},
         {
           headers: {
@@ -383,7 +380,7 @@ const DriverDashboard = () => {
     try {
       const token = sessionStorage.getItem('dms_luxe_token');
       const response = await axios.patch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides/${rideId}/driver-arrived`,
+        `${getApiUrl()}/rides/${rideId}/driver-arrived`,
         {},
         {
           headers: {
@@ -409,7 +406,7 @@ const DriverDashboard = () => {
     try {
       const token = sessionStorage.getItem('dms_luxe_token');
       const response = await axios.patch(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides/${rideId}/complete`,
+        `${getApiUrl()}/rides/${rideId}/complete`,
         {},
         {
           headers: {
@@ -869,7 +866,7 @@ const DriverDashboard = () => {
                   <div className="mt-6 border-t border-slate-100 pt-6">
                     <p className="text-xs text-slate-500 uppercase tracking-wider mb-3">Live Route Tracking Map</p>
                     <div className="relative bg-slate-50 border border-slate-200 rounded-2xl h-80 overflow-hidden shadow-inner">
-                      <TrackingMap role="driver" rideId={activeRide?._id} />
+                      <TrackingMap role="driver" rideId={activeRide?._id} userId={user?._id} />
                     </div>
                   </div>
 

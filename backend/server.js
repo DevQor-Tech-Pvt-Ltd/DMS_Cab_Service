@@ -58,14 +58,17 @@ const startServer = async () => {
 
     // Listen for real-time location sent from driver/client
     socket.on('send-location', (data) => {
-      const { rideId, latitude, longitude } = data;
+      const { rideId, latitude, longitude, role, userId } = data;
       if (rideId) {
-        // Broadcast location only to clients in the specific ride room
+        // Broadcast location to all participants in the ride room
+        // Forward role and userId so receivers can stably identify sender
         io.to(`ride_${rideId}`).emit('receive-location', {
           id: socket.id,
           latitude,
           longitude,
-          rideId
+          rideId,
+          role: role || 'unknown',
+          userId: userId || null
         });
       }
     });

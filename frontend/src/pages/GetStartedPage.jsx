@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
+import { getApiUrl } from '../utils/urls';
 import { isMobile } from '../utils/motion';
 
 const fleetOptions = [
@@ -188,7 +189,7 @@ const GetStartedPage = () => {
     try {
       const token = sessionStorage.getItem('dms_luxe_token');
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides`,
+        `${getApiUrl()}/rides`,
         formData,
         {
           headers: {
@@ -219,7 +220,7 @@ const GetStartedPage = () => {
               try {
                 setLoading(true);
                 const verifyResponse = await axios.post(
-                  `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/payment/verify`,
+                  `${getApiUrl()}/payment/verify`,
                   {
                     razorpay_payment_id: paymentResponse.razorpay_payment_id,
                     razorpay_order_id: paymentResponse.razorpay_order_id,

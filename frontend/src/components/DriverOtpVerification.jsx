@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ShieldCheck, AlertCircle, Timer, CheckCircle, ArrowRight } from '../utils/icons';
 import axios from 'axios';
+import { getApiUrl } from '../utils/urls';
 
 const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, onCancel }) => {
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -61,7 +62,7 @@ const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, o
     try {
       const token = sessionStorage.getItem('dms_luxe_token');
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides/${bookingId}/resend-otp`,
+        `${getApiUrl()}/rides/${bookingId}/resend-otp`,
         {},
         {
           headers: {
@@ -104,7 +105,7 @@ const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, o
     try {
       const token = sessionStorage.getItem('dms_luxe_token');
       const response = await axios.post(
-        `${import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1'}/rides/verify-otp`,
+        `${getApiUrl()}/rides/verify-otp`,
         { bookingId, otp: fullOtp },
         {
           headers: {
