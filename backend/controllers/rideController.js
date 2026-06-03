@@ -395,7 +395,7 @@ exports.resendOtp = async (req, res) => {
     if (!ride) {
       return res.status(404).json({ success: false, message: 'Booking not found.' });
     }
-    if (ride.status !== 'driver_arrived') {
+    if (ride.status !== 'driver_assigned' && ride.status !== 'driver_arrived') {
       return res.status(400).json({
         success: false,
         message: 'OTP verification is not allowed at this stage.'
