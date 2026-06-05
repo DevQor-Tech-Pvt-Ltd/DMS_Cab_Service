@@ -792,7 +792,7 @@ const ClientDashboard = () => {
               if (window.confirm('Are you sure you want to cancel this booking?')) {
                 try {
                   const token = sessionStorage.getItem('dms_luxe_token');
-                  const response = await axios.delete(`${getApiUrl()}/client/rides/${ride._id}`, {
+                  const response = await axios.delete(`${getApiUrl()}/rides/${ride._id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                   });
                   if (response.data.success) {
