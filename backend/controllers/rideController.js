@@ -340,6 +340,7 @@ exports.verifyOtp = async (req, res) => {
     ride.otpVerified = true;
     ride.status = 'ride_started';
     ride.rideStartedAt = new Date();
+    ride.rideOtp = null;
     ride.rideOtpHash = null;
     ride.otpExpiresAt = null;
 
