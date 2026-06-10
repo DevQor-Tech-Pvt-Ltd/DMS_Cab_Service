@@ -708,13 +708,13 @@ const ClientDashboard = () => {
     }
 
     return (
-      <div className="bg-[#0b1019] border border-[#d4af37]/35 text-white rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden text-left">
+      <div className="bg-[#0b1019] border border-[#003893]/35 text-white rounded-2xl p-5 space-y-4 shadow-xl relative overflow-hidden text-left">
         {/* Luxury top border highlight */}
-        <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-[#d4af37] to-transparent"></div>
+        <div className="absolute top-0 left-0 right-0 h-[4px] bg-gradient-to-r from-[#003893] via-[#F8C301] to-[#003893]"></div>
 
         <div className="flex justify-between items-start">
           <div className="space-y-1">
-            <span className="text-[9px] text-[#d4af37] font-bold uppercase tracking-wider">Live Journey Tracker</span>
+            <span className="text-[9px] text-[#F8C301] font-bold uppercase tracking-wider">Live Journey Tracker</span>
             <h4 className="text-base font-serif font-bold text-white">{statusText}</h4>
             <p className="text-[10px] text-gray-400">{statusDesc}</p>
           </div>
@@ -728,7 +728,7 @@ const ClientDashboard = () => {
         {/* Progress Bar */}
         <div className="w-full bg-white/5 rounded-full h-1.5 overflow-hidden">
           <div 
-            className="bg-gradient-to-r from-[#d4af37] to-[#b8962e] h-full transition-all duration-500 ease-out" 
+            className="bg-gradient-to-r from-[#003893] to-[#F8C301] h-full transition-all duration-500 ease-out" 
             style={{ width: `${progressPercent}%` }}
           />
         </div>
@@ -737,13 +737,13 @@ const ClientDashboard = () => {
         {!isPending && ride.driver && (
           <div className="flex items-center justify-between bg-white/5 border border-white/10 p-3.5 rounded-xl">
             <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 rounded-full bg-[#d4af37]/10 border border-[#d4af37]/30 flex items-center justify-center text-[#d4af37] font-bold text-sm">
+              <div className="w-10 h-10 rounded-full bg-[#003893]/15 border border-[#003893]/30 flex items-center justify-center text-[#F8C301] font-bold text-sm">
                 {ride.driver.fullName?.charAt(0).toUpperCase()}
               </div>
               <div>
                 <p className="text-xs font-bold text-white">{ride.driver.fullName}</p>
                 <p className="text-[10px] text-gray-400 font-medium">{ride.driver.vehicleType || 'Luxury Class'}</p>
-                <p className="text-[9px] font-bold tracking-widest text-[#d4af37] uppercase mt-0.5">{ride.driver.vehicleNumber}</p>
+                <p className="text-[9px] font-bold tracking-widest text-[#F8C301] uppercase mt-0.5">{ride.driver.vehicleNumber}</p>
               </div>
             </div>
             
@@ -758,11 +758,11 @@ const ClientDashboard = () => {
 
         {/* OTP Display Card (if assigned or arrived) */}
         {(isAssigned || isArrived) && (
-          <div className="bg-gradient-to-r from-[#d4af37]/5 to-[#d4af37]/10 border border-[#d4af37]/20 p-4 rounded-xl flex flex-col items-center justify-center text-center space-y-2">
-            <span className="text-[9px] text-[#d4af37] font-bold uppercase tracking-wider">Start Verification Code</span>
+          <div className="bg-gradient-to-r from-[#003893]/10 to-[#F8C301]/10 border border-[#003893]/20 p-4 rounded-xl flex flex-col items-center justify-center text-center space-y-2">
+            <span className="text-[9px] text-[#F8C301] font-bold uppercase tracking-wider">Start Verification Code</span>
             
             {ride.rideOtp ? (
-              <div className="text-2xl font-bold font-mono tracking-[4px] text-[#d4af37] bg-black/40 border border-[#d4af37]/30 px-6 py-1.5 rounded-lg shadow-inner">
+              <div className="text-2xl font-bold font-mono tracking-[4px] text-[#F8C301] bg-black/40 border border-[#003893]/30 px-6 py-1.5 rounded-lg shadow-inner">
                 {ride.rideOtp}
               </div>
             ) : (
@@ -778,7 +778,7 @@ const ClientDashboard = () => {
             <button
               onClick={() => handleResendOtp(ride._id)}
               disabled={resendingOtpId === ride._id}
-              className="text-[10px] font-bold text-[#d4af37] hover:text-white uppercase tracking-wider transition-colors disabled:opacity-40 mt-1 cursor-pointer"
+              className="text-[10px] font-bold text-[#F8C301] hover:text-white uppercase tracking-wider transition-colors disabled:opacity-40 mt-1 cursor-pointer"
             >
               {resendingOtpId === ride._id ? 'Sending...' : 'Resend Code via Email'}
             </button>

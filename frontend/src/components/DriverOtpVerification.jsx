@@ -142,7 +142,7 @@ const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, o
   return (
     <div className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8 max-w-md mx-auto shadow-2xl relative overflow-hidden">
       {/* Decorative luxury gradient outline */}
-      <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-transparent via-[#003893] to-transparent"></div>
+      <div className="absolute top-0 left-0 w-full h-[4px] bg-gradient-to-r from-[#003893] via-[#F8C301] to-[#003893]"></div>
 
       <div className="text-center mb-6">
         <div className="w-14 h-14 bg-[#003893]/10 rounded-full flex items-center justify-center text-[#003893] mx-auto mb-4 border border-[#003893]/20">

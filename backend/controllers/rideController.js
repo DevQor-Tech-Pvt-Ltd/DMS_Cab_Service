@@ -129,6 +129,8 @@ exports.acceptRide = async (req, res) => {
     // Expiry time 5 minutes window
     const otpExpiryTime = new Date(Date.now() + 5 * 60 * 1000); 
 
+    console.log(`[DEBUG OTP] Generated OTP: ${secureOtp} for ride accept`); 
+
     // Atomically find the ride and update status to driver_assigned
     const rideId = req.params.id || req.params.rideId;
     const ride = await Ride.findOneAndUpdate(
@@ -228,6 +230,8 @@ exports.driverArrived = async (req, res) => {
     const secureOtp = crypto.randomInt(1000, 10000).toString();
     const hashedOtp = await bcrypt.hash(secureOtp, 10);
     const otpExpiryTime = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes window
+
+    console.log(`[DEBUG OTP] Generated OTP: ${secureOtp} on driver arrival`);
 
     ride.status = 'driver_arrived';
     ride.rideOtp = secureOtp;
@@ -428,6 +432,8 @@ exports.resendOtp = async (req, res) => {
     
     ride.rideOtp = freshOtp;
     ride.rideOtpHash = await bcrypt.hash(freshOtp, 10);
+
+    console.log(`[DEBUG OTP] Resent fresh OTP: ${freshOtp} for ride: ${ride._id}`);
     ride.otpAttempts = 0;
     ride.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // Reset for another 5 minutes
     ride.otpLastSentAt = new Date();
