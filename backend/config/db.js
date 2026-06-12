@@ -1,9 +1,21 @@
 const mongoose = require('mongoose');
 
+let mongod = null;
+
 const connectDB = async () => {
     try {
         mongoose.set('strictQuery', false);
-        await mongoose.connect(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/dms_luxe', {
+        let uri = process.env.MONGO_URI;
+
+        if (!uri) {
+            console.log('No MONGO_URI specified. Starting in-memory MongoDB server...');
+            const { MongoMemoryServer } = require('mongodb-memory-server');
+            mongod = await MongoMemoryServer.create();
+            uri = mongod.getUri();
+            console.log(`In-memory MongoDB started successfully at: ${uri}`);
+        }
+
+        await mongoose.connect(uri, {
             serverSelectionTimeoutMS: 5000,
         });
         console.log('MongoDB connected successfully');

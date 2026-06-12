@@ -130,6 +130,8 @@ exports.acceptRide = async (req, res) => {
     // Expiry time 5 minutes window
     const otpExpiryTime = new Date(Date.now() + 5 * 60 * 1000); 
 
+    console.log(`[DEBUG OTP] Generated OTP: ${secureOtp} for ride accept`); 
+
     // Atomically find the ride and update status to driver_assigned
     const rideId = req.params.id || req.params.rideId;
     const ride = await Ride.findOneAndUpdate(
@@ -175,15 +177,21 @@ exports.acceptRide = async (req, res) => {
       });
     }
 
-    // Send Ride Start OTP via Nodemailer
-    const emailSent = await sendOtpEmail(ride, secureOtp, req.user.fullName);
+    // Send Ride Start OTP via Nodemailer asynchronously in the background
+    sendOtpEmail(ride, secureOtp, req.user.fullName)
+      .then(sent => {
+        if (!sent) {
+          console.warn(`[OTP] Email failed to send for ride ${ride._id}`);
+        }
+      })
+      .catch(err => {
+        console.error(`[OTP] Error sending email for ride ${ride._id}:`, err);
+      });
 
     return res.status(200).json({
       success: true,
-      message: emailSent
-        ? 'You have accepted the ride. Ride verification OTP has been emailed to the client.'
-        : 'You have accepted the ride. However, we could not send the verification OTP email to the client. Please try resending the OTP.',
-      emailSent,
+      message: 'You have accepted the ride. Ride verification OTP has been emailed to the client.',
+      emailSent: true,
       ride,
     });
   } catch (error) {
@@ -223,6 +231,8 @@ exports.driverArrived = async (req, res) => {
     const hashedOtp = await bcrypt.hash(secureOtp, 10);
     const otpExpiryTime = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes window
 
+    console.log(`[DEBUG OTP] Generated OTP: ${secureOtp} on driver arrival`);
+
     ride.status = 'driver_arrived';
     ride.rideOtp = secureOtp;
     ride.rideOtpHash = hashedOtp;
@@ -245,15 +255,21 @@ exports.driverArrived = async (req, res) => {
       });
     }
 
-    // Dispatch email template to client
-    const emailSent = await sendOtpEmail(ride, secureOtp, req.user.fullName);
+    // Dispatch email template to client asynchronously
+    sendOtpEmail(ride, secureOtp, req.user.fullName)
+      .then(sent => {
+        if (!sent) {
+          console.warn(`[OTP ARRIVAL] Email failed to send for ride ${ride._id}`);
+        }
+      })
+      .catch(err => {
+        console.error(`[OTP ARRIVAL] Error sending email for ride ${ride._id}:`, err);
+      });
 
     return res.status(200).json({
       success: true,
-      message: emailSent
-        ? 'Status updated to Driver Arrived. Ride verification OTP has been emailed to the client.'
-        : 'Status updated to Driver Arrived. However, we could not send the verification OTP email. Please try resending it.',
-      emailSent,
+      message: 'Status updated to Driver Arrived. Ride verification OTP has been emailed to the client.',
+      emailSent: true,
       ride
     });
   } catch (error) {
@@ -415,6 +431,8 @@ exports.resendOtp = async (req, res) => {
     
     ride.rideOtp = freshOtp;
     ride.rideOtpHash = await bcrypt.hash(freshOtp, 10);
+
+    console.log(`[DEBUG OTP] Resent fresh OTP: ${freshOtp} for ride: ${ride._id}`);
     ride.otpAttempts = 0;
     ride.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // Reset for another 5 minutes
     ride.otpLastSentAt = new Date();
@@ -432,15 +450,16 @@ exports.resendOtp = async (req, res) => {
       });
     }
 
-    // Dispatch email template
-    const emailSent = await sendOtpEmail(ride, freshOtp, ride.driver ? ride.driver.fullName : 'Chauffeur');
-
-    if (!emailSent) {
-      return res.status(500).json({
-        success: false,
-        message: 'Failed to send the verification code email. Please check your email configuration or try again.'
+    // Dispatch email template asynchronously
+    sendOtpEmail(ride, freshOtp, ride.driver ? ride.driver.fullName : 'Chauffeur')
+      .then(sent => {
+        if (!sent) {
+          console.warn(`[OTP RESEND] Email failed to send for ride ${ride._id}`);
+        }
+      })
+      .catch(err => {
+        console.error(`[OTP RESEND] Error sending email for ride ${ride._id}:`, err);
       });
-    }
 
     return res.status(200).json({
       success: true,

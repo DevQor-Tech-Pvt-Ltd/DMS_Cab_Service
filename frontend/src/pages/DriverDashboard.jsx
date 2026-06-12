@@ -205,6 +205,12 @@ const DriverDashboard = () => {
       });
     });
 
+    socket.on('ride-deleted', (data) => {
+      const { rideId } = data;
+      setRideNotifications(current => current.filter(r => r._id !== rideId));
+      setAllRides(current => current.filter(r => r._id !== rideId));
+    });
+
     // Load current rides from DB on mount
     const fetchCurrentRides = async (force = false) => {
       if (hasFetched.current && !force) return;
