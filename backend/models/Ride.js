@@ -59,6 +59,7 @@ const rideSchema = new mongoose.Schema(
     razorpaySignature: {
       type: String,
       default: null,
+      select: false,
     },
     fare: {
       type: Number,
@@ -72,10 +73,12 @@ const rideSchema = new mongoose.Schema(
     rideOtp: {
       type: String,
       default: null,
+      select: false,
     },
     rideOtpHash: {
       type: String,
       default: null,
+      select: false,
     },
     otpVerified: {
       type: Boolean,
@@ -106,14 +109,17 @@ const rideSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
-    otpAuditLogs: [
-      {
-        attemptedAt: { type: Date, default: Date.now },
-        otpMasked: { type: String },
-        success: { type: Boolean },
-        ipAddress: { type: String }
-      }
-    ],
+    otpAuditLogs: {
+      type: [
+        {
+          attemptedAt: { type: Date, default: Date.now },
+          otpMasked: { type: String },
+          success: { type: Boolean },
+          ipAddress: { type: String }
+        }
+      ],
+      select: false
+    },
     otpLastSentAt: {
       type: Date,
       default: null,
@@ -123,9 +129,9 @@ const rideSchema = new mongoose.Schema(
 );
 
 // INDEXES FOR PERFORMANCE & FAST QUERIES
-rideSchema.index({ client: 1 });
-rideSchema.index({ driver: 1 });
-rideSchema.index({ status: 1 });
+rideSchema.index({ client: 1, status: 1 });
+rideSchema.index({ driver: 1, status: 1 });
+rideSchema.index({ status: 1, paymentMethod: 1, paymentStatus: 1 });
 rideSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model('Ride', rideSchema);

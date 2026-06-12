@@ -23,7 +23,14 @@ import { getSocketUrl } from '../utils/urls';
  * @param {string|null} rideId - The ride ID to track (null = map-only mode)
  * @param {string|null} userId - The authenticated user's ID for self-identification
  */
-const TrackingMap = ({ role = 'client', rideId = null, userId = null }) => {
+const TrackingMap = ({ 
+  role = 'client', 
+  rideId = null, 
+  userId = null, 
+  pickupLocation = null, 
+  dropoffLocation = null, 
+  onDistanceUpdate = null 
+}) => {
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef({});
@@ -36,6 +43,8 @@ const TrackingMap = ({ role = 'client', rideId = null, userId = null }) => {
   const [errorMsg, setErrorMsg] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [otherUserOnline, setOtherUserOnline] = useState(false);
+  const [dropoffCoords, setDropoffCoords] = useState(null);
+  const polylineRef = useRef(null);
 
   // The counterpart role label
   const otherRoleLabel = role === 'driver' ? 'Client' : 'Chauffeur';
@@ -138,6 +147,195 @@ const TrackingMap = ({ role = 'client', rideId = null, userId = null }) => {
     }
   }, []);
 
+  const createDropoffIcon = useCallback(() => {
+    return L.divIcon({
+      html: `
+        <div style="position:relative;display:flex;align-items:center;justify-content:center;width:44px;height:44px;">
+          <div style="
+            position:absolute;
+            width:36px;height:36px;
+            border-radius:50%;
+            background:rgba(239,68,68,0.25);
+            animation:trackingPulse 2s ease-out infinite;
+          "></div>
+          <div style="
+            position:relative;
+            width:16px;height:16px;
+            border-radius:50%;
+            background:#ef4444;
+            border:3px solid #fff;
+            box-shadow:0 2px 8px rgba(0,0,0,0.3),0 0 0 1px #dc2626;
+          "></div>
+          <div style="
+            position:absolute;
+            bottom:-18px;
+            left:50%;
+            transform:translateX(-50%);
+            background:rgba(0,0,0,0.85);
+            color:#fff;
+            font-size:9px;
+            font-weight:750;
+            padding:2px 6px;
+            border-radius:4px;
+            white-space:nowrap;
+            border: 1px solid rgba(255,255,255,0.1);
+            letter-spacing:0.5px;
+            font-family:system-ui,sans-serif;
+          ">Destination</div>
+        </div>
+      `,
+      className: 'tracking-marker-dropoff',
+      iconSize: [44, 44],
+      iconAnchor: [22, 22],
+    });
+  }, []);
+
+  // Geocode dropoff address string to coordinates
+  useEffect(() => {
+    if (!dropoffLocation) {
+      setDropoffCoords(null);
+      return;
+    }
+
+    const geocodeAddress = async (address) => {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
+          {
+            headers: {
+              'User-Agent': 'DMS-Luxury-Cab-Service/1.0 (engineering@devqor.in)'
+            }
+          }
+        );
+        const data = await response.json();
+        if (data && data.length > 0) {
+          return {
+            lat: parseFloat(data[0].lat),
+            lon: parseFloat(data[0].lon)
+          };
+        }
+      } catch (error) {
+        console.error("Geocoding error:", error);
+      }
+      
+      // Fallback mapping for major Kolkata points
+      const addrLower = address.toLowerCase();
+      if (addrLower.includes('new town') || addrLower.includes('tcs tower')) {
+        return { lat: 22.5791, lon: 88.4610 };
+      }
+      if (addrLower.includes('kalighat') || addrLower.includes('southern avenue')) {
+        return { lat: 22.5176, lon: 88.3473 };
+      }
+      if (addrLower.includes('park street')) {
+        return { lat: 22.5485, lon: 88.3516 };
+      }
+      if (addrLower.includes('airport') || addrLower.includes('ccu')) {
+        return { lat: 22.6547, lon: 88.4467 };
+      }
+      if (addrLower.includes('sector v') || addrLower.includes('salt lake')) {
+        return { lat: 22.5735, lon: 88.4331 };
+      }
+      if (addrLower.includes('howrah')) {
+        return { lat: 22.5851, lon: 88.3468 };
+      }
+      
+      return null;
+    };
+
+    geocodeAddress(dropoffLocation).then(coords => {
+      if (coords) {
+        setDropoffCoords(coords);
+      }
+    });
+  }, [dropoffLocation]);
+
+  // Effect for Dropoff Marker rendering
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    if (!dropoffCoords) {
+      if (markersRef.current['dropoff']) {
+        map.removeLayer(markersRef.current['dropoff']);
+        delete markersRef.current['dropoff'];
+      }
+      return;
+    }
+
+    const icon = createDropoffIcon();
+    if (markersRef.current['dropoff']) {
+      markersRef.current['dropoff'].setLatLng([dropoffCoords.lat, dropoffCoords.lon]);
+    } else {
+      const marker = L.marker([dropoffCoords.lat, dropoffCoords.lon], { icon }).addTo(map);
+      marker.bindPopup(`
+        <div style="padding:4px 2px;font-family:system-ui,sans-serif;">
+          <p style="font-weight:700;font-size:12px;color:#1e293b;margin:0;">Destination</p>
+          <p style="font-size:10px;color:#64748b;margin:4px 0 0 0;">${dropoffLocation}</p>
+        </div>
+      `);
+      markersRef.current['dropoff'] = marker;
+    }
+
+    // Auto-fit bounds if we have both markers
+    if (selfCoordsRef.current) {
+      const bounds = L.latLngBounds([
+        [selfCoordsRef.current.latitude, selfCoordsRef.current.longitude],
+        [dropoffCoords.lat, dropoffCoords.lon]
+      ]);
+      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 17, animate: true });
+    }
+
+    return () => {
+      if (markersRef.current['dropoff'] && mapRef.current) {
+        mapRef.current.removeLayer(markersRef.current['dropoff']);
+        delete markersRef.current['dropoff'];
+      }
+    };
+  }, [dropoffCoords, dropoffLocation, createDropoffIcon]);
+
+  // Effect for Polyline Route and Distance Notification
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !coords || !dropoffCoords) {
+      if (polylineRef.current) {
+        map.removeLayer(polylineRef.current);
+        polylineRef.current = null;
+      }
+      return;
+    }
+
+    const points = [
+      [coords.latitude, coords.longitude],
+      [dropoffCoords.lat, dropoffCoords.lon]
+    ];
+
+    if (polylineRef.current) {
+      polylineRef.current.setLatLngs(points);
+    } else {
+      polylineRef.current = L.polyline(points, {
+        color: '#3b82f6',
+        weight: 4,
+        opacity: 0.8,
+        dashArray: '8, 8',
+        lineCap: 'round',
+        lineJoin: 'round'
+      }).addTo(map);
+    }
+
+    if (onDistanceUpdate) {
+      const dist = L.latLng(coords.latitude, coords.longitude)
+        .distanceTo(L.latLng(dropoffCoords.lat, dropoffCoords.lon));
+      onDistanceUpdate(dist);
+    }
+
+    return () => {
+      if (polylineRef.current && mapRef.current) {
+        mapRef.current.removeLayer(polylineRef.current);
+        polylineRef.current = null;
+      }
+    };
+  }, [coords, dropoffCoords, onDistanceUpdate]);
+
   useEffect(() => {
     // ─── 1. Initialize Leaflet Map ───
     if (!mapRef.current && mapContainerRef.current) {
@@ -169,6 +367,7 @@ const TrackingMap = ({ role = 'client', rideId = null, userId = null }) => {
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
+        withCredentials: true,
       });
       socketRef.current = socket;
 

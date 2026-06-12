@@ -1,4 +1,5 @@
 const Ride = require('../models/Ride');
+const Transaction = require('../models/Transaction');
 const Razorpay = require('razorpay');
 const { sendInvoiceEmail } = require('../utils/emailService');
 const bcrypt = require('bcryptjs');
@@ -165,13 +166,12 @@ exports.acceptRide = async (req, res) => {
         driverName: req.user.fullName,
       });
 
-      // Emit client dashboard status change
-      io.emit(`ride_status_${ride._id}`, {
+      // Emit client dashboard status change to the specific ride room (C-2)
+      io.to(`ride_${ride._id}`).emit(`ride_status_${ride._id}`, {
         status: 'driver_assigned',
         driver: ride.driver,
         otpSent: true,
-        otpExpiresAt: ride.otpExpiresAt,
-        rideOtp: secureOtp
+        otpExpiresAt: ride.otpExpiresAt
       });
     }
 
@@ -235,14 +235,13 @@ exports.driverArrived = async (req, res) => {
     await ride.populate('client', 'fullName email phone');
     await ride.populate('driver', 'fullName phone vehicleNumber vehicleType');
 
-    // Broadcast real-time status change to the client
+    // Broadcast real-time status change to the client room (C-2)
     const io = req.app.get('io');
     if (io) {
-      io.emit(`ride_status_${ride._id}`, {
+      io.to(`ride_${ride._id}`).emit(`ride_status_${ride._id}`, {
         status: 'driver_arrived',
         otpSent: true,
-        otpExpiresAt: ride.otpExpiresAt,
-        rideOtp: secureOtp
+        otpExpiresAt: ride.otpExpiresAt
       });
     }
 
@@ -340,6 +339,7 @@ exports.verifyOtp = async (req, res) => {
     ride.otpVerified = true;
     ride.status = 'ride_started';
     ride.rideStartedAt = new Date();
+    ride.rideOtp = null; // Clear plaintext OTP field (H-1)
     ride.rideOtpHash = null;
     ride.otpExpiresAt = null;
 
@@ -348,10 +348,10 @@ exports.verifyOtp = async (req, res) => {
     await ride.populate('client', 'fullName email phone');
     await ride.populate('driver', 'fullName phone vehicleNumber vehicleType');
 
-    // Notify clients and general subscribers in real-time
+    // Notify client in room in real-time (C-2)
     const io = req.app.get('io');
     if (io) {
-      io.emit(`ride_status_${ride._id}`, {
+      io.to(`ride_${ride._id}`).emit(`ride_status_${ride._id}`, {
         status: 'ride_started',
         otpVerified: true,
         rideStartedAt: ride.rideStartedAt
@@ -423,13 +423,12 @@ exports.resendOtp = async (req, res) => {
     await ride.populate('client', 'fullName email phone');
     await ride.populate('driver', 'fullName phone vehicleNumber vehicleType');
 
-    // Notify dashboard countdowns in real-time
+    // Notify dashboard countdowns in room in real-time (C-2)
     const io = req.app.get('io');
     if (io) {
-      io.emit(`ride_status_${ride._id}`, {
+      io.to(`ride_${ride._id}`).emit(`ride_status_${ride._id}`, {
         otpSent: true,
-        otpExpiresAt: ride.otpExpiresAt,
-        rideOtp: freshOtp
+        otpExpiresAt: ride.otpExpiresAt
       });
     }
 
@@ -477,14 +476,29 @@ exports.completeRide = async (req, res) => {
       });
     }
 
+    if (ride.paymentMethod === 'cash') {
+      ride.paymentStatus = 'paid';
+    }
     ride.status = 'completed';
     ride.completedAt = new Date();
     await ride.save();
 
-    // Broadcast complete status
+    // Create a transaction ledger record if the payment was cash
+    if (ride.paymentMethod === 'cash') {
+      await Transaction.create({
+        user: ride.client,
+        ride: ride._id,
+        amount: ride.fare,
+        type: 'payment',
+        paymentMethod: 'cash',
+        status: 'success'
+      });
+    }
+
+    // Broadcast complete status to room (C-2)
     const io = req.app.get('io');
     if (io) {
-      io.emit(`ride_status_${ride._id}`, {
+      io.to(`ride_${ride._id}`).emit(`ride_status_${ride._id}`, {
         status: 'completed',
         completedAt: ride.completedAt
       });
@@ -527,14 +541,18 @@ exports.rateRide = async (req, res) => {
       return res.status(400).json({ success: false, message: 'You can only rate completed rides.' });
     }
 
+    if (ride.rating) {
+      return res.status(400).json({ success: false, message: 'You have already rated this ride.' });
+    }
+
     ride.rating = rating;
     ride.feedback = feedback || '';
     await ride.save();
 
-    // Broadcast rating/feedback update in real-time
+    // Broadcast rating/feedback update to room in real-time (C-2)
     const io = req.app.get('io');
     if (io) {
-      io.emit(`ride_status_${ride._id}`, {
+      io.to(`ride_${ride._id}`).emit(`ride_status_${ride._id}`, {
         rating: ride.rating,
         feedback: ride.feedback
       });
@@ -570,7 +588,15 @@ exports.cancelRide = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Ride not found' });
     }
 
-    // Update status to cancelled
+    // Update status to cancelled with status check guard (M-5)
+    const allowedStatuses = ['driver_assigned', 'driver_arrived'];
+    if (!allowedStatuses.includes(ride.status)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: `Cannot cancel a ride with status: ${ride.status}` 
+      });
+    }
+
     ride.status = 'cancelled';
     await ride.save();
 

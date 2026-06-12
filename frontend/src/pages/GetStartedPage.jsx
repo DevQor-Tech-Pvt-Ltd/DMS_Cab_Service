@@ -7,8 +7,7 @@ import {
 } from '../utils/icons';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
-import axios from 'axios';
-import { getApiUrl } from '../utils/urls';
+import { api } from '../services/authService';
 import { isMobile } from '../utils/motion';
 
 const fleetOptions = [
@@ -187,15 +186,9 @@ const GetStartedPage = () => {
   const handleConfirmBooking = async () => {
     setLoading(true);
     try {
-      const token = sessionStorage.getItem('dms_luxe_token');
-      const response = await axios.post(
-        `${getApiUrl()}/rides`,
-        formData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+      const response = await api.post(
+        '/rides',
+        formData
       );
 
       if (response.data.success) {
@@ -219,17 +212,12 @@ const GetStartedPage = () => {
             handler: async (paymentResponse) => {
               try {
                 setLoading(true);
-                const verifyResponse = await axios.post(
-                  `${getApiUrl()}/payment/verify`,
+                const verifyResponse = await api.post(
+                  '/payment/verify',
                   {
                     razorpay_payment_id: paymentResponse.razorpay_payment_id,
                     razorpay_order_id: paymentResponse.razorpay_order_id,
                     razorpay_signature: paymentResponse.razorpay_signature
-                  },
-                  {
-                    headers: {
-                      Authorization: `Bearer ${token}`
-                    }
                   }
                 );
 

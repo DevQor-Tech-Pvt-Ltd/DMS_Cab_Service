@@ -4,7 +4,7 @@ const { z } = require('zod');
 const signupSchema = z.object({
   fullName: z.string().trim().min(1, 'Full name is required').max(100),
   email: z.string().trim().email('Invalid email address').lowercase(),
-  phone: z.string().trim().min(1, 'Phone number is required'),
+  phone: z.string().trim().min(1, 'Phone number is required').regex(/^[+]?[\d\s\-().]{7,15}$/, 'Invalid phone number format'),
   role: z.enum(['client', 'driver']),
   password: z.string().min(8, 'Password must be at least 8 characters long')
     .refine(v => /^(?=.*[a-zA-Z])(?=.*\d)/.test(v), {
@@ -15,16 +15,42 @@ const signupSchema = z.object({
   licenseNumber: z.string().trim().optional(),
   rcDocument: z.string().trim().optional(),
   licenseDocument: z.string().trim().optional(),
+  currentCity: z.string().trim().optional(),
+  vehicleModelYear: z.string().trim().optional(),
+  aadhaarNumber: z.string().trim().optional(),
+  driverNameIfVendor: z.string().trim().optional(),
+  driverContactNumber: z.string().trim().optional(),
+  rcCopyAvailable: z.enum(['Yes', 'No']).optional(),
+  insuranceValidTill: z.string().trim().optional(),
+  preferredServiceArea: z.string().trim().optional(),
+  previousExperience: z.string().trim().optional(),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
 }).refine(data => {
   if (data.role === 'driver') {
-    return !!(data.vehicleNumber && data.licenseNumber && data.rcDocument && data.licenseDocument);
+    const hasRequiredBase = !!(
+      data.phone &&
+      data.currentCity &&
+      data.vehicleNumber &&
+      data.vehicleModelYear &&
+      data.licenseNumber &&
+      data.rcCopyAvailable &&
+      data.insuranceValidTill &&
+      data.preferredServiceArea &&
+      data.licenseDocument
+    );
+    if (!hasRequiredBase) return false;
+
+    // If RC Copy Available is 'Yes', then rcDocument upload is required
+    if (data.rcCopyAvailable === 'Yes' && !data.rcDocument) {
+      return false;
+    }
+    return true;
   }
   return true;
 }, {
-  message: "Vehicle number, license number, RC document, and license document are required for drivers",
+  message: "All driver details (Contact Number, Current City, Car Number, Vehicle Model & Year, Driving License Number, RC Copy Available, Insurance Valid Till, Preferred Service Area, License Document, and RC Document if copy is available) are required.",
   path: ["role"]
 });
 
@@ -38,7 +64,7 @@ const loginSchema = z.object({
 const passengerDetailsSchema = z.object({
   fullName: z.string().trim().min(1, 'Passenger name is required'),
   email: z.string().trim().email('Invalid passenger email address').lowercase(),
-  phone: z.string().trim().min(1, 'Passenger phone is required'),
+  phone: z.string().trim().min(1, 'Passenger phone is required').regex(/^[+]?[\d\s\-().]{7,15}$/, 'Invalid phone number format'),
   specialInstructions: z.string().trim().optional().default(''),
 });
 
@@ -68,6 +94,15 @@ const updateProfileSchema = z.object({
   licenseNumber: z.string().trim().optional(),
   rcDocument: z.string().optional(),
   licenseDocument: z.string().optional(),
+  currentCity: z.string().trim().optional(),
+  vehicleModelYear: z.string().trim().optional(),
+  aadhaarNumber: z.string().trim().optional(),
+  driverNameIfVendor: z.string().trim().optional(),
+  driverContactNumber: z.string().trim().optional(),
+  rcCopyAvailable: z.enum(['Yes', 'No']).optional(),
+  insuranceValidTill: z.string().trim().optional(),
+  preferredServiceArea: z.string().trim().optional(),
+  previousExperience: z.string().trim().optional(),
 });
 
 // Schema for OTP verification

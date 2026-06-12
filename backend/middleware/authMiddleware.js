@@ -57,11 +57,11 @@ async function handleRefresh(req, res, next, originalError = null) {
       return res.status(401).json({ success: false, message });
     }
 
-    if (!process.env.JWT_SECRET) {
-      throw new Error("JWT_SECRET is missing in environment variables");
+    if (!process.env.JWT_REFRESH_SECRET) {
+      throw new Error("JWT_REFRESH_SECRET is missing in environment variables");
     }
 
-    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    const decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
     const user = await User.findById(decoded.userId || decoded.id);
 
     if (!user) {

@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const { encrypt, decrypt } = require('../utils/crypto');
 
 const userSchema = new mongoose.Schema(
   {
@@ -61,14 +62,44 @@ const userSchema = new mongoose.Schema(
     rcDocument: String,
     licenseDocument: String,
     profilePicture: String,
+    currentCity: String,
+    vehicleModelYear: String,
+    aadhaarNumber: {
+      type: String,
+      set: encrypt,
+      get: decrypt,
+    },
+    driverNameIfVendor: String,
+    driverContactNumber: String,
+    rcCopyAvailable: {
+      type: String,
+      enum: ['Yes', 'No'],
+      default: 'No',
+    },
+    insuranceValidTill: String,
+    preferredServiceArea: String,
+    previousExperience: String,
     approvedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
       default: null,
     },
     approvalDate: Date,
+    currentLocation: {
+      latitude: { type: Number, default: null },
+      longitude: { type: Number, default: null },
+      lastUpdated: { type: Date, default: null }
+    },
+    walletBalance: {
+      type: Number,
+      default: 1500.00
+    }
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true }
+  }
 );
 
 userSchema.pre('save', async function () {
@@ -89,5 +120,9 @@ userSchema.methods.toJSON = function () {
   delete obj.password;
   return obj;
 };
+
+// Add compound indexes for authentication and admin query optimization
+userSchema.index({ email: 1, role: 1 });
+userSchema.index({ role: 1, status: 1 });
 
 module.exports = mongoose.model('User', userSchema);

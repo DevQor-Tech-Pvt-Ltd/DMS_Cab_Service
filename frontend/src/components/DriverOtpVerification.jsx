@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ShieldCheck, AlertCircle, Timer, CheckCircle, ArrowRight } from '../utils/icons';
-import axios from 'axios';
-import { getApiUrl } from '../utils/urls';
+import { api } from '../services/authService';
 
 const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, onCancel }) => {
   const [otp, setOtp] = useState(['', '', '', '']);
@@ -60,15 +59,9 @@ const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, o
     setError('');
     setLoading(true);
     try {
-      const token = sessionStorage.getItem('dms_luxe_token');
-      const response = await axios.post(
-        `${getApiUrl()}/rides/${bookingId}/resend-otp`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+      const response = await api.post(
+        `/rides/${bookingId}/resend-otp`,
+        {}
       );
       if (response.data.success) {
         alert('A fresh verification OTP has been emailed to the client.');
@@ -103,15 +96,9 @@ const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, o
 
     setLoading(true);
     try {
-      const token = sessionStorage.getItem('dms_luxe_token');
-      const response = await axios.post(
-        `${getApiUrl()}/rides/verify-otp`,
-        { bookingId, otp: fullOtp },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+      const response = await api.post(
+        '/rides/verify-otp',
+        { bookingId, otp: fullOtp }
       );
 
       if (response.data.success) {
@@ -205,7 +192,7 @@ const DriverOtpVerification = ({ bookingId, clientName, onVerificationSuccess, o
           </div>
 
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-xl p-3.5 flex items-start space-x-2.5 text-xs text-red-650">
+            <div className="bg-red-50 border border-red-200 rounded-xl p-3.5 flex items-start space-x-2.5 text-xs text-red-600">
               <AlertCircle size={16} className="shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>

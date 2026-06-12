@@ -41,9 +41,7 @@ app.use(
                 ? process.env.CLIENT_URL.split(',').map(url => url.trim())
                 : ['http://localhost:5173', 'http://localhost:4173'];
 
-            const isAllowed = list.some(allowed => origin === allowed) ||
-                origin.endsWith('.vercel.app') ||
-                process.env.NODE_ENV === 'development';
+            const isAllowed = list.some(allowed => origin === allowed);
 
             if (isAllowed) {
                 callback(null, true);
@@ -94,19 +92,36 @@ app.use('/api/v1/auth', haltOnTimedout, require('./routes/authRoutes'));
 app.use('/api/v1/admin', haltOnTimedout, require('./routes/adminRoutes'));
 app.use('/api/v1/rides', haltOnTimedout, require('./routes/rideRoutes'));
 
-// Secured Enterprise API Routes (RBAC + Input Validation + IDOR Protection)
-app.use('/api', haltOnTimedout, require('./routes/apiRoutes'));
+// Driver Location API protected by auth middleware and rate limiter
+const { protect, authorize } = require('./middleware/authMiddleware');
+const User = require('./models/User');
 
-// Driver Location & Payment API Stubs protected by their respective route-specific limiters
-app.post('/api/v1/drivers/location', driverLocationLimiter, (req, res) => {
-    res.status(200).json({ success: true, message: 'Driver location updated successfully (Stub)' });
+app.post('/api/v1/drivers/location', protect, authorize('driver'), driverLocationLimiter, async (req, res, next) => {
+  try {
+    const { latitude, longitude } = req.body;
+    if (latitude === undefined || longitude === undefined) {
+      return res.status(400).json({ success: false, message: 'Latitude and longitude are required' });
+    }
+
+    await User.findByIdAndUpdate(req.user._id, {
+      currentLocation: {
+        latitude: Number(latitude),
+        longitude: Number(longitude),
+        lastUpdated: new Date()
+      }
+    });
+
+    res.status(200).json({ success: true, message: 'Chauffeur location updated successfully' });
+  } catch (error) {
+    next(error);
+  }
 });
 
 app.use('/api/v1/payment', paymentLimiter, haltOnTimedout, require('./routes/paymentRoutes'));
 
-// Basic route
+// Basic route - Minimal response to avoid server info disclosure (L-3)
 app.get('/', (req, res) => {
-    res.send('DMS Cab Services API is running');
+    res.sendStatus(204);
 });
 
 app.get('/api/v1', (req, res) => {
@@ -125,8 +140,9 @@ app.use((err, req, res, next) => {
 });
 
 // Error handling middleware
+const logger = require('./utils/logger');
 app.use((err, req, res, next) => {
-    console.error(err.stack);
+    logger.error('API Error: %s', err.stack || err.message || err);
     res.status(err.status || 500).json({
         success: false,
         message:

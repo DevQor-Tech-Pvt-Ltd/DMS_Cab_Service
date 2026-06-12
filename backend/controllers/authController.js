@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { sendInquiryEmail } = require('../utils/emailService');
+const { uploadBase64Document } = require('../utils/cloudinary');
 
 const createToken = (user) => {
   if (!process.env.JWT_SECRET) {
@@ -21,8 +22,8 @@ const createToken = (user) => {
 };
 
 const createRefreshToken = (user) => {
-  if (!process.env.JWT_SECRET) {
-    throw new Error('JWT_SECRET environment variable is not configured. Server cannot issue tokens.');
+  if (!process.env.JWT_REFRESH_SECRET) {
+    throw new Error('JWT_REFRESH_SECRET environment variable is not configured. Server cannot issue tokens.');
   }
   return jwt.sign(
     {
@@ -30,7 +31,7 @@ const createRefreshToken = (user) => {
       id: user._id.toString(),
       role: user.role,
     },
-    process.env.JWT_SECRET,
+    process.env.JWT_REFRESH_SECRET,
     {
       expiresIn: '7d',
     }
@@ -54,15 +55,33 @@ const sendToken = (res, user) => {
   res.status(200).json({ 
     success: true, 
     user: user.toJSON ? user.toJSON() : user, 
-    token,
-    refreshToken,
     role: user.role 
   });
 };
 
 exports.register = async (req, res, next) => {
   try {
-    const { fullName, email, phone, role, password, confirmPassword, vehicleNumber, licenseNumber, rcDocument, licenseDocument } = req.body;
+    const { 
+      fullName, 
+      email, 
+      phone, 
+      role, 
+      password, 
+      confirmPassword, 
+      vehicleNumber, 
+      licenseNumber, 
+      rcDocument, 
+      licenseDocument,
+      currentCity,
+      vehicleModelYear,
+      aadhaarNumber,
+      driverNameIfVendor,
+      driverContactNumber,
+      rcCopyAvailable,
+      insuranceValidTill,
+      preferredServiceArea,
+      previousExperience
+    } = req.body;
 
     // Validation
     if (!fullName || !email || !phone || !role || !password || !confirmPassword) {
@@ -100,16 +119,39 @@ exports.register = async (req, res, next) => {
 
     // If role is driver, set status to pending and require vehicle details
     if (role === 'driver') {
-      if (!vehicleNumber || !licenseNumber || !rcDocument || !licenseDocument) {
+      if (
+        !phone ||
+        !currentCity ||
+        !vehicleNumber ||
+        !vehicleModelYear ||
+        !licenseNumber ||
+        !rcCopyAvailable ||
+        !insuranceValidTill ||
+        !preferredServiceArea ||
+        !licenseDocument ||
+        (rcCopyAvailable === 'Yes' && !rcDocument)
+      ) {
         return res.status(400).json({ 
           success: false, 
-          message: 'Vehicle number, license number, RC document, and license document are required for drivers' 
+          message: 'All driver details (Contact Number, Current City, Car Number, Vehicle Model & Year, Driving License Number, RC Copy Available, Insurance Valid Till, Preferred Service Area, License Document, and RC Document if available) are required.' 
         });
       }
       userData.vehicleNumber = vehicleNumber;
       userData.licenseNumber = licenseNumber;
-      userData.rcDocument = rcDocument;
-      userData.licenseDocument = licenseDocument;
+      
+      // Upload documents to Cloudinary to replace base64 strings with clean URLs
+      userData.rcDocument = rcDocument ? await uploadBase64Document(rcDocument, 'dms_luxe_vehicle_rc') : null;
+      userData.licenseDocument = licenseDocument ? await uploadBase64Document(licenseDocument, 'dms_luxe_driver_licenses') : null;
+
+      userData.currentCity = currentCity;
+      userData.vehicleModelYear = vehicleModelYear;
+      userData.aadhaarNumber = aadhaarNumber;
+      userData.driverNameIfVendor = driverNameIfVendor;
+      userData.driverContactNumber = driverContactNumber;
+      userData.rcCopyAvailable = rcCopyAvailable;
+      userData.insuranceValidTill = insuranceValidTill;
+      userData.preferredServiceArea = preferredServiceArea;
+      userData.previousExperience = previousExperience;
       userData.status = 'pending'; // Drivers need admin approval
       userData.isApproved = false;
     } else {
@@ -207,7 +249,27 @@ exports.logout = async (req, res, next) => {
 
 exports.updateProfile = async (req, res, next) => {
   try {
-    const { fullName, email, phone, currentPassword, newPassword, vehicleNumber, licenseNumber, rcDocument, licenseDocument, profilePicture } = req.body;
+    const { 
+      fullName, 
+      email, 
+      phone, 
+      currentPassword, 
+      newPassword, 
+      vehicleNumber, 
+      licenseNumber, 
+      rcDocument, 
+      licenseDocument, 
+      profilePicture,
+      currentCity,
+      vehicleModelYear,
+      aadhaarNumber,
+      driverNameIfVendor,
+      driverContactNumber,
+      rcCopyAvailable,
+      insuranceValidTill,
+      preferredServiceArea,
+      previousExperience
+    } = req.body;
     
     // Find the user (with password selected if they want to change it)
     const user = await User.findById(req.user._id).select('+password');
@@ -227,14 +289,29 @@ exports.updateProfile = async (req, res, next) => {
     // Update standard fields
     if (fullName) user.fullName = fullName;
     if (phone) user.phone = phone;
-    if (profilePicture !== undefined) user.profilePicture = profilePicture;
+    if (profilePicture !== undefined) {
+      user.profilePicture = profilePicture ? await uploadBase64Document(profilePicture, 'dms_luxe_profiles') : null;
+    }
 
     // Update driver specific fields if the user is a driver
     if (user.role === 'driver') {
-      if (vehicleNumber) user.vehicleNumber = vehicleNumber;
-      if (licenseNumber) user.licenseNumber = licenseNumber;
-      if (rcDocument) user.rcDocument = rcDocument;
-      if (licenseDocument) user.licenseDocument = licenseDocument;
+      if (vehicleNumber !== undefined) user.vehicleNumber = vehicleNumber;
+      if (licenseNumber !== undefined) user.licenseNumber = licenseNumber;
+      if (rcDocument !== undefined) {
+        user.rcDocument = rcDocument ? await uploadBase64Document(rcDocument, 'dms_luxe_vehicle_rc') : null;
+      }
+      if (licenseDocument !== undefined) {
+        user.licenseDocument = licenseDocument ? await uploadBase64Document(licenseDocument, 'dms_luxe_driver_licenses') : null;
+      }
+      if (currentCity !== undefined) user.currentCity = currentCity;
+      if (vehicleModelYear !== undefined) user.vehicleModelYear = vehicleModelYear;
+      if (aadhaarNumber !== undefined) user.aadhaarNumber = aadhaarNumber;
+      if (driverNameIfVendor !== undefined) user.driverNameIfVendor = driverNameIfVendor;
+      if (driverContactNumber !== undefined) user.driverContactNumber = driverContactNumber;
+      if (rcCopyAvailable !== undefined) user.rcCopyAvailable = rcCopyAvailable;
+      if (insuranceValidTill !== undefined) user.insuranceValidTill = insuranceValidTill;
+      if (preferredServiceArea !== undefined) user.preferredServiceArea = preferredServiceArea;
+      if (previousExperience !== undefined) user.previousExperience = previousExperience;
     }
 
     // Password update handling

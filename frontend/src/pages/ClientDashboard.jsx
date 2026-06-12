@@ -13,8 +13,8 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import TrackingMap from '../components/TrackingMap';
 import EditProfileModal from '../components/EditProfileModal.jsx';
 import io from 'socket.io-client';
-import axios from 'axios';
-import { getApiUrl, getSocketUrl } from '../utils/urls';
+import { api } from '../services/authService';
+import { getSocketUrl } from '../utils/urls';
 import { updateProfile, deleteAccount } from '../services/authService';
 import NotFoundPage from './NotFoundPage';
 
@@ -72,6 +72,8 @@ const ClientDashboard = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [showRatingModal, setShowRatingModal] = useState(false);
   const [selectedRideId, setSelectedRideId] = useState(null);
+  const selectedRideForRating = ridesList.find(r => r._id === selectedRideId);
+  const driverNameForRating = selectedRideForRating?.driver?.fullName || 'Your Chauffeur';
   const [userRating, setUserRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [feedbackText, setFeedbackText] = useState('');
@@ -530,15 +532,7 @@ const ClientDashboard = () => {
     try {
       setRidesLoading(true);
       setRidesError(null);
-      const token = sessionStorage.getItem('dms_luxe_token');
-      const response = await axios.get(
-        `${getApiUrl()}/rides`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
-      );
+      const response = await api.get('/rides');
       if (response.data.success) {
         setRidesList(response.data.rides);
       } else {
@@ -562,7 +556,10 @@ const ClientDashboard = () => {
   useEffect(() => {
     if (!user || ridesList.length === 0) return;
 
-    const socket = io(getSocketUrl(), { transports: ['websocket', 'polling'] });
+    const socket = io(getSocketUrl(), {
+      transports: ['websocket', 'polling'],
+      withCredentials: true
+    });
 
     ridesList.forEach(ride => {
       socket.on(`ride_status_${ride._id}`, (data) => {
@@ -591,17 +588,11 @@ const ClientDashboard = () => {
 
     setRatingSubmitting(true);
     try {
-      const token = sessionStorage.getItem('dms_luxe_token');
-      const response = await axios.patch(
-        `${getApiUrl()}/rides/${selectedRideId}/rate`,
+      const response = await api.patch(
+        `/rides/${selectedRideId}/rate`,
         {
           rating: userRating,
           feedback: feedbackText
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
         }
       );
 
@@ -623,15 +614,9 @@ const ClientDashboard = () => {
   const handleResendOtp = async (rideId) => {
     setResendingOtpId(rideId);
     try {
-      const token = sessionStorage.getItem('dms_luxe_token');
-      const response = await axios.post(
-        `${getApiUrl()}/rides/${rideId}/resend-otp`,
-        {},
-        {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        }
+      const response = await api.post(
+        `/rides/${rideId}/resend-otp`,
+        {}
       );
       if (response.data.success) {
         alert('A verification OTP has been emailed to you.');
@@ -676,6 +661,21 @@ const ClientDashboard = () => {
   const activeRide = ridesList.find(
     r => ['pending', 'driver_assigned', 'driver_arrived', 'ride_started'].includes(r.status)
   );
+
+  const prevActiveRideIdRef = useRef(null);
+
+  useEffect(() => {
+    if (activeRide) {
+      prevActiveRideIdRef.current = activeRide._id;
+    } else if (prevActiveRideIdRef.current) {
+      const lastRideId = prevActiveRideIdRef.current;
+      const lastRide = ridesList.find(r => r._id === lastRideId);
+      if (lastRide && lastRide.status === 'completed' && !lastRide.rating) {
+        handleOpenRatingModal(lastRideId);
+      }
+      prevActiveRideIdRef.current = null;
+    }
+  }, [activeRide, ridesList]);
 
   const renderActiveRideCard = (ride) => {
     if (!ride) return null;
@@ -731,6 +731,27 @@ const ClientDashboard = () => {
             className="bg-gradient-to-r from-[#d4af37] to-[#b8962e] h-full transition-all duration-500 ease-out" 
             style={{ width: `${progressPercent}%` }}
           />
+        </div>
+
+        {/* Route Details */}
+        <div className="bg-white/5 border border-white/10 p-4 rounded-xl space-y-3">
+          <div className="flex items-start space-x-3 text-xs">
+            <div className="flex flex-col items-center mt-1">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-emerald-500/20"></div>
+              <div className="w-[1.5px] h-6 bg-white/20 my-1"></div>
+              <div className="w-2 h-2 rounded-full bg-red-500 ring-2 ring-red-500/20"></div>
+            </div>
+            <div className="flex-grow space-y-2">
+              <div>
+                <p className="text-[9px] text-gray-400 uppercase tracking-wider">Pickup</p>
+                <p className="text-xs text-white font-medium truncate max-w-[280px]">{ride.pickupLocation}</p>
+              </div>
+              <div>
+                <p className="text-[9px] text-[#d4af37] uppercase tracking-wider font-bold">Destination</p>
+                <p className="text-xs text-[#d4af37] font-semibold truncate max-w-[280px]">{ride.dropoffLocation}</p>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Chauffeur Details */}
@@ -791,10 +812,7 @@ const ClientDashboard = () => {
             onClick={async () => {
               if (window.confirm('Are you sure you want to cancel this booking?')) {
                 try {
-                  const token = sessionStorage.getItem('dms_luxe_token');
-                  const response = await axios.delete(`${getApiUrl()}/client/rides/${ride._id}`, {
-                    headers: { Authorization: `Bearer ${token}` }
-                  });
+                  const response = await api.delete(`/rides/${ride._id}`);
                   if (response.data.success) {
                     alert('Booking cancelled successfully.');
                     fetchRides(true);
@@ -848,7 +866,13 @@ const ClientDashboard = () => {
 
         {/* Map */}
         <div className="relative bg-slate-50 border border-slate-200 rounded-2xl h-80 overflow-hidden shadow-inner">
-          <TrackingMap role="client" rideId={activeRide?._id} userId={user?._id} />
+          <TrackingMap 
+            role="client" 
+            rideId={activeRide?._id} 
+            userId={user?._id} 
+            pickupLocation={activeRide?.pickupLocation}
+            dropoffLocation={activeRide?.dropoffLocation}
+          />
         </div>
 
         {/* Bottom sheet layout "Where to?" or "Active Ride" */}
@@ -1187,7 +1211,13 @@ const ClientDashboard = () => {
           {/* Map & Go Home/Office shortcut buttons */}
           <div className="lg:col-span-8 space-y-6">
             <div className="relative bg-slate-50 border border-slate-200 rounded-2xl h-96 overflow-hidden">
-              <TrackingMap role="client" rideId={activeRide?._id} userId={user?._id} />
+              <TrackingMap 
+                role="client" 
+                rideId={activeRide?._id} 
+                userId={user?._id} 
+                pickupLocation={activeRide?.pickupLocation}
+                dropoffLocation={activeRide?.dropoffLocation}
+              />
             </div>
 
             {activeRide ? renderActiveRideCard(activeRide) : (
@@ -1532,7 +1562,6 @@ const ClientDashboard = () => {
       alert(response.message || 'Account deleted successfully.');
 
       // Clear session storage context
-      sessionStorage.removeItem('dms_luxe_token');
       sessionStorage.removeItem('dms_luxe_user');
       sessionStorage.removeItem('dms_luxe_tab_id');
       window.name = '';
@@ -2012,7 +2041,7 @@ const ClientDashboard = () => {
             {/* Visual Blue Bar at top */}
             <div className="absolute left-0 right-0 top-0 h-1.5 bg-[#003893]" />
 
-            <h3 className="text-xl font-serif text-slate-800 mb-2 font-bold">Rate Your Journey</h3>
+            <h3 className="text-xl font-serif text-slate-800 mb-2 font-bold">Rate Your Journey with {driverNameForRating}</h3>
             <p className="text-xs text-slate-500 mb-6">Your feedback helps us maintain our peak chauffeur service standards.</p>
 
             <form onSubmit={handleSubmitRating} className="space-y-6">

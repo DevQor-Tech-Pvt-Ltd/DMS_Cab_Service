@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, Phone, Eye, EyeOff, Car, CreditCard, Upload, FileText, X } from '../utils/icons';
+import { Mail, Lock, User, Phone, Eye, EyeOff, Car, CreditCard, Upload, FileText, X, MapPin, Calendar, Map, Award } from '../utils/icons';
 import { useAuth } from '../context/AuthContext.jsx';
 import { updateProfile } from '../services/authService.js';
 
@@ -16,6 +16,15 @@ const EditProfileModal = ({ isOpen, onClose }) => {
   const [licenseDocument, setLicenseDocument] = useState('');
   const [rcFileName, setRcFileName] = useState('');
   const [licenseFileName, setLicenseFileName] = useState('');
+  const [currentCity, setCurrentCity] = useState('');
+  const [vehicleModelYear, setVehicleModelYear] = useState('');
+  const [aadhaarNumber, setAadhaarNumber] = useState('');
+  const [driverNameIfVendor, setDriverNameIfVendor] = useState('');
+  const [driverContactNumber, setDriverContactNumber] = useState('');
+  const [rcCopyAvailable, setRcCopyAvailable] = useState('No');
+  const [insuranceValidTill, setInsuranceValidTill] = useState('');
+  const [preferredServiceArea, setPreferredServiceArea] = useState('');
+  const [previousExperience, setPreviousExperience] = useState('');
   
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -43,6 +52,15 @@ const EditProfileModal = ({ isOpen, onClose }) => {
       setRcFileName(user.rcDocument ? 'Uploaded RC Document' : '');
       setLicenseFileName(user.licenseDocument ? 'Uploaded License Document' : '');
       setProfilePicture(user.profilePicture || '');
+      setCurrentCity(user.currentCity || '');
+      setVehicleModelYear(user.vehicleModelYear || '');
+      setAadhaarNumber(user.aadhaarNumber || '');
+      setDriverNameIfVendor(user.driverNameIfVendor || '');
+      setDriverContactNumber(user.driverContactNumber || '');
+      setRcCopyAvailable(user.rcCopyAvailable || 'No');
+      setInsuranceValidTill(user.insuranceValidTill || '');
+      setPreferredServiceArea(user.preferredServiceArea || '');
+      setPreviousExperience(user.previousExperience || '');
       
       // Reset password fields
       setCurrentPassword('');
@@ -104,8 +122,36 @@ const EditProfileModal = ({ isOpen, onClose }) => {
     }
 
     if (user.role === 'driver') {
-      if (!vehicleNumber.trim() || !licenseNumber.trim()) {
-        setError('Vehicle number and license number are required.');
+      if (!currentCity.trim()) {
+        setError('Current City is required.');
+        return;
+      }
+      if (!vehicleNumber.trim()) {
+        setError('Car Number is required.');
+        return;
+      }
+      if (!vehicleModelYear.trim()) {
+        setError('Vehicle Model & Year is required.');
+        return;
+      }
+      if (!licenseNumber.trim()) {
+        setError('Driving License Number is required.');
+        return;
+      }
+      if (rcCopyAvailable === 'Yes' && !rcDocument) {
+        setError('Please upload vehicle RC document.');
+        return;
+      }
+      if (!insuranceValidTill.trim()) {
+        setError('Insurance Validity Date is required.');
+        return;
+      }
+      if (!preferredServiceArea.trim()) {
+        setError('Preferred Service Area is required.');
+        return;
+      }
+      if (!licenseDocument) {
+        setError('Please upload license document.');
         return;
       }
     }
@@ -138,7 +184,21 @@ const EditProfileModal = ({ isOpen, onClose }) => {
         email,
         phone,
         profilePicture,
-        ...(user.role === 'driver' && { vehicleNumber, licenseNumber, rcDocument, licenseDocument }),
+        ...(user.role === 'driver' && { 
+          vehicleNumber, 
+          licenseNumber, 
+          rcDocument, 
+          licenseDocument,
+          currentCity,
+          vehicleModelYear,
+          aadhaarNumber,
+          driverNameIfVendor,
+          driverContactNumber,
+          rcCopyAvailable,
+          insuranceValidTill,
+          preferredServiceArea,
+          previousExperience
+        }),
         ...(newPassword && { currentPassword, newPassword }),
       };
 
@@ -268,7 +328,7 @@ const EditProfileModal = ({ isOpen, onClose }) => {
 
               {/* Phone */}
               <div>
-                <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Mobile Number</label>
+                <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Contact Number</label>
                 <div className="relative">
                   <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                   <input
@@ -285,11 +345,27 @@ const EditProfileModal = ({ isOpen, onClose }) => {
               {/* Driver Fields */}
               {user?.role === 'driver' && (
                 <div className="pt-2 border-t border-slate-100 space-y-4">
-                  <h3 className="text-sm font-serif text-[#003893] tracking-wide font-bold">Vehicle & License Details</h3>
+                  <h3 className="text-sm font-serif text-[#003893] tracking-wide font-bold">Chauffeur & Vehicle Details</h3>
                   
-                  {/* Vehicle Number */}
+                  {/* Current City */}
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Vehicle Number</label>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Current City</label>
+                    <div className="relative">
+                      <Map className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                      <input
+                        type="text"
+                        value={currentCity}
+                        onChange={(e) => setCurrentCity(e.target.value)}
+                        required
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
+                        placeholder="Current City"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Vehicle Number (Car Number) */}
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Car Number</label>
                     <div className="relative">
                       <Car className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                       <input
@@ -303,9 +379,25 @@ const EditProfileModal = ({ isOpen, onClose }) => {
                     </div>
                   </div>
 
-                  {/* License Number */}
+                  {/* Vehicle Model & Year */}
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">License Number</label>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Vehicle Model & Year</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                      <input
+                        type="text"
+                        value={vehicleModelYear}
+                        onChange={(e) => setVehicleModelYear(e.target.value)}
+                        required
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
+                        placeholder="e.g. Toyota Innova Crysta 2022"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Driving License Number */}
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Driving License Number</label>
                     <div className="relative">
                       <CreditCard className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                       <input
@@ -319,27 +411,143 @@ const EditProfileModal = ({ isOpen, onClose }) => {
                     </div>
                   </div>
 
-                  {/* RC Document */}
+                  {/* Aadhaar Number */}
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">RC Document</label>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Aadhaar Number</label>
                     <div className="relative">
+                      <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                       <input
-                        type="file"
-                        id="modal-rc-upload"
-                        onChange={(e) => handleFileChange(e, setRcDocument, setRcFileName)}
-                        accept=".jpg,.jpeg,.png,.pdf"
-                        className="hidden"
+                        type="text"
+                        value={aadhaarNumber}
+                        onChange={(e) => setAadhaarNumber(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
+                        placeholder="Enter 12-digit Aadhaar Number"
                       />
-                      <label
-                        htmlFor="modal-rc-upload"
-                        className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-lg py-2.5 px-4 text-slate-800 cursor-pointer transition-colors"
+                    </div>
+                  </div>
+
+                  {/* Driver Name (if Vendor) */}
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Driver Name (if Vendor)</label>
+                    <div className="relative">
+                      <User className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                      <input
+                        type="text"
+                        value={driverNameIfVendor}
+                        onChange={(e) => setDriverNameIfVendor(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
+                        placeholder="Driver Name (if Vendor)"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Driver Contact Number */}
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Driver Contact Number</label>
+                    <div className="relative">
+                      <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                      <input
+                        type="tel"
+                        value={driverContactNumber}
+                        onChange={(e) => setDriverContactNumber(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
+                        placeholder="Driver Contact Number"
+                      />
+                    </div>
+                  </div>
+
+                  {/* RC Copy Available */}
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">RC Copy Available</label>
+                    <div className="relative">
+                      <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                      <select
+                        value={rcCopyAvailable}
+                        onChange={(e) => {
+                          setRcCopyAvailable(e.target.value);
+                          if (e.target.value === 'No') {
+                            setRcDocument('');
+                            setRcFileName('');
+                          }
+                        }}
+                        required
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors appearance-none"
                       >
-                        <Upload className="text-[#003893] shrink-0" size={18} />
-                        <span className="text-slate-500 truncate flex-1 text-sm">
-                          {rcFileName || 'Upload New RC File...'}
-                        </span>
-                        {rcFileName && <FileText className="text-emerald-500" size={16} />}
-                      </label>
+                        <option value="No">No</option>
+                        <option value="Yes">Yes</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* RC Document */}
+                  {rcCopyAvailable === 'Yes' && (
+                    <div>
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">RC Document</label>
+                      <div className="relative">
+                        <input
+                          type="file"
+                          id="modal-rc-upload"
+                          onChange={(e) => handleFileChange(e, setRcDocument, setRcFileName)}
+                          accept=".jpg,.jpeg,.png,.pdf"
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="modal-rc-upload"
+                          className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-lg py-2.5 px-4 text-slate-800 cursor-pointer transition-colors"
+                        >
+                          <Upload className="text-[#003893] shrink-0" size={18} />
+                          <span className="text-slate-500 truncate flex-1 text-sm">
+                            {rcFileName || 'Upload New RC File...'}
+                          </span>
+                          {rcFileName && <FileText className="text-emerald-500" size={16} />}
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Insurance Valid Till */}
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Insurance Valid Till</label>
+                    <div className="relative">
+                      <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                      <input
+                        type="date"
+                        value={insuranceValidTill}
+                        onChange={(e) => setInsuranceValidTill(e.target.value)}
+                        required
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Preferred Service Area */}
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Preferred Service Area</label>
+                    <div className="relative">
+                      <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                      <input
+                        type="text"
+                        value={preferredServiceArea}
+                        onChange={(e) => setPreferredServiceArea(e.target.value)}
+                        required
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
+                        placeholder="e.g. Airport, New Town, Salt Lake"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Previous Experience */}
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Previous Experience (if any)</label>
+                    <div className="relative">
+                      <Award className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                      <input
+                        type="text"
+                        value={previousExperience}
+                        onChange={(e) => setPreviousExperience(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
+                        placeholder="e.g. 5 Years as Chauffeur"
+                      />
                     </div>
                   </div>
 

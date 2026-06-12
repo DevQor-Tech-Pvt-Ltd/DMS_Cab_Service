@@ -4,14 +4,25 @@ const Ride = require('../models/Ride');
 // Get all pending driver applications
 exports.getPendingDrivers = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const total = await User.countDocuments({ role: 'driver', status: 'pending' });
     const pendingDrivers = await User.find({ 
       role: 'driver', 
       status: 'pending' 
-    }).select('-password');
+    })
+      .select('-password')
+      .skip(skip)
+      .limit(limit);
 
     return res.status(200).json({ 
       success: true, 
       count: pendingDrivers.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
       drivers: pendingDrivers 
     });
   } catch (error) {
@@ -26,14 +37,26 @@ exports.getPendingDrivers = async (req, res) => {
 // Get all approved drivers
 exports.getApprovedDrivers = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const total = await User.countDocuments({ role: 'driver', status: 'approved' });
     const approvedDrivers = await User.find({ 
       role: 'driver', 
       status: 'approved' 
-    }).select('-password').populate('approvedBy', 'fullName email');
+    })
+      .select('-password')
+      .populate('approvedBy', 'fullName email')
+      .skip(skip)
+      .limit(limit);
 
     return res.status(200).json({ 
       success: true, 
       count: approvedDrivers.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
       drivers: approvedDrivers 
     });
   } catch (error) {
@@ -48,20 +71,38 @@ exports.getApprovedDrivers = async (req, res) => {
 // Get all users (clients, drivers, admins)
 exports.getAllUsers = async (req, res) => {
   try {
-    const users = await User.find().select('-password').populate('approvedBy', 'fullName email');
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const totalUsers = await User.countDocuments();
+    const totalAdmins = await User.countDocuments({ role: 'admin' });
+    const totalClients = await User.countDocuments({ role: 'client' });
+    const totalDrivers = await User.countDocuments({ role: 'driver' });
+    const pendingDrivers = await User.countDocuments({ role: 'driver', status: 'pending' });
+    const approvedDrivers = await User.countDocuments({ role: 'driver', status: 'approved' });
 
     const stats = {
-      totalUsers: users.length,
-      admins: users.filter(u => u.role === 'admin').length,
-      clients: users.filter(u => u.role === 'client').length,
-      drivers: users.filter(u => u.role === 'driver').length,
-      pendingDrivers: users.filter(u => u.role === 'driver' && u.status === 'pending').length,
-      approvedDrivers: users.filter(u => u.role === 'driver' && u.status === 'approved').length,
+      totalUsers,
+      admins: totalAdmins,
+      clients: totalClients,
+      drivers: totalDrivers,
+      pendingDrivers,
+      approvedDrivers,
     };
+
+    const users = await User.find()
+      .select('-password')
+      .populate('approvedBy', 'fullName email')
+      .skip(skip)
+      .limit(limit);
 
     return res.status(200).json({ 
       success: true, 
       stats,
+      total: totalUsers,
+      page,
+      pages: Math.ceil(totalUsers / limit),
       users 
     });
   } catch (error) {
@@ -335,14 +376,24 @@ exports.getDashboardStats = async (req, res) => {
 // Get all rides (admin only)
 exports.getAllRides = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const total = await Ride.countDocuments();
     const rides = await Ride.find()
       .populate('client', 'fullName email phone')
       .populate('driver', 'fullName phone vehicleNumber vehicleType')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     return res.status(200).json({ 
       success: true, 
       count: rides.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
       rides 
     });
   } catch (error) {
@@ -354,21 +405,35 @@ exports.getAllRides = async (req, res) => {
 // Get all drivers (admin only) - combines pending, approved, and rejected
 exports.getAllDrivers = async (req, res) => {
   try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 20;
+    const skip = (page - 1) * limit;
+
+    const total = await User.countDocuments({ role: 'driver' });
+    const pending = await User.countDocuments({ role: 'driver', status: 'pending' });
+    const approved = await User.countDocuments({ role: 'driver', status: 'approved' });
+    const rejected = await User.countDocuments({ role: 'driver', status: 'rejected' });
+
+    const stats = {
+      total,
+      pending,
+      approved,
+      rejected,
+    };
+
     const drivers = await User.find({ role: 'driver' })
       .select('-password')
       .populate('approvedBy', 'fullName email')
-      .sort({ createdAt: -1 });
-
-    const stats = {
-      total: drivers.length,
-      pending: drivers.filter(d => d.status === 'pending').length,
-      approved: drivers.filter(d => d.status === 'approved').length,
-      rejected: drivers.filter(d => d.status === 'rejected').length,
-    };
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
     return res.status(200).json({ 
       success: true, 
       stats,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
       drivers 
     });
   } catch (error) {

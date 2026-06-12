@@ -424,7 +424,7 @@ const AdminDashboard = () => {
 
         {/* Notifications */}
         {statsError && (
-          <div className="mb-6 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-650 flex justify-between items-center">
+          <div className="mb-6 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600 flex justify-between items-center">
             <span>{statsError}</span>
             <button
               onClick={() => {
@@ -563,7 +563,7 @@ const AdminDashboard = () => {
                         success: 'text-white bg-emerald-700 shadow-sm border border-emerald-800',
                         info: 'text-white bg-[#003893] shadow-sm border border-[#003893]/20',
                         warning: 'text-white bg-amber-600 shadow-sm border border-amber-700',
-                        error: 'text-white bg-red-650 shadow-sm border border-red-700',
+                        error: 'text-white bg-red-600 shadow-sm border border-red-700',
                       };
                       const colors = colorMap[activity.type] || colorMap.info;
                       const ActivityIcon = iconMap[activity.iconName] || Clock;
@@ -684,7 +684,7 @@ const AdminDashboard = () => {
                     <tr className="border-b-2 border-[#003893]/25">
                       <th className="text-left text-xs text-[#003893] uppercase tracking-wider pb-3 font-bold">Chauffeur</th>
                       <th className="text-left text-xs text-[#003893] uppercase tracking-wider pb-3 font-bold">Contact</th>
-                      <th className="text-left text-xs text-[#003893] uppercase tracking-wider pb-3 font-bold">Vehicle / License No.</th>
+                      <th className="text-left text-xs text-[#003893] uppercase tracking-wider pb-3 font-bold">Driver & Vehicle Details</th>
                       <th className="text-left text-xs text-[#003893] uppercase tracking-wider pb-3 font-bold">Attached Documents</th>
                       <th className="text-right text-xs text-[#003893] uppercase tracking-wider pb-3 font-bold">Actions</th>
                     </tr>
@@ -705,8 +705,19 @@ const AdminDashboard = () => {
                           <p className="text-xs text-slate-700 font-medium">{driver.phone}</p>
                         </td>
                         <td className="py-4 text-left">
-                          <p className="text-sm text-slate-900 font-semibold font-mono">Vehicle: {driver.vehicleNumber}</p>
-                          <p className="text-xs text-slate-700 font-medium font-mono">License: {driver.licenseNumber}</p>
+                          <div className="space-y-1 text-xs text-slate-800">
+                            <p><strong className="text-slate-500 font-medium">Car Number:</strong> <span className="font-semibold font-mono text-slate-900">{driver.vehicleNumber}</span></p>
+                            <p><strong className="text-slate-500 font-medium">Model & Year:</strong> <span className="font-semibold text-slate-900">{driver.vehicleModelYear || 'N/A'}</span></p>
+                            <p><strong className="text-slate-500 font-medium">License No:</strong> <span className="font-semibold font-mono text-slate-900">{driver.licenseNumber}</span></p>
+                            <p><strong className="text-slate-500 font-medium">City:</strong> <span className="font-semibold text-slate-900">{driver.currentCity || 'N/A'}</span></p>
+                            <p><strong className="text-slate-500 font-medium">Aadhaar:</strong> <span className="font-semibold text-slate-900">{driver.aadhaarNumber || 'N/A'}</span></p>
+                            {driver.driverNameIfVendor && <p><strong className="text-slate-500 font-medium">Driver (Vendor):</strong> <span className="font-semibold text-slate-900">{driver.driverNameIfVendor}</span></p>}
+                            {driver.driverContactNumber && <p><strong className="text-slate-500 font-medium">Driver Contact:</strong> <span className="font-semibold text-slate-900">{driver.driverContactNumber}</span></p>}
+                            <p><strong className="text-slate-500 font-medium">RC Available:</strong> <span className="font-semibold text-slate-900">{driver.rcCopyAvailable || 'No'}</span></p>
+                            <p><strong className="text-slate-500 font-medium">Insurance Till:</strong> <span className="font-semibold text-slate-900">{driver.insuranceValidTill || 'N/A'}</span></p>
+                            <p><strong className="text-slate-500 font-medium">Preferred Area:</strong> <span className="font-semibold text-slate-900">{driver.preferredServiceArea || 'N/A'}</span></p>
+                            {driver.previousExperience && <p><strong className="text-slate-500 font-medium">Experience:</strong> <span className="font-semibold text-slate-900">{driver.previousExperience}</span></p>}
+                          </div>
                         </td>
                         <td className="py-4">
                           <div className="flex items-center space-x-2">
@@ -749,7 +760,7 @@ const AdminDashboard = () => {
                             </button>
                             <button
                               onClick={() => handleReject(driver._id)}
-                              className="p-2.5 rounded-lg bg-red-650 hover:bg-red-700 text-white font-semibold transition-all shadow-sm border-none cursor-pointer flex items-center justify-center"
+                              className="p-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-all shadow-sm border-none cursor-pointer flex items-center justify-center"
                               title="Reject Driver Application"
                             >
                               <XCircle size={18} />
@@ -783,9 +794,20 @@ const AdminDashboard = () => {
                         <p className="text-xs text-slate-600 font-medium mt-0.5">{driver.phone}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-[#003893] uppercase tracking-wider mb-0.5 font-bold">Credentials</p>
-                        <p className="text-xs text-slate-900 font-semibold font-mono">Vehicle: {driver.vehicleNumber}</p>
-                        <p className="text-xs text-slate-600 font-medium font-mono mt-0.5">License: {driver.licenseNumber}</p>
+                        <p className="text-[10px] text-[#003893] uppercase tracking-wider mb-0.5 font-bold">Credentials & Details</p>
+                        <div className="space-y-1 text-[11px] text-slate-800">
+                          <p><strong className="text-slate-500 font-medium">Car:</strong> <span className="font-semibold font-mono">{driver.vehicleNumber}</span></p>
+                          <p><strong className="text-slate-500 font-medium">Model:</strong> <span className="font-semibold">{driver.vehicleModelYear || 'N/A'}</span></p>
+                          <p><strong className="text-slate-500 font-medium">License:</strong> <span className="font-semibold font-mono">{driver.licenseNumber}</span></p>
+                          <p><strong className="text-slate-500 font-medium">City:</strong> <span className="font-semibold">{driver.currentCity || 'N/A'}</span></p>
+                          <p><strong className="text-slate-500 font-medium">Aadhaar:</strong> <span className="font-semibold">{driver.aadhaarNumber || 'N/A'}</span></p>
+                          {driver.driverNameIfVendor && <p><strong className="text-slate-500 font-medium">Driver (Vendor):</strong> <span className="font-semibold">{driver.driverNameIfVendor}</span></p>}
+                          {driver.driverContactNumber && <p><strong className="text-slate-500 font-medium">Driver Phone:</strong> <span className="font-semibold">{driver.driverContactNumber}</span></p>}
+                          <p><strong className="text-slate-500 font-medium">RC Available:</strong> <span className="font-semibold">{driver.rcCopyAvailable || 'No'}</span></p>
+                          <p><strong className="text-slate-500 font-medium">Insurance Till:</strong> <span className="font-semibold">{driver.insuranceValidTill || 'N/A'}</span></p>
+                          <p><strong className="text-slate-500 font-medium">Preferred Area:</strong> <span className="font-semibold">{driver.preferredServiceArea || 'N/A'}</span></p>
+                          {driver.previousExperience && <p><strong className="text-slate-500 font-medium">Experience:</strong> <span className="font-semibold">{driver.previousExperience}</span></p>}
+                        </div>
                       </div>
                     </div>
 
@@ -824,7 +846,7 @@ const AdminDashboard = () => {
                     <div className="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100">
                       <button
                         onClick={() => handleReject(driver._id)}
-                        className="flex-1 py-2 rounded-lg bg-red-650 hover:bg-red-700 text-white text-xs font-semibold flex items-center justify-center space-x-1 transition-all shadow-sm cursor-pointer"
+                        className="flex-1 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-semibold flex items-center justify-center space-x-1 transition-all shadow-sm cursor-pointer"
                       >
                         <XCircle size={14} />
                         <span>Reject</span>
@@ -874,7 +896,7 @@ const AdminDashboard = () => {
                     <tr className="border-b-2 border-[#003893]/25">
                       <th className="text-left text-xs text-[#003893] uppercase tracking-wider pb-3 font-bold">Chauffeur</th>
                       <th className="text-left text-xs text-[#003893] uppercase tracking-wider pb-3 font-bold">Contact</th>
-                      <th className="text-left text-xs text-[#003893] uppercase tracking-wider pb-3 font-bold">Vehicle / License No.</th>
+                      <th className="text-left text-xs text-[#003893] uppercase tracking-wider pb-3 font-bold">Driver & Vehicle Details</th>
                       <th className="text-left text-xs text-[#003893] uppercase tracking-wider pb-3 font-bold">Verification Documents</th>
                       <th className="text-right text-xs text-[#003893] uppercase tracking-wider pb-3 font-bold">Status / Approved On</th>
                     </tr>
@@ -898,8 +920,19 @@ const AdminDashboard = () => {
                           <p className="text-xs text-slate-700 font-medium">{driver.phone}</p>
                         </td>
                         <td className="py-4 text-left">
-                          <p className="text-sm text-slate-900 font-semibold font-mono">Vehicle: {driver.vehicleNumber}</p>
-                          <p className="text-xs text-slate-700 font-medium font-mono">License: {driver.licenseNumber}</p>
+                          <div className="space-y-1 text-xs text-slate-800">
+                            <p><strong className="text-slate-500 font-medium">Car Number:</strong> <span className="font-semibold font-mono text-slate-900">{driver.vehicleNumber}</span></p>
+                            <p><strong className="text-slate-500 font-medium">Model & Year:</strong> <span className="font-semibold text-slate-900">{driver.vehicleModelYear || 'N/A'}</span></p>
+                            <p><strong className="text-slate-500 font-medium">License No:</strong> <span className="font-semibold font-mono text-slate-900">{driver.licenseNumber}</span></p>
+                            <p><strong className="text-slate-500 font-medium">City:</strong> <span className="font-semibold text-slate-900">{driver.currentCity || 'N/A'}</span></p>
+                            <p><strong className="text-slate-500 font-medium">Aadhaar:</strong> <span className="font-semibold text-slate-900">{driver.aadhaarNumber || 'N/A'}</span></p>
+                            {driver.driverNameIfVendor && <p><strong className="text-slate-500 font-medium">Driver (Vendor):</strong> <span className="font-semibold text-slate-900">{driver.driverNameIfVendor}</span></p>}
+                            {driver.driverContactNumber && <p><strong className="text-slate-500 font-medium">Driver Contact:</strong> <span className="font-semibold text-slate-900">{driver.driverContactNumber}</span></p>}
+                            <p><strong className="text-slate-500 font-medium">RC Available:</strong> <span className="font-semibold text-slate-900">{driver.rcCopyAvailable || 'No'}</span></p>
+                            <p><strong className="text-slate-500 font-medium">Insurance Till:</strong> <span className="font-semibold text-slate-900">{driver.insuranceValidTill || 'N/A'}</span></p>
+                            <p><strong className="text-slate-500 font-medium">Preferred Area:</strong> <span className="font-semibold text-slate-900">{driver.preferredServiceArea || 'N/A'}</span></p>
+                            {driver.previousExperience && <p><strong className="text-slate-500 font-medium">Experience:</strong> <span className="font-semibold text-slate-900">{driver.previousExperience}</span></p>}
+                          </div>
                         </td>
                         <td className="py-4 text-left">
                           <div className="flex items-center space-x-2">
@@ -951,7 +984,7 @@ const AdminDashboard = () => {
               </div>
 
               {/* Mobile view */}
-              <div className="md:hidden space-y-4">
+              <div className="md:hidden space-y-4 text-left">
                 {approvedDriversList.map((driver) => (
                   <div key={driver._id} className="bg-white border border-[#003893]/15 rounded-2xl p-5 space-y-4 shadow-sm">
                     <div className="flex items-center space-x-3">
@@ -971,9 +1004,20 @@ const AdminDashboard = () => {
                         <p className="text-xs text-slate-600 font-medium mt-0.5">{driver.phone}</p>
                       </div>
                       <div>
-                        <p className="text-[10px] text-[#003893] uppercase tracking-wider mb-0.5 font-bold">Credentials</p>
-                        <p className="text-xs text-slate-900 font-semibold font-mono">Vehicle: {driver.vehicleNumber}</p>
-                        <p className="text-xs text-slate-600 font-medium font-mono mt-0.5">License: {driver.licenseNumber}</p>
+                        <p className="text-[10px] text-[#003893] uppercase tracking-wider mb-0.5 font-bold">Credentials & Details</p>
+                        <div className="space-y-1 text-[11px] text-slate-800">
+                          <p><strong className="text-slate-500 font-medium">Car:</strong> <span className="font-semibold font-mono">{driver.vehicleNumber}</span></p>
+                          <p><strong className="text-slate-500 font-medium">Model:</strong> <span className="font-semibold">{driver.vehicleModelYear || 'N/A'}</span></p>
+                          <p><strong className="text-slate-500 font-medium">License:</strong> <span className="font-semibold font-mono">{driver.licenseNumber}</span></p>
+                          <p><strong className="text-slate-500 font-medium">City:</strong> <span className="font-semibold">{driver.currentCity || 'N/A'}</span></p>
+                          <p><strong className="text-slate-500 font-medium">Aadhaar:</strong> <span className="font-semibold">{driver.aadhaarNumber || 'N/A'}</span></p>
+                          {driver.driverNameIfVendor && <p><strong className="text-slate-500 font-medium">Driver (Vendor):</strong> <span className="font-semibold">{driver.driverNameIfVendor}</span></p>}
+                          {driver.driverContactNumber && <p><strong className="text-slate-500 font-medium">Driver Phone:</strong> <span className="font-semibold">{driver.driverContactNumber}</span></p>}
+                          <p><strong className="text-slate-500 font-medium">RC Available:</strong> <span className="font-semibold">{driver.rcCopyAvailable || 'No'}</span></p>
+                          <p><strong className="text-slate-500 font-medium">Insurance Till:</strong> <span className="font-semibold">{driver.insuranceValidTill || 'N/A'}</span></p>
+                          <p><strong className="text-slate-500 font-medium">Preferred Area:</strong> <span className="font-semibold">{driver.preferredServiceArea || 'N/A'}</span></p>
+                          {driver.previousExperience && <p><strong className="text-slate-500 font-medium">Experience:</strong> <span className="font-semibold">{driver.previousExperience}</span></p>}
+                        </div>
                       </div>
                     </div>
 
@@ -1013,12 +1057,12 @@ const AdminDashboard = () => {
                       </div>
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                      <div className="flex items-center space-x-1.5 bg-emerald-700 text-white border border-emerald-800 px-3 py-1 rounded-full text-xs font-semibold shadow-xs">
+                    <div className="flex items-center justify-between flex-wrap gap-2 pt-3 border-t border-slate-100">
+                      <div className="flex items-center space-x-1.5 bg-emerald-700 text-white border border-emerald-800 px-3 py-1 rounded-full text-xs font-semibold shadow-xs shrink-0">
                         <CheckCircle size={10} />
                         <span>Approved</span>
                       </div>
-                      <p className="text-xs text-slate-600 font-medium">
+                      <p className="text-xs text-slate-600 font-medium shrink-0">
                         Approved on: {driver.approvalDate ? new Date(driver.approvalDate).toLocaleDateString() : 'N/A'}
                       </p>
                     </div>

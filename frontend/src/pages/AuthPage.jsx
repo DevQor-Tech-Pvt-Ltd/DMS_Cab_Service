@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mail, Lock, User, Phone, ArrowRight, Briefcase, Eye, EyeOff, Car, CreditCard, Upload, FileText, Shield, Clock, Star } from '../utils/icons';
+import { Mail, Lock, User, Phone, ArrowRight, Briefcase, Eye, EyeOff, Car, CreditCard, Upload, FileText, Shield, Clock, Star, MapPin, Calendar, Map, Award } from '../utils/icons';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { login as loginRequest, register as registerRequest } from '../services/authService.js';
@@ -20,6 +20,15 @@ const AuthPage = () => {
   const [licenseDocument, setLicenseDocument] = useState('');
   const [rcFileName, setRcFileName] = useState('');
   const [licenseFileName, setLicenseFileName] = useState('');
+  const [currentCity, setCurrentCity] = useState('');
+  const [vehicleModelYear, setVehicleModelYear] = useState('');
+  const [aadhaarNumber, setAadhaarNumber] = useState('');
+  const [driverNameIfVendor, setDriverNameIfVendor] = useState('');
+  const [driverContactNumber, setDriverContactNumber] = useState('');
+  const [rcCopyAvailable, setRcCopyAvailable] = useState('No');
+  const [insuranceValidTill, setInsuranceValidTill] = useState('');
+  const [preferredServiceArea, setPreferredServiceArea] = useState('');
+  const [previousExperience, setPreviousExperience] = useState('');
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showColdStartWarning, setShowColdStartWarning] = useState(false);
@@ -73,16 +82,40 @@ const AuthPage = () => {
       }
 
       if (role === 'driver') {
-        if (!vehicleNumber.trim() || !licenseNumber.trim()) {
-          setError('Vehicle number and license number are required for drivers.');
+        if (!currentCity.trim()) {
+          setError('Current City is required.');
           return;
         }
-        if (!rcDocument) {
-          setError('Please upload vehicle RC file as document.');
+        if (!vehicleNumber.trim()) {
+          setError('Car Number is required.');
+          return;
+        }
+        if (!vehicleModelYear.trim()) {
+          setError('Vehicle Model & Year is required.');
+          return;
+        }
+        if (!licenseNumber.trim()) {
+          setError('Driving License Number is required.');
+          return;
+        }
+        if (!rcCopyAvailable) {
+          setError('Please select if RC Copy is available.');
+          return;
+        }
+        if (rcCopyAvailable === 'Yes' && !rcDocument) {
+          setError('Please upload vehicle RC document.');
+          return;
+        }
+        if (!insuranceValidTill.trim()) {
+          setError('Insurance Validity Date is required.');
+          return;
+        }
+        if (!preferredServiceArea.trim()) {
+          setError('Preferred Service Area is required.');
           return;
         }
         if (!licenseDocument) {
-          setError('Please upload license as document.');
+          setError('Please upload license document.');
           return;
         }
       }
@@ -112,7 +145,21 @@ const AuthPage = () => {
         role,
         password,
         confirmPassword,
-        ...(role === 'driver' && { vehicleNumber, licenseNumber, rcDocument, licenseDocument }),
+        ...(role === 'driver' && { 
+          vehicleNumber, 
+          licenseNumber, 
+          rcDocument, 
+          licenseDocument,
+          currentCity,
+          vehicleModelYear,
+          aadhaarNumber,
+          driverNameIfVendor,
+          driverContactNumber,
+          rcCopyAvailable,
+          insuranceValidTill,
+          preferredServiceArea,
+          previousExperience
+        }),
       };
 
       const response = isLogin
@@ -123,7 +170,7 @@ const AuthPage = () => {
         setError('Registration successful! Your account is pending admin approval.');
         setIsLogin(true);
       } else {
-        login(response.user, response.token);
+        login(response.user);
         if (redirect && ['activity', 'wallet'].includes(redirect)) {
           navigate(`/client/dashboard?tab=${redirect}`);
         } else if (redirect === 'get-started') {
@@ -300,7 +347,7 @@ const AuthPage = () => {
 
                 {!isLogin && (
                   <motion.div layout={!isMobile}>
-                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Mobile Number</label>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Contact Number</label>
                     <div className="relative">
                       <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                       <input
@@ -335,13 +382,35 @@ const AuthPage = () => {
 
                 {!isLogin && role === 'driver' && (
                   <>
+                    {/* Current City */}
                     <motion.div
                       layout={!isMobile}
                       initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
                       animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
                       transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
                     >
-                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Vehicle Number</label>
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Current City</label>
+                      <div className="relative">
+                        <Map className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                        <input
+                          type="text"
+                          value={currentCity}
+                          onChange={(e) => setCurrentCity(e.target.value)}
+                          required
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
+                          placeholder="Enter your current city"
+                        />
+                      </div>
+                    </motion.div>
+
+                    {/* Car Number */}
+                    <motion.div
+                      layout={!isMobile}
+                      initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                      animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                      transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                    >
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Car Number</label>
                       <div className="relative">
                         <Car className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                         <input
@@ -355,13 +424,35 @@ const AuthPage = () => {
                       </div>
                     </motion.div>
 
+                    {/* Vehicle Model & Year */}
                     <motion.div
                       layout={!isMobile}
                       initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
                       animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
                       transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
                     >
-                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">License Number</label>
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Vehicle Model & Year</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                        <input
+                          type="text"
+                          value={vehicleModelYear}
+                          onChange={(e) => setVehicleModelYear(e.target.value)}
+                          required
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
+                          placeholder="e.g. Toyota Innova Crysta 2022"
+                        />
+                      </div>
+                    </motion.div>
+
+                    {/* Driving License Number */}
+                    <motion.div
+                      layout={!isMobile}
+                      initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                      animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                      transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                    >
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Driving License Number</label>
                       <div className="relative">
                         <CreditCard className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                         <input
@@ -375,34 +466,187 @@ const AuthPage = () => {
                       </div>
                     </motion.div>
 
+                    {/* Aadhaar Number */}
                     <motion.div
                       layout={!isMobile}
                       initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
                       animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
                       transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
                     >
-                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">RC File (Vehicle Registration)</label>
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Aadhaar Number</label>
                       <div className="relative">
+                        <Shield className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
                         <input
-                          type="file"
-                          id="rc-upload"
-                          onChange={(e) => handleFileChange(e, setRcDocument, setRcFileName)}
-                          accept=".jpg,.jpeg,.png,.pdf"
-                          className="hidden"
+                          type="text"
+                          value={aadhaarNumber}
+                          onChange={(e) => setAadhaarNumber(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
+                          placeholder="Enter 12-digit Aadhaar Number"
                         />
-                        <label
-                          htmlFor="rc-upload"
-                          className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-xl py-3 px-4 text-slate-900 cursor-pointer transition-colors"
-                        >
-                          <Upload className="text-[#003893] shrink-0" size={18} />
-                          <span className="text-slate-500 truncate flex-1 text-sm">
-                            {rcFileName || 'Upload RC File (Image or PDF)...'}
-                          </span>
-                          {rcFileName && <FileText className="text-emerald-500" size={16} />}
-                        </label>
                       </div>
                     </motion.div>
 
+                    {/* Driver Name (if Vendor) */}
+                    <motion.div
+                      layout={!isMobile}
+                      initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                      animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                      transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                    >
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Driver Name (if Vendor)</label>
+                      <div className="relative">
+                        <User className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                        <input
+                          type="text"
+                          value={driverNameIfVendor}
+                          onChange={(e) => setDriverNameIfVendor(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
+                          placeholder="Enter driver's name if you are a vendor"
+                        />
+                      </div>
+                    </motion.div>
+
+                    {/* Driver Contact Number */}
+                    <motion.div
+                      layout={!isMobile}
+                      initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                      animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                      transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                    >
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Driver Contact Number</label>
+                      <div className="relative">
+                        <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                        <input
+                          type="tel"
+                          value={driverContactNumber}
+                          onChange={(e) => setDriverContactNumber(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
+                          placeholder="Enter driver's contact number"
+                        />
+                      </div>
+                    </motion.div>
+
+                    {/* RC Copy Available: Yes / No */}
+                    <motion.div
+                      layout={!isMobile}
+                      initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                      animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                      transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                    >
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">RC Copy Available</label>
+                      <div className="relative">
+                        <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                        <select
+                          value={rcCopyAvailable}
+                          onChange={(e) => {
+                            setRcCopyAvailable(e.target.value);
+                            if (e.target.value === 'No') {
+                              setRcDocument('');
+                              setRcFileName('');
+                            }
+                          }}
+                          required
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all appearance-none"
+                        >
+                          <option value="No">No</option>
+                          <option value="Yes">Yes</option>
+                        </select>
+                      </div>
+                    </motion.div>
+
+                    {/* RC File Upload (Conditionally shown if RC Copy is Available) */}
+                    {rcCopyAvailable === 'Yes' && (
+                      <motion.div
+                        layout={!isMobile}
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">RC File (Vehicle Registration)</label>
+                        <div className="relative">
+                          <input
+                            type="file"
+                            id="rc-upload"
+                            onChange={(e) => handleFileChange(e, setRcDocument, setRcFileName)}
+                            accept=".jpg,.jpeg,.png,.pdf"
+                            className="hidden"
+                          />
+                          <label
+                            htmlFor="rc-upload"
+                            className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-xl py-3 px-4 text-slate-900 cursor-pointer transition-colors"
+                          >
+                            <Upload className="text-[#003893] shrink-0" size={18} />
+                            <span className="text-slate-500 truncate flex-1 text-sm">
+                              {rcFileName || 'Upload RC File (Image or PDF)...'}
+                            </span>
+                            {rcFileName && <FileText className="text-emerald-500" size={16} />}
+                          </label>
+                        </div>
+                      </motion.div>
+                    )}
+
+                    {/* Insurance Valid Till */}
+                    <motion.div
+                      layout={!isMobile}
+                      initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                      animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                      transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                    >
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Insurance Valid Till</label>
+                      <div className="relative">
+                        <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                        <input
+                          type="date"
+                          value={insuranceValidTill}
+                          onChange={(e) => setInsuranceValidTill(e.target.value)}
+                          required
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
+                        />
+                      </div>
+                    </motion.div>
+
+                    {/* Preferred Service Area */}
+                    <motion.div
+                      layout={!isMobile}
+                      initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                      animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                      transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                    >
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Preferred Service Area</label>
+                      <div className="relative">
+                        <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                        <input
+                          type="text"
+                          value={preferredServiceArea}
+                          onChange={(e) => setPreferredServiceArea(e.target.value)}
+                          required
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
+                          placeholder="e.g. Airport, New Town, Salt Lake"
+                        />
+                      </div>
+                    </motion.div>
+
+                    {/* Previous Experience */}
+                    <motion.div
+                      layout={!isMobile}
+                      initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                      animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                      transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                    >
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Previous Experience (if any)</label>
+                      <div className="relative">
+                        <Award className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                        <input
+                          type="text"
+                          value={previousExperience}
+                          onChange={(e) => setPreviousExperience(e.target.value)}
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
+                          placeholder="e.g. 5 Years as Chauffeur"
+                        />
+                      </div>
+                    </motion.div>
+
+                    {/* License Document */}
                     <motion.div
                       layout={!isMobile}
                       initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}

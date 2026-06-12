@@ -1,5 +1,6 @@
 const crypto = require('crypto');
 const Ride = require('../models/Ride');
+const Transaction = require('../models/Transaction');
 const { sendInvoiceEmail } = require('../utils/emailService');
 const { verifyPaymentSchema } = require('../validations/paymentValidation');
 const { ZodError } = require('zod');
@@ -73,6 +74,17 @@ exports.verifyPayment = async (req, res) => {
     ride.razorpaySignature = razorpay_signature;
     
     await ride.save();
+
+    // Create a transaction ledger record for the payment
+    await Transaction.create({
+      user: ride.client,
+      ride: ride._id,
+      amount: ride.fare,
+      type: 'payment',
+      paymentMethod: ride.paymentMethod || 'card',
+      razorpayPaymentId: razorpay_payment_id,
+      status: 'success'
+    });
 
     // Dispatch invoice email asynchronously once verified and paid
     sendInvoiceEmail(ride).catch(err => console.error('Failed to send online booking invoice email:', err));
