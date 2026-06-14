@@ -41,7 +41,10 @@ app.use(
                 ? process.env.CLIENT_URL.split(',').map(url => url.trim())
                 : ['http://localhost:5173', 'http://localhost:4173'];
 
-            const isAllowed = list.some(allowed => origin === allowed);
+            const isAllowed = list.some(allowed => origin === allowed) ||
+                              origin === 'https://dms-cab-service.vercel.app' ||
+                              (origin.startsWith('https://dms-cab-service') && origin.endsWith('.vercel.app')) ||
+                              /^https?:\/\/localhost(:\d+)?$/.test(origin);
 
             if (isAllowed) {
                 callback(null, true);
