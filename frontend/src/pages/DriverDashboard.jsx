@@ -871,10 +871,10 @@ const DriverDashboard = () => {
                   {/* Action Buttons */}
                   <div className="mt-6 pt-4 border-t border-slate-100 space-y-3">
                     {activeRide.status === 'driver_assigned' && (
-                      <div className="flex items-center space-x-3">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                         <button
                           onClick={() => handleCancelPickup(activeRide._id)}
-                          className="flex-1 flex items-center justify-center space-x-2 bg-red-50 border border-red-200 text-red-600 py-3 rounded-xl hover:bg-red-100/50 transition-colors font-medium text-sm"
+                          className="w-full sm:flex-1 flex items-center justify-center space-x-2 bg-red-50 border border-red-250 text-red-650 py-3.5 rounded-xl hover:bg-red-100/50 transition-colors font-semibold text-sm cursor-pointer"
                         >
                           <XCircle size={16} />
                           <span>Cancel Pickup</span>
@@ -882,7 +882,7 @@ const DriverDashboard = () => {
                         <button
                           onClick={() => handleDriverArrived(activeRide._id)}
                           disabled={btnLoading}
-                          className="flex-1 flex items-center justify-center space-x-2 bg-[#003893] text-white py-3 rounded-xl hover:bg-[#002d72] transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
+                          className="w-full sm:flex-1 flex items-center justify-center space-x-2 bg-[#003893] text-white py-3.5 rounded-xl hover:bg-[#002d72] transition-colors font-bold text-sm cursor-pointer disabled:opacity-50"
                         >
                           {btnLoading ? (
                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -897,17 +897,17 @@ const DriverDashboard = () => {
                     )}
 
                     {activeRide.status === 'driver_arrived' && (
-                      <div className="flex items-center space-x-3">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                         <button
                           onClick={() => handleCancelPickup(activeRide._id)}
-                          className="flex-1 flex items-center justify-center space-x-2 bg-red-50 border border-red-200 text-red-600 py-3 rounded-xl hover:bg-red-100/50 transition-colors font-medium text-sm"
+                          className="w-full sm:flex-1 flex items-center justify-center space-x-2 bg-red-50 border border-red-250 text-red-650 py-3.5 rounded-xl hover:bg-red-100/50 transition-colors font-semibold text-sm cursor-pointer"
                         >
                           <XCircle size={16} />
                           <span>Cancel Pickup</span>
                         </button>
                         <button
                           onClick={() => setShowOtpModal(true)}
-                          className="flex-1 flex items-center justify-center space-x-2 bg-[#003893] text-white py-3 rounded-xl hover:bg-[#002d72] transition-colors font-bold text-sm animate-pulse cursor-pointer"
+                          className="w-full sm:flex-1 flex items-center justify-center space-x-2 bg-[#003893] text-white py-3.5 rounded-xl hover:bg-[#002d72] transition-colors font-bold text-sm animate-pulse cursor-pointer"
                         >
                           <Shield size={16} />
                           <span>Start Ride (Enter OTP)</span>

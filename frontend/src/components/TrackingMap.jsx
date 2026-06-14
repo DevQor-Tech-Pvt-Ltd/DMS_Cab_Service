@@ -540,7 +540,7 @@ const TrackingMap = ({
       {/* Map Header Status Bar */}
       <div className="absolute top-4 left-4 right-4 z-[1000] flex flex-wrap gap-2 items-center justify-between pointer-events-none">
         {/* Connection Status */}
-        <div className="pointer-events-auto flex items-center space-x-2 bg-[#0e131f]/95 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-md shadow-lg">
+        <div className="pointer-events-auto hidden md:flex items-center space-x-2 bg-[#0e131f]/95 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-md shadow-lg">
           <span className={`w-2.5 h-2.5 rounded-full ${
             !rideId ? 'bg-blue-500' 
             : isConnected ? 'bg-emerald-500 animate-pulse' 
@@ -552,7 +552,7 @@ const TrackingMap = ({
         </div>
 
         {/* Tracking Info Panel */}
-        <div className="pointer-events-auto flex items-center space-x-3 bg-[#0e131f]/95 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-md shadow-lg">
+        <div className="pointer-events-auto hidden md:flex items-center space-x-3 bg-[#0e131f]/95 border border-white/10 px-4 py-2 rounded-xl backdrop-blur-md shadow-lg">
           {rideId && (
             <>
               <span className={`w-2 h-2 rounded-full ${otherUserOnline ? 'bg-[#d4af37] animate-pulse' : 'bg-gray-500'}`}></span>
@@ -582,7 +582,7 @@ const TrackingMap = ({
       {/* Bottom Controls */}
       <div className="absolute bottom-4 left-4 z-[1000] flex flex-col gap-2">
         {coords && (
-          <div className="bg-[#0e131f]/95 border border-white/10 p-3 rounded-xl backdrop-blur-md shadow-lg text-[11px] text-gray-300 font-mono space-y-1">
+          <div className="hidden md:block bg-[#0e131f]/95 border border-white/10 p-3 rounded-xl backdrop-blur-md shadow-lg text-[11px] text-gray-300 font-mono space-y-1">
             <div className="flex items-center space-x-1.5 text-gray-400 mb-1 font-sans font-semibold uppercase tracking-wider text-[9px]">
               <Compass size={11} className="text-[#d4af37] animate-spin" style={{ animationDuration: '6s' }} />
               <span>GPS Fix</span>
