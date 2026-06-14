@@ -61,7 +61,7 @@ const Navbar = () => {
       <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 h-full">
         <div className="flex justify-between items-center h-full">
           <Link to="/" className="flex items-center">
-            <img src="/logo.png" alt="DMS Logo" className="h-[120px] w-auto object-contain" />
+            <img src="/logoo.png" alt="DMS Logo" className="h-[120px] w-auto object-contain" />
           </Link>
 
           <div className="hidden lg:flex items-center gap-6 xl:gap-10">
@@ -165,8 +165,8 @@ const Navbar = () => {
                     key={link.name}
                     to={link.path}
                     className={`block text-[18px] font-bold py-3 transition-colors border-b border-slate-100 ${isLinkActive(link)
-                        ? 'text-[#0B3D91]'
-                        : 'text-[#0F172A] hover:text-[#0B3D91]'
+                      ? 'text-[#0B3D91]'
+                      : 'text-[#0F172A] hover:text-[#0B3D91]'
                       }`}
                     onClick={() => {
                       setIsOpen(false);
