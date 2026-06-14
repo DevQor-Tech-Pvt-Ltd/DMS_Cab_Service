@@ -2,18 +2,22 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { sendInquiryEmail } = require('../utils/emailService');
 const { uploadBase64Document } = require('../utils/cloudinary');
+const logger = require('../utils/logger');
 
 /**
  * Determine if the server is running in a deployed (non-local) environment.
- * Uses multiple signals to be robust:
- * - NODE_ENV is not 'development'
- * - CLIENT_URL contains 'https://' (indicating a deployed frontend)
+ * Uses multiple signals for robustness:
+ * 1. NODE_ENV === 'production' → deployed
+ * 2. NODE_ENV === 'development' → local
+ * 3. process.env.RENDER is set (Render auto-sets this to 'true')
+ * 4. CLIENT_URL contains 'https://' (indicates deployed frontend)
  * This ensures cross-origin cookies always work on Render/Vercel deployments
  * even if NODE_ENV is accidentally left unset or misconfigured.
  */
 const isDeployed = () => {
-  if (process.env.NODE_ENV === 'development') return false;
   if (process.env.NODE_ENV === 'production') return true;
+  if (process.env.RENDER) return true; // Render auto-sets RENDER=true
+  if (process.env.NODE_ENV === 'development') return false;
   // Fallback: if CLIENT_URL has https origins, we're deployed
   const clientUrl = process.env.CLIENT_URL || '';
   return clientUrl.includes('https://');
@@ -25,6 +29,14 @@ const getCookieOptions = () => ({
   sameSite: isDeployed() ? 'none' : 'lax',
   path: '/',
 });
+
+// Log cookie mode at startup for diagnostics
+logger.info('Cookie config: isDeployed=%s, NODE_ENV=%s, RENDER=%s, CLIENT_URL=%s',
+  isDeployed(),
+  process.env.NODE_ENV || '(unset)',
+  process.env.RENDER || '(unset)',
+  process.env.CLIENT_URL ? '(set)' : '(unset)'
+);
 
 const createToken = (user) => {
   if (!process.env.JWT_SECRET) {
@@ -65,6 +77,8 @@ const sendToken = (res, user) => {
   const token = createToken(user);
   const refreshToken = createRefreshToken(user);
   const cookieOptions = getCookieOptions();
+  logger.info('sendToken: Setting cookies with options: secure=%s, sameSite=%s, user=%s',
+    cookieOptions.secure, cookieOptions.sameSite, user.email);
 
   res.cookie('token', token, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
   res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });

@@ -1,11 +1,24 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Ride = require('../models/Ride');
+const logger = require('../utils/logger');
 
 // Verify JWT and authenticate user with automatic token refresh support
 exports.protect = async (req, res, next) => {
   try {
     let token = null;
+
+    // Diagnostic: log what the server actually receives
+    const hasCookieHeader = !!req.headers.cookie;
+    const hasCookiesParsed = !!(req.cookies && Object.keys(req.cookies).length);
+    const hasTokenCookie = !!(req.cookies && req.cookies.token);
+    const hasRefreshCookie = !!(req.cookies && req.cookies.refreshToken);
+    const hasAuthHeader = !!(req.headers.authorization);
+    logger.info('Auth protect [%s %s]: cookieHeader=%s, parsedCookies=%s, tokenCookie=%s, refreshCookie=%s, authHeader=%s, origin=%s',
+      req.method, req.originalUrl,
+      hasCookieHeader, hasCookiesParsed, hasTokenCookie, hasRefreshCookie, hasAuthHeader,
+      req.headers.origin || '(none)'
+    );
 
     if (req.cookies && req.cookies.token) {
       token = req.cookies.token;
@@ -16,6 +29,7 @@ exports.protect = async (req, res, next) => {
     }
 
     if (!token) {
+      logger.warn('Auth protect: No token found, attempting refresh for %s %s', req.method, req.originalUrl);
       // If token is missing, attempt to refresh automatically using refresh token
       return handleRefresh(req, res, next);
     }
@@ -39,11 +53,12 @@ exports.protect = async (req, res, next) => {
       req.user = user;
       return next();
     } catch (jwtError) {
+      logger.warn('Auth protect: JWT verify failed: %s', jwtError.message);
       // If Access Token is expired/invalid, try silent automatic refresh
       return handleRefresh(req, res, next, jwtError);
     }
   } catch (error) {
-    console.error('Auth protect middleware error:', error);
+    logger.error('Auth protect middleware error: %s', error.message);
     return res.status(401).json({ success: false, message: 'Not authorized, token validation failed' });
   }
 };
@@ -85,8 +100,9 @@ async function handleRefresh(req, res, next, originalError = null) {
     );
 
     const isDeployed = (() => {
-      if (process.env.NODE_ENV === 'development') return false;
       if (process.env.NODE_ENV === 'production') return true;
+      if (process.env.RENDER) return true;
+      if (process.env.NODE_ENV === 'development') return false;
       const clientUrl = process.env.CLIENT_URL || '';
       return clientUrl.includes('https://');
     })();
