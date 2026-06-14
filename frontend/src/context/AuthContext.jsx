@@ -42,6 +42,12 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     const verifySession = async () => {
+      // If no stored user, there's nothing to verify — just mark loading done
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
       try {
         const response = await getMe();
         if (response.success && response.user) {
@@ -51,11 +57,17 @@ export const AuthProvider = ({ children }) => {
           throw new Error('Verification failed or user empty');
         }
       } catch (error) {
-        console.warn('Session verification failed, logging out:', error.message);
-        setUser(null);
-        sessionStorage.removeItem('dms_luxe_user');
-        sessionStorage.removeItem('dms_luxe_tab_id');
-        window.name = '';
+        console.warn('Session verification failed:', error.message);
+        // Only clear session on definitive auth failures (401/403), not on network errors
+        const status = error?.response?.status;
+        if (status === 401 || status === 403) {
+          setUser(null);
+          sessionStorage.removeItem('dms_luxe_user');
+          sessionStorage.removeItem('dms_luxe_tab_id');
+          window.name = '';
+        }
+        // For network errors or 5xx, keep the stored user to allow the dashboard
+        // to render — individual API calls will fail and show their own errors
       } finally {
         setLoading(false);
       }

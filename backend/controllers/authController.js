@@ -245,10 +245,21 @@ exports.login = async (req, res, next) => {
 
 exports.getMe = async (req, res, next) => {
   try {
+    if (!req.user || !req.user._id) {
+      logger.warn('getMe called without req.user._id context');
+      return res.status(401).json({ success: false, message: 'Not authorized, missing session user' });
+    }
+
     const user = await User.findById(req.user._id).populate('approvedBy', 'fullName email');
+    if (!user) {
+      logger.warn('getMe failed: user %s not found in database', req.user._id);
+      return res.status(404).json({ success: false, message: 'User profile not found.' });
+    }
+
+    logger.info('getMe successful for user %s (role: %s)', user.email, user.role);
     return res.status(200).json({ success: true, user: user.toJSON() });
   } catch (error) {
-    console.error('GetMe error:', error);
+    logger.error('GetMe controller error: %s', error.stack || error.message);
     return res.status(500).json({ success: false, message: 'Unable to fetch user profile.' });
   }
 };
