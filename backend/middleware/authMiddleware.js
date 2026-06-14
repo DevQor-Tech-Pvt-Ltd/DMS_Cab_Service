@@ -84,11 +84,16 @@ async function handleRefresh(req, res, next, originalError = null) {
       { expiresIn: '15m' }
     );
 
-    const isProduction = process.env.NODE_ENV === 'production';
+    const isDeployed = (() => {
+      if (process.env.NODE_ENV === 'development') return false;
+      if (process.env.NODE_ENV === 'production') return true;
+      const clientUrl = process.env.CLIENT_URL || '';
+      return clientUrl.includes('https://');
+    })();
     res.cookie('token', newAccessToken, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      secure: isDeployed,
+      sameSite: isDeployed ? 'none' : 'lax',
       path: '/',
       maxAge: 15 * 60 * 1000,
     });

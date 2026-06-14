@@ -3,6 +3,29 @@ const User = require('../models/User');
 const { sendInquiryEmail } = require('../utils/emailService');
 const { uploadBase64Document } = require('../utils/cloudinary');
 
+/**
+ * Determine if the server is running in a deployed (non-local) environment.
+ * Uses multiple signals to be robust:
+ * - NODE_ENV is not 'development'
+ * - CLIENT_URL contains 'https://' (indicating a deployed frontend)
+ * This ensures cross-origin cookies always work on Render/Vercel deployments
+ * even if NODE_ENV is accidentally left unset or misconfigured.
+ */
+const isDeployed = () => {
+  if (process.env.NODE_ENV === 'development') return false;
+  if (process.env.NODE_ENV === 'production') return true;
+  // Fallback: if CLIENT_URL has https origins, we're deployed
+  const clientUrl = process.env.CLIENT_URL || '';
+  return clientUrl.includes('https://');
+};
+
+const getCookieOptions = () => ({
+  httpOnly: true,
+  secure: isDeployed(),
+  sameSite: isDeployed() ? 'none' : 'lax',
+  path: '/',
+});
+
 const createToken = (user) => {
   if (!process.env.JWT_SECRET) {
     throw new Error('JWT_SECRET environment variable is not configured. Server cannot issue tokens.');
@@ -41,13 +64,7 @@ const createRefreshToken = (user) => {
 const sendToken = (res, user) => {
   const token = createToken(user);
   const refreshToken = createRefreshToken(user);
-  const isProduction = process.env.NODE_ENV === 'production';
-  const cookieOptions = {
-    httpOnly: true,
-    secure: isProduction,
-    sameSite: isProduction ? 'none' : 'lax', // 'none' required for cross-origin Vercel↔Render
-    path: '/',
-  };
+  const cookieOptions = getCookieOptions();
 
   res.cookie('token', token, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
   res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
@@ -224,20 +241,14 @@ exports.getMe = async (req, res, next) => {
 
 exports.logout = async (req, res, next) => {
   try {
-    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieOpts = getCookieOptions();
     res.cookie('token', '', {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      ...cookieOpts,
       expires: new Date(0),
-      path: '/',
     });
     res.cookie('refreshToken', '', {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      ...cookieOpts,
       expires: new Date(0),
-      path: '/',
     });
 
     res.status(200).json({ success: true, message: 'Logged out successfully' });
@@ -387,20 +398,14 @@ exports.deleteAccount = async (req, res, next) => {
     await user.save();
 
     // Clear authentication cookies
-    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieOpts = getCookieOptions();
     res.cookie('token', '', {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      ...cookieOpts,
       expires: new Date(0),
-      path: '/',
     });
     res.cookie('refreshToken', '', {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
+      ...cookieOpts,
       expires: new Date(0),
-      path: '/',
     });
 
     return res.status(200).json({
