@@ -1,4 +1,5 @@
 const cloudinary = require('cloudinary').v2;
+const logger = require('./logger');
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -23,6 +24,16 @@ const uploadBase64Document = async (fileData, folder = 'dms_luxe_documents') => 
     return fileData; // Return as-is if it doesn't match standard data URI pattern
   }
 
+  // Validate MIME type (L-1)
+  const mimeMatch = fileData.match(/^data:([^;]+);base64,/);
+  if (mimeMatch) {
+    const mimeType = mimeMatch[1];
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    if (!allowedMimeTypes.includes(mimeType)) {
+      throw new Error(`Invalid file type: ${mimeType}. Only JPEG, PNG, and PDF are allowed.`);
+    }
+  }
+
   try {
     const uploadResponse = await cloudinary.uploader.upload(fileData, {
       folder: folder,
@@ -30,7 +41,7 @@ const uploadBase64Document = async (fileData, folder = 'dms_luxe_documents') => 
     });
     return uploadResponse.secure_url;
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
+    logger.error('Cloudinary upload error: %s', error.message);
     throw new Error('Failed to upload document to Cloudinary: ' + error.message);
   }
 };

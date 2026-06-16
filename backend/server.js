@@ -1,10 +1,12 @@
 require('dotenv').config();
 const http = require('http');
+const mongoose = require('mongoose');
 const { Server } = require('socket.io');
 const app = require('./app');
 const connectDB = require('./config/db');
 const createAdmin = require("./config/createAdmin");
 const logger = require('./utils/logger');
+const { isOriginAllowed } = require('./utils/corsOriginValidator');
 
 // Connect to Database and start server
 const startServer = async () => {
@@ -17,17 +19,7 @@ const startServer = async () => {
   const io = new Server(server, {
     cors: {
       origin: (origin, callback) => {
-        if (!origin) return callback(null, true);
-        const list = process.env.CLIENT_URL
-            ? process.env.CLIENT_URL.split(',').map(url => url.trim())
-            : ['http://localhost:5173', 'http://localhost:4173'];
-
-        const isAllowed = list.some(allowed => origin === allowed) ||
-                          origin === 'https://dms-cab-service.vercel.app' ||
-                          (origin.startsWith('https://dms-cab-service') && origin.endsWith('.vercel.app')) ||
-                          /^https?:\/\/localhost(:\d+)?$/.test(origin);
-
-        if (isAllowed) {
+        if (isOriginAllowed(origin)) {
           callback(null, true);
         } else {
           callback(new Error('Not allowed by CORS'));
@@ -121,20 +113,32 @@ const startServer = async () => {
     });
 
     // Listen for real-time location sent from driver/client
+    // SECURITY: Use authenticated socket.user instead of client-sent role/userId
     socket.on('send-location', (data) => {
-      const { rideId, latitude, longitude, role, userId } = data;
-      if (rideId) {
-        // Broadcast location to all participants in the ride room
-        // Forward role and userId so receivers can stably identify sender
-        io.to(`ride_${rideId}`).emit('receive-location', {
-          id: socket.id,
-          latitude,
-          longitude,
-          rideId,
-          role: role || 'unknown',
-          userId: userId || null
-        });
+      const { rideId, latitude, longitude } = data;
+      if (!rideId) return;
+
+      // Validate coordinate ranges
+      const lat = Number(latitude);
+      const lng = Number(longitude);
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return; // silently drop invalid coordinates
       }
+
+      // Verify the socket user is actually in the ride room
+      if (!socket.rooms.has(`ride_${rideId}`)) {
+        return; // user is not in this ride room, reject
+      }
+
+      // Broadcast location using server-verified identity
+      io.to(`ride_${rideId}`).emit('receive-location', {
+        id: socket.id,
+        latitude: lat,
+        longitude: lng,
+        rideId,
+        role: socket.user.role,
+        userId: socket.user._id.toString()
+      });
     });
 
     socket.on('disconnecting', () => {
@@ -160,11 +164,47 @@ const startServer = async () => {
   server.listen(PORT, () => {
     logger.info(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
   });
+
+  // Periodically clean up expired OTPs from Ride documents (every 1 hour)
+  const otpCleanupInterval = setInterval(async () => {
+    try {
+      const Ride = require('./models/Ride');
+      const result = await Ride.updateMany(
+        { otpExpiresAt: { $lt: new Date() } },
+        { $set: { rideOtp: null, rideOtpHash: null, otpExpiresAt: null } }
+      );
+      if (result.modifiedCount > 0) {
+        logger.info(`[OTP CLEANUP] Cleaned up expired OTP fields for ${result.modifiedCount} rides`);
+      }
+    } catch (error) {
+      logger.error('[OTP CLEANUP] Failed to clean up expired OTP fields: %s', error.message);
+    }
+  }, 3600000); // 1 hour
+
+  // Graceful shutdown handler
+  const gracefulShutdown = (signal) => {
+    logger.info('%s received. Shutting down gracefully...', signal);
+    clearInterval(otpCleanupInterval);
+    server.close(() => {
+      logger.info('HTTP server closed.');
+      mongoose.connection.close(false).then(() => {
+        logger.info('MongoDB connection closed.');
+        process.exit(0);
+      });
+    });
+
+    // Force shutdown after 10 seconds if graceful shutdown hangs
+    setTimeout(() => {
+      logger.error('Forced shutdown after timeout.');
+      process.exit(1);
+    }, 10000);
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 };
 
 startServer().catch((error) => {
   logger.error('Failed to start server:', error);
   process.exit(1);
 });
-
-

@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const Ride = require('../models/Ride');
+const logger = require('../utils/logger');
+const cache = require('../utils/cache');
 
 // Get all pending driver applications
 exports.getPendingDrivers = async (req, res) => {
@@ -8,10 +10,11 @@ exports.getPendingDrivers = async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    const total = await User.countDocuments({ role: 'driver', status: 'pending' });
+    const total = await User.countDocuments({ role: 'driver', status: 'pending', isActive: { $ne: false } });
     const pendingDrivers = await User.find({ 
       role: 'driver', 
-      status: 'pending' 
+      status: 'pending',
+      isActive: { $ne: false }
     })
       .select('-password')
       .skip(skip)
@@ -26,7 +29,7 @@ exports.getPendingDrivers = async (req, res) => {
       drivers: pendingDrivers 
     });
   } catch (error) {
-    console.error('Get pending drivers error:', error);
+    logger.error('Get pending drivers error: %s', error.message);
     return res.status(500).json({ 
       success: false, 
       message: 'Unable to fetch pending drivers' 
@@ -41,10 +44,11 @@ exports.getApprovedDrivers = async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    const total = await User.countDocuments({ role: 'driver', status: 'approved' });
+    const total = await User.countDocuments({ role: 'driver', status: 'approved', isActive: { $ne: false } });
     const approvedDrivers = await User.find({ 
       role: 'driver', 
-      status: 'approved' 
+      status: 'approved',
+      isActive: { $ne: false }
     })
       .select('-password')
       .populate('approvedBy', 'fullName email')
@@ -60,7 +64,7 @@ exports.getApprovedDrivers = async (req, res) => {
       drivers: approvedDrivers 
     });
   } catch (error) {
-    console.error('Get approved drivers error:', error);
+    logger.error('Get approved drivers error: %s', error.message);
     return res.status(500).json({ 
       success: false, 
       message: 'Unable to fetch approved drivers' 
@@ -75,12 +79,12 @@ exports.getAllUsers = async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    const totalUsers = await User.countDocuments();
-    const totalAdmins = await User.countDocuments({ role: 'admin' });
-    const totalClients = await User.countDocuments({ role: 'client' });
-    const totalDrivers = await User.countDocuments({ role: 'driver' });
-    const pendingDrivers = await User.countDocuments({ role: 'driver', status: 'pending' });
-    const approvedDrivers = await User.countDocuments({ role: 'driver', status: 'approved' });
+    const totalUsers = await User.countDocuments({ isActive: { $ne: false } });
+    const totalAdmins = await User.countDocuments({ role: 'admin', isActive: { $ne: false } });
+    const totalClients = await User.countDocuments({ role: 'client', isActive: { $ne: false } });
+    const totalDrivers = await User.countDocuments({ role: 'driver', isActive: { $ne: false } });
+    const pendingDrivers = await User.countDocuments({ role: 'driver', status: 'pending', isActive: { $ne: false } });
+    const approvedDrivers = await User.countDocuments({ role: 'driver', status: 'approved', isActive: { $ne: false } });
 
     const stats = {
       totalUsers,
@@ -91,7 +95,7 @@ exports.getAllUsers = async (req, res) => {
       approvedDrivers,
     };
 
-    const users = await User.find()
+    const users = await User.find({ isActive: { $ne: false } })
       .select('-password')
       .populate('approvedBy', 'fullName email')
       .skip(skip)
@@ -106,7 +110,7 @@ exports.getAllUsers = async (req, res) => {
       users 
     });
   } catch (error) {
-    console.error('Get all users error:', error);
+    logger.error('Get all users error: %s', error.message);
     return res.status(500).json({ 
       success: false, 
       message: 'Unable to fetch users' 
@@ -119,7 +123,7 @@ exports.approveDriver = async (req, res) => {
   try {
     const { driverId } = req.params;
 
-    const driver = await User.findById(driverId);
+    const driver = await User.findOne({ _id: driverId, isActive: { $ne: false } });
     if (!driver || driver.role !== 'driver') {
       return res.status(404).json({ 
         success: false, 
@@ -140,13 +144,16 @@ exports.approveDriver = async (req, res) => {
     driver.approvalDate = new Date();
     await driver.save();
 
+    // Invalidate dashboard stats cache
+    cache.clearDashboardCache();
+
     return res.status(200).json({ 
       success: true, 
       message: 'Driver approved successfully',
       driver: driver.toJSON() 
     });
   } catch (error) {
-    console.error('Approve driver error:', error);
+    logger.error('Approve driver error: %s', error.message);
     return res.status(500).json({ 
       success: false, 
       message: 'Unable to approve driver' 
@@ -160,7 +167,7 @@ exports.rejectDriver = async (req, res) => {
     const { driverId } = req.params;
     const { reason } = req.body;
 
-    const driver = await User.findById(driverId);
+    const driver = await User.findOne({ _id: driverId, isActive: { $ne: false } });
     if (!driver || driver.role !== 'driver') {
       return res.status(404).json({ 
         success: false, 
@@ -179,8 +186,10 @@ exports.rejectDriver = async (req, res) => {
     driver.isApproved = false;
     driver.approvedBy = req.user._id;
     driver.approvalDate = new Date();
-    // Note: You could store rejection reason if you add it to the schema
     await driver.save();
+
+    // Invalidate dashboard stats cache
+    cache.clearDashboardCache();
 
     return res.status(200).json({ 
       success: true, 
@@ -188,7 +197,7 @@ exports.rejectDriver = async (req, res) => {
       driver: driver.toJSON() 
     });
   } catch (error) {
-    console.error('Reject driver error:', error);
+    logger.error('Reject driver error: %s', error.message);
     return res.status(500).json({ 
       success: false, 
       message: 'Unable to reject driver' 
@@ -199,13 +208,53 @@ exports.rejectDriver = async (req, res) => {
 // Get dashboard stats for admin
 exports.getDashboardStats = async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
-    const totalAdmins = await User.countDocuments({ role: 'admin' });
-    const totalClients = await User.countDocuments({ role: 'client' });
-    const totalDrivers = await User.countDocuments({ role: 'driver' });
-    const pendingDriverApprovals = await User.countDocuments({ role: 'driver', status: 'pending' });
-    const approvedDrivers = await User.countDocuments({ role: 'driver', status: 'approved' });
-    const rejectedDrivers = await User.countDocuments({ role: 'driver', status: 'rejected' });
+    const DASHBOARD_CACHE_KEY = 'admin_dashboard_stats';
+    
+    // Check in-memory cache first
+    const cachedStats = cache.get(DASHBOARD_CACHE_KEY);
+    if (cachedStats) {
+      return res.status(200).json({
+        success: true,
+        stats: cachedStats
+      });
+    }
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const fourteenDaysAgo = new Date();
+    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
+
+    // 1. Facet user counts (Active users only)
+    const userStats = await User.aggregate([
+      {
+        $facet: {
+          totalUsers: [{ $match: { isActive: { $ne: false } } }, { $count: 'count' }],
+          admins: [{ $match: { role: 'admin', isActive: { $ne: false } } }, { $count: 'count' }],
+          clients: [{ $match: { role: 'client', isActive: { $ne: false } } }, { $count: 'count' }],
+          drivers: [{ $match: { role: 'driver', isActive: { $ne: false } } }, { $count: 'count' }],
+          pendingDriverApprovals: [{ $match: { role: 'driver', status: 'pending', isActive: { $ne: false } } }, { $count: 'count' }],
+          approvedDrivers: [{ $match: { role: 'driver', status: 'approved', isActive: { $ne: false } } }, { $count: 'count' }],
+          rejectedDrivers: [{ $match: { role: 'driver', status: 'rejected', isActive: { $ne: false } } }, { $count: 'count' }],
+          recentUsersCount: [{ $match: { createdAt: { $gte: sevenDaysAgo }, isActive: { $ne: false } } }, { $count: 'count' }],
+          priorUsersCount: [{ $match: { createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo }, isActive: { $ne: false } } }, { $count: 'count' }],
+          recentDriversCount: [{ $match: { role: 'driver', createdAt: { $gte: sevenDaysAgo }, isActive: { $ne: false } } }, { $count: 'count' }],
+          priorDriversCount: [{ $match: { role: 'driver', createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo }, isActive: { $ne: false } } }, { $count: 'count' }]
+        }
+      }
+    ]);
+
+    const uStats = userStats[0] || {};
+    const totalUsers = uStats.totalUsers?.[0]?.count || 0;
+    const totalAdmins = uStats.admins?.[0]?.count || 0;
+    const totalClients = uStats.clients?.[0]?.count || 0;
+    const totalDrivers = uStats.drivers?.[0]?.count || 0;
+    const pendingDriverApprovals = uStats.pendingDriverApprovals?.[0]?.count || 0;
+    const approvedDrivers = uStats.approvedDrivers?.[0]?.count || 0;
+    const rejectedDrivers = uStats.rejectedDrivers?.[0]?.count || 0;
+    const recentUsersCount = uStats.recentUsersCount?.[0]?.count || 0;
+    const priorUsersCount = uStats.priorUsersCount?.[0]?.count || 0;
+    const recentDriversCount = uStats.recentDriversCount?.[0]?.count || 0;
+    const priorDriversCount = uStats.priorDriversCount?.[0]?.count || 0;
 
     // Calculate dynamic indices
     const processedDrivers = approvedDrivers + rejectedDrivers;
@@ -219,20 +268,10 @@ exports.getDashboardStats = async (req, res) => {
       ? Math.round((processedDrivers / totalDrivers) * 100) 
       : 100;
 
-    // Calculate dynamic growth trends
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    const fourteenDaysAgo = new Date();
-    fourteenDaysAgo.setDate(fourteenDaysAgo.getDate() - 14);
-
-    const recentUsersCount = await User.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
-    const priorUsersCount = await User.countDocuments({ createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo } });
     const userTrend = priorUsersCount > 0 
       ? Math.round(((recentUsersCount - priorUsersCount) / priorUsersCount) * 100)
       : recentUsersCount > 0 ? 100 : 0;
 
-    const recentDriversCount = await User.countDocuments({ role: 'driver', createdAt: { $gte: sevenDaysAgo } });
-    const priorDriversCount = await User.countDocuments({ role: 'driver', createdAt: { $gte: fourteenDaysAgo, $lt: sevenDaysAgo } });
     const driverTrend = priorDriversCount > 0
       ? Math.round(((recentDriversCount - priorDriversCount) / priorDriversCount) * 100)
       : recentDriversCount > 0 ? 100 : 0;
@@ -241,48 +280,78 @@ exports.getDashboardStats = async (req, res) => {
       ? Math.round((pendingDriverApprovals / totalDrivers) * 100)
       : 0;
 
-    // Fetch ride statistics
-    const totalRides = await Ride.countDocuments();
-    const completedRides = await Ride.countDocuments({ status: 'completed' });
-    const cancelledRides = await Ride.countDocuments({ status: 'cancelled' });
-    const activeRides = await Ride.countDocuments({ status: { $in: ['accepted', 'driver_assigned', 'driver_arrived', 'ride_started'] } });
-    
-    const completedRidesList = await Ride.find({ status: 'completed' }).select('fare');
-    const totalRevenue = completedRidesList.reduce((sum, r) => sum + (r.fare || 0), 0);
+    // 2. Facet ride counts and total revenue
+    const rideStats = await Ride.aggregate([
+      {
+        $facet: {
+          totalRides: [{ $count: 'count' }],
+          completedRides: [{ $match: { status: 'completed' } }, { $count: 'count' }],
+          cancelledRides: [{ $match: { status: 'cancelled' } }, { $count: 'count' }],
+          activeRides: [{ $match: { status: { $in: ['accepted', 'driver_assigned', 'driver_arrived', 'ride_started'] } } }, { $count: 'count' }],
+          revenue: [
+            { $match: { status: 'completed' } },
+            { $group: { _id: null, total: { $sum: '$fare' } } }
+          ]
+        }
+      }
+    ]);
 
-    // Last 7 days business chart data
+    const rStats = rideStats[0] || {};
+    const totalRides = rStats.totalRides?.[0]?.count || 0;
+    const completedRides = rStats.completedRides?.[0]?.count || 0;
+    const cancelledRides = rStats.cancelledRides?.[0]?.count || 0;
+    const activeRides = rStats.activeRides?.[0]?.count || 0;
+    const totalRevenue = rStats.revenue?.[0]?.total || 0;
+
+    // 3. Date-grouping aggregation for chart data
+    const startOfChartPeriod = new Date();
+    startOfChartPeriod.setDate(startOfChartPeriod.getDate() - 6);
+    startOfChartPeriod.setHours(0, 0, 0, 0);
+
+    const dailyStats = await Ride.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startOfChartPeriod }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'Asia/Kolkata' }
+          },
+          bookings: { $sum: 1 },
+          revenue: {
+            $sum: {
+              $cond: [{ $eq: ['$status', 'completed'] }, '$fare', 0]
+            }
+          }
+        }
+      }
+    ]);
+
+    // Construct chartData
     const chartData = [];
+    const statsMap = new Map(dailyStats.map(s => [s._id, s]));
+
     for (let i = 6; i >= 0; i--) {
-      const startOfDay = new Date();
-      startOfDay.setDate(startOfDay.getDate() - i);
-      startOfDay.setHours(0, 0, 0, 0);
-
-      const endOfDay = new Date();
-      endOfDay.setDate(endOfDay.getDate() - i);
-      endOfDay.setHours(23, 59, 59, 999);
-
-      const dayBookings = await Ride.countDocuments({
-        createdAt: { $gte: startOfDay, $lte: endOfDay }
-      });
-
-      const dayCompletedRides = await Ride.find({
-        status: 'completed',
-        createdAt: { $gte: startOfDay, $lte: endOfDay }
-      }).select('fare');
-
-      const dayRevenue = dayCompletedRides.reduce((sum, r) => sum + (r.fare || 0), 0);
-
-      const dateLabel = startOfDay.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      
+      const offsetDate = new Date(d.toLocaleString('en-US', { timeZone: 'Asia/Kolkata' }));
+      const key = `${offsetDate.getFullYear()}-${String(offsetDate.getMonth() + 1).padStart(2, '0')}-${String(offsetDate.getDate()).padStart(2, '0')}`;
+      
+      const dayStat = statsMap.get(key) || { bookings: 0, revenue: 0 };
+      const dateLabel = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'Asia/Kolkata' });
 
       chartData.push({
         label: dateLabel,
-        bookings: dayBookings,
-        revenue: dayRevenue
+        bookings: dayStat.bookings,
+        revenue: dayStat.revenue
       });
     }
 
     // Fetch recent users/registrations to construct dynamic logs
-    const recentUsers = await User.find()
+    const recentUsers = await User.find({ isActive: { $ne: false } })
       .sort({ updatedAt: -1 })
       .limit(10)
       .populate('approvedBy', 'fullName');
@@ -360,12 +429,15 @@ exports.getDashboardStats = async (req, res) => {
       chartData
     };
 
+    // Store in cache for 30 seconds
+    cache.set(DASHBOARD_CACHE_KEY, stats, 30);
+
     return res.status(200).json({ 
       success: true, 
       stats 
     });
   } catch (error) {
-    console.error('Get dashboard stats error:', error);
+    logger.error('Get dashboard stats error: %s', error.message);
     return res.status(500).json({ 
       success: false, 
       message: 'Unable to fetch dashboard stats' 
@@ -397,7 +469,7 @@ exports.getAllRides = async (req, res) => {
       rides 
     });
   } catch (error) {
-    console.error('Get all rides error:', error);
+    logger.error('Get all rides error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Unable to fetch rides' });
   }
 };
@@ -409,10 +481,10 @@ exports.getAllDrivers = async (req, res) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    const total = await User.countDocuments({ role: 'driver' });
-    const pending = await User.countDocuments({ role: 'driver', status: 'pending' });
-    const approved = await User.countDocuments({ role: 'driver', status: 'approved' });
-    const rejected = await User.countDocuments({ role: 'driver', status: 'rejected' });
+    const total = await User.countDocuments({ role: 'driver', isActive: { $ne: false } });
+    const pending = await User.countDocuments({ role: 'driver', status: 'pending', isActive: { $ne: false } });
+    const approved = await User.countDocuments({ role: 'driver', status: 'approved', isActive: { $ne: false } });
+    const rejected = await User.countDocuments({ role: 'driver', status: 'rejected', isActive: { $ne: false } });
 
     const stats = {
       total,
@@ -421,7 +493,7 @@ exports.getAllDrivers = async (req, res) => {
       rejected,
     };
 
-    const drivers = await User.find({ role: 'driver' })
+    const drivers = await User.find({ role: 'driver', isActive: { $ne: false } })
       .select('-password')
       .populate('approvedBy', 'fullName email')
       .sort({ createdAt: -1 })
@@ -437,7 +509,7 @@ exports.getAllDrivers = async (req, res) => {
       drivers 
     });
   } catch (error) {
-    console.error('Get all drivers error:', error);
+    logger.error('Get all drivers error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Unable to fetch drivers' });
   }
 };
@@ -469,12 +541,15 @@ exports.deleteUser = async (req, res) => {
     user.phone = `deactivated_${timestamp}_${user.phone}`;
     await user.save();
 
+    // Invalidate dashboard stats cache
+    cache.clearDashboardCache();
+
     return res.status(200).json({ 
       success: true, 
       message: `User ${user.fullName} (${originalEmail}) has been deactivated successfully` 
     });
   } catch (error) {
-    console.error('Delete user error:', error);
+    logger.error('Delete user error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Unable to delete user' });
   }
 };

@@ -8,6 +8,7 @@ const hpp = require('hpp');
 const compression = require('compression');
 const timeout = require('connect-timeout');
 const globalLimiter = require('./middleware/globalRateLimiter');
+const { isOriginAllowed } = require('./utils/corsOriginValidator');
 
 
 
@@ -34,19 +35,7 @@ app.use(
 app.use(
     cors({
         origin: (origin, callback) => {
-            // Allow requests with no origin (like mobile apps or curl requests)
-            if (!origin) return callback(null, true);
-
-            const list = process.env.CLIENT_URL
-                ? process.env.CLIENT_URL.split(',').map(url => url.trim())
-                : ['http://localhost:5173', 'http://localhost:4173'];
-
-            const isAllowed = list.some(allowed => origin === allowed) ||
-                              origin === 'https://dms-cab-service.vercel.app' ||
-                              (origin.startsWith('https://dms-cab-service') && origin.endsWith('.vercel.app')) ||
-                              /^https?:\/\/localhost(:\d+)?$/.test(origin);
-
-            if (isAllowed) {
+            if (isOriginAllowed(origin)) {
                 callback(null, true);
             } else {
                 callback(null, false);
@@ -75,6 +64,7 @@ app.use(mongoSanitize());
 app.use(hpp());
 app.use(compression());
 app.use(cookieParser());
+app.use(require('./middleware/csrfMiddleware'));
 
 app.use(timeout('15s'));
 app.use(haltOnTimedout);
@@ -88,7 +78,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Import specific rate limiters for app-level routes
-const { driverLocationLimiter, paymentLimiter } = require('./middlewares/rateLimiters');
+const { driverLocationLimiter, paymentLimiter } = require('./middleware/rateLimiters');
 
 // Routes
 app.use('/api/v1/auth', haltOnTimedout, require('./routes/authRoutes'));
@@ -125,6 +115,15 @@ app.use('/api/v1/payment', paymentLimiter, haltOnTimedout, require('./routes/pay
 // Basic route - Minimal response to avoid server info disclosure (L-3)
 app.get('/', (req, res) => {
     res.sendStatus(204);
+});
+
+// Health check endpoint for load balancer and monitoring probes
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'ok',
+        uptime: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString(),
+    });
 });
 
 app.get('/api/v1', (req, res) => {

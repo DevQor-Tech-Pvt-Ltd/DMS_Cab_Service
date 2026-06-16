@@ -43,7 +43,8 @@ const createLimiter = ({ windowMs, maxProd, maxDev, message, apiName }) => {
     // Standardized JSON response formatting
     handler: (req, res, next, options) => {
       // Professional logging for audit trails and security analytics
-      console.warn(
+      const logger = require('../utils/logger');
+      logger.warn(
         `[SECURITY WARNING] [RATE_LIMIT_EXCEEDED] API: ${apiName} | IP: ${req.ip} | Method: ${req.method} | Path: ${req.originalUrl}`
       );
 
@@ -53,8 +54,6 @@ const createLimiter = ({ windowMs, maxProd, maxDev, message, apiName }) => {
         error: 'Too Many Requests'
       });
     },
-
-    // ==========================================
 
     // ==========================================
     // FUTURE REDIS INTEGRATION READY TEMPLATE:
@@ -143,11 +142,24 @@ const paymentLimiter = createLimiter({
   apiName: 'PAYMENT_API'
 });
 
+/**
+ * G) Contact Inquiry Limiter
+ * Prevents SMTP spam abuse on the unauthenticated public contact form.
+ */
+const contactInquiryLimiter = createLimiter({
+  windowMs: 15 * 60 * 1000, // 15 Minutes
+  maxProd: 3,                // Very strict — public, unauthenticated endpoint
+  maxDev: 1000,
+  message: 'Too many contact inquiries. Please try again later.',
+  apiName: 'CONTACT_INQUIRY'
+});
+
 module.exports = {
   loginLimiter,
   signupLimiter,
   rideBookingLimiter,
   driverLocationLimiter,
   otpVerificationLimiter,
-  paymentLimiter
+  paymentLimiter,
+  contactInquiryLimiter
 };

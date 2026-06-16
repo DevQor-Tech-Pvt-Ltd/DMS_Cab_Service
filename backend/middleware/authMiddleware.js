@@ -99,17 +99,11 @@ async function handleRefresh(req, res, next, originalError = null) {
       { expiresIn: '15m' }
     );
 
-    const isDeployed = (() => {
-      if (process.env.NODE_ENV === 'production') return true;
-      if (process.env.RENDER) return true;
-      if (process.env.NODE_ENV === 'development') return false;
-      const clientUrl = process.env.CLIENT_URL || '';
-      return clientUrl.includes('https://');
-    })();
+    const { isDeployed } = require('../utils/env');
     res.cookie('token', newAccessToken, {
       httpOnly: true,
-      secure: isDeployed,
-      sameSite: isDeployed ? 'none' : 'lax',
+      secure: isDeployed(),
+      sameSite: isDeployed() ? 'none' : 'lax',
       path: '/',
       maxAge: 15 * 60 * 1000,
     });
@@ -117,7 +111,7 @@ async function handleRefresh(req, res, next, originalError = null) {
     req.user = user;
     return next();
   } catch (refreshError) {
-    console.error('Automatic token refresh failed:', refreshError.message);
+    logger.error('Automatic token refresh failed: %s', refreshError.message);
     return res.status(401).json({ success: false, message: 'Session expired, please login again' });
   }
 }
@@ -147,7 +141,7 @@ exports.isApproved = async (req, res, next) => {
     }
     next();
   } catch (error) {
-    console.error(error);
+    logger.error('Authorization check failed: %s', error.message);
     return res.status(500).json({ success: false, message: 'Authorization error' });
   }
 };

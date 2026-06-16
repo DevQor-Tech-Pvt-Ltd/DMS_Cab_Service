@@ -1,10 +1,12 @@
 const nodemailer = require('nodemailer');
+const escapeHtml = require('./escapeHtml');
+const logger = require('./logger');
 
 const smtpUser = process.env.SMTP_USER;
 const smtpPass = process.env.SMTP_PASS;
 
 if (!smtpUser || !smtpPass) {
-  console.warn('Warning: SMTP_USER or SMTP_PASS environment variables are not set.');
+  logger.warn('Warning: SMTP_USER or SMTP_PASS environment variables are not set.');
 }
 
 const transporter = nodemailer.createTransport({
@@ -20,9 +22,9 @@ const transporter = nodemailer.createTransport({
 // Verify SMTP connection on startup
 transporter.verify((error, success) => {
   if (error) {
-    console.error('[SMTP VERIFICATION ERROR] Connection failed:', error);
+    logger.error('[SMTP VERIFICATION ERROR] Connection failed: %s', error.message);
   } else {
-    console.log('[SMTP VERIFICATION SUCCESS] Server is ready to take our messages');
+    logger.info('SMTP connection established successfully.');
   }
 });
 
@@ -222,7 +224,7 @@ exports.sendInvoiceEmail = async (ride) => {
             </table>
             
             <p style="font-size: 14px; color: #475569; line-height: 1.6; margin-top: 0;">
-              Dear ${ride.passengerDetails.fullName},<br><br>
+              Dear ${escapeHtml(ride.passengerDetails.fullName)},<br><br>
               Thank you for reserving a luxury journey with DMS Cab Services. Your reservation details and billing statement are verified below.
             </p>
 
@@ -259,8 +261,8 @@ exports.sendInvoiceEmail = async (ride) => {
               </thead>
               <tbody>
                 <tr>
-                  <td style="color: #0f172a; line-height: 1.4; vertical-align: top; padding-right: 15px;">${ride.pickupLocation}</td>
-                  <td style="color: #0f172a; line-height: 1.4; vertical-align: top;">${ride.dropoffLocation}</td>
+                  <td style="color: #0f172a; line-height: 1.4; vertical-align: top; padding-right: 15px;">${escapeHtml(ride.pickupLocation)}</td>
+                  <td style="color: #0f172a; line-height: 1.4; vertical-align: top;">${escapeHtml(ride.dropoffLocation)}</td>
                 </tr>
               </tbody>
             </table>
@@ -274,8 +276,8 @@ exports.sendInvoiceEmail = async (ride) => {
               </thead>
               <tbody>
                 <tr>
-                  <td style="color: #0f172a; line-height: 1.4; vertical-align: top; padding-right: 15px; font-weight: bold;">${ride.vehicleType}</td>
-                  <td style="color: #475569; line-height: 1.4; vertical-align: top; font-style: italic;">${ride.passengerDetails.specialInstructions || 'None'}</td>
+                  <td style="color: #0f172a; line-height: 1.4; vertical-align: top; padding-right: 15px; font-weight: bold;">${escapeHtml(ride.vehicleType)}</td>
+                  <td style="color: #475569; line-height: 1.4; vertical-align: top; font-style: italic;">${escapeHtml(ride.passengerDetails.specialInstructions || 'None')}</td>
                 </tr>
               </tbody>
             </table>
@@ -316,10 +318,10 @@ exports.sendInvoiceEmail = async (ride) => {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`[EMAIL SUCCESS] Invoice sent for ride: ${ride._id}. MessageId: ${info.messageId}`);
+    logger.info(`[EMAIL SUCCESS] Invoice sent for ride: ${ride._id}. MessageId: ${info.messageId}`);
     return true;
   } catch (error) {
-    console.error('[EMAIL ERROR] Failed to dispatch invoice email:', error);
+    logger.error('[EMAIL ERROR] Failed to dispatch invoice email: %s', error.message);
     return false;
   }
 };
@@ -338,7 +340,7 @@ exports.sendEmail = async ({ to, subject, html }) => {
     const info = await transporter.sendMail(mailOptions);
     return info;
   } catch (error) {
-    console.error('[GENERIC EMAIL ERROR]:', error);
+    logger.error('[GENERIC EMAIL ERROR]: %s', error.message);
     throw error;
   }
 };
@@ -437,8 +439,8 @@ exports.sendOtpEmail = async (ride, otp, driverName) => {
           <div class="content">
             <h2 style="font-family: 'Georgia', serif; color: #003893; margin-top: 0; font-size: 20px;">Your Ride Start OTP</h2>
             <p style="color: #475569; font-size: 14px;">
-              Hello ${ride.passengerDetails.fullName},<br><br>
-              Chauffeur <strong>${driverName}</strong> has been assigned to your booking <strong>#RD-${bookingId}</strong>.
+              Hello ${escapeHtml(ride.passengerDetails.fullName)},<br><br>
+              Chauffeur <strong>${escapeHtml(driverName)}</strong> has been assigned to your booking <strong>#RD-${bookingId}</strong>.
             </p>
             
             <div class="otp-box">
@@ -464,10 +466,10 @@ exports.sendOtpEmail = async (ride, otp, driverName) => {
       subject: `Ride Verification Code - DMS Cab Services`,
       html: htmlContent,
     });
-    console.log(`[OTP EMAIL SUCCESS] Sent to client: ${to}`);
+    logger.info(`[OTP EMAIL SUCCESS] Sent to client: ${to}`);
     return true;
   } catch (error) {
-    console.error('[OTP EMAIL ERROR]:', error);
+    logger.error('[OTP EMAIL ERROR]: %s', error.message);
     return false;
   }
 };
@@ -592,7 +594,7 @@ exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, 
 
             <h3 style="font-family: 'Georgia', serif; color: #003893; font-size: 16px; margin-bottom: 10px;">Message:</h3>
             <div class="message-box">
-              ${message.replace(/\n/g, '<br>')}
+              ${escapeHtml(message).replace(/\n/g, '<br>')}
             </div>
           </div>
           <div class="footer">
@@ -612,10 +614,10 @@ exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, 
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log(`[EMAIL SUCCESS] Inquiry email sent to ${to}. MessageId: ${info.messageId}`);
+    logger.info(`[EMAIL SUCCESS] Inquiry email sent to ${to}. MessageId: ${info.messageId}`);
     return true;
   } catch (error) {
-    console.error('[EMAIL ERROR] Failed to send inquiry email:', error);
+    logger.error('[EMAIL ERROR] Failed to send inquiry email: %s', error.message);
     return false;
   }
 };

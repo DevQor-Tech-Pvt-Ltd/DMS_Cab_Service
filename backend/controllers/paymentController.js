@@ -4,6 +4,7 @@ const Transaction = require('../models/Transaction');
 const { sendInvoiceEmail } = require('../utils/emailService');
 const { verifyPaymentSchema } = require('../validations/paymentValidation');
 const { ZodError } = require('zod');
+const logger = require('../utils/logger');
 
 /**
  * Verify Razorpay payment signature
@@ -42,6 +43,13 @@ exports.verifyPayment = async (req, res) => {
       // Find the ride to set paymentStatus as failed
       const ride = await Ride.findOne({ razorpayOrderId: razorpay_order_id });
       if (ride) {
+        // Enforce ownership check even for failed verifications
+        if (ride.client.toString() !== req.user._id.toString()) {
+          return res.status(403).json({
+            success: false,
+            message: 'Forbidden. You do not own this ride booking.'
+          });
+        }
         ride.paymentStatus = 'failed';
         await ride.save();
       }
@@ -59,6 +67,14 @@ exports.verifyPayment = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: 'No booking found associated with this payment order ID'
+      });
+    }
+
+    // Scope to Ride Owner (H-3)
+    if (ride.client.toString() !== req.user._id.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden. You do not own this ride booking.'
       });
     }
 
@@ -87,7 +103,7 @@ exports.verifyPayment = async (req, res) => {
     });
 
     // Dispatch invoice email asynchronously once verified and paid
-    sendInvoiceEmail(ride).catch(err => console.error('Failed to send online booking invoice email:', err));
+    sendInvoiceEmail(ride).catch(err => logger.error('Failed to send online booking invoice email: %s', err.message));
 
     // Now broadcast the new booking notification to nearby drivers via Socket.io
     const io = req.app.get('io');
@@ -114,24 +130,24 @@ exports.verifyPayment = async (req, res) => {
     });
   } catch (error) {
 
-  // Zod Validation Errors
-  if (error instanceof ZodError) {
-    return res.status(400).json({
+    // Zod Validation Errors
+    if (error instanceof ZodError) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: error.errors,
+      });
+    }
+
+    logger.error('Error verifying payment: %s', error.message);
+
+    return res.status(500).json({
       success: false,
-      message: 'Validation failed',
-      errors: error.errors,
+      message: 'Internal server error during payment verification',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Internal Server Error'
     });
   }
-
-  console.error('Error verifying payment:', error);
-
-  return res.status(500).json({
-    success: false,
-    message: 'Internal server error during payment verification',
-    error:
-      process.env.NODE_ENV === 'development'
-        ? error.message
-        : 'Internal Server Error'
-  });
-}
 };

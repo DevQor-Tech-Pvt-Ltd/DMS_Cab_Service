@@ -11,8 +11,8 @@ const {
   rateRide,
   deleteRide
 } = require('../controllers/rideController');
-const { protect, ownershipMiddleware } = require('../middleware/authMiddleware');
-const { rideBookingLimiter } = require('../middlewares/rateLimiters');
+const { protect, authorize, ownershipMiddleware } = require('../middleware/authMiddleware');
+const { rideBookingLimiter } = require('../middleware/rateLimiters');
 const validate = require('../middleware/validationMiddleware');
 const { rideBookingSchema, otpVerificationSchema } = require('../validations/validationSchemas');
 
@@ -21,18 +21,22 @@ const router = express.Router();
 // Apply protect middleware to all routes
 router.use(protect);
 
-// Apply ride booking rate limiter on ride creation routes
-router.post('/', rideBookingLimiter, validate(rideBookingSchema), createRide);
-router.post('/book', rideBookingLimiter, validate(rideBookingSchema), createRide); // Supports both /rides/ and /rides/book path variations
+// Client-only: Create ride bookings
+router.post('/', authorize('client'), rideBookingLimiter, validate(rideBookingSchema), createRide);
 
+// All authenticated roles can list their rides
 router.get('/', getRides);
-router.put('/:id/accept', acceptRide);
-router.put('/:id/cancel', cancelRide);
-router.patch('/:id/driver-arrived', driverArrived);
-router.post('/verify-otp', rideBookingLimiter, validate(otpVerificationSchema), verifyOtp);
+
+// Driver-only: ride lifecycle actions
+router.put('/:id/accept', authorize('driver'), acceptRide);
+router.put('/:id/cancel', authorize('driver', 'client'), cancelRide);
+router.patch('/:id/driver-arrived', authorize('driver'), driverArrived);
+router.post('/verify-otp', authorize('driver'), rideBookingLimiter, validate(otpVerificationSchema), verifyOtp);
 router.post('/:id/resend-otp', resendOtp);
-router.patch('/:id/complete', completeRide);
-router.patch('/:id/rate', rideBookingLimiter, rateRide);
-router.delete('/:id', ownershipMiddleware, deleteRide);
+router.patch('/:id/complete', authorize('driver'), completeRide);
+
+// Client-only: rate and delete rides
+router.patch('/:id/rate', authorize('client'), rideBookingLimiter, rateRide);
+router.delete('/:id', authorize('client'), ownershipMiddleware, deleteRide);
 
 module.exports = router;

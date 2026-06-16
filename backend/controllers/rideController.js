@@ -1,8 +1,12 @@
+const crypto = require('crypto');
 const Ride = require('../models/Ride');
 const Transaction = require('../models/Transaction');
 const Razorpay = require('razorpay');
-const { sendInvoiceEmail } = require('../utils/emailService');
+const { sendInvoiceEmail, sendOtpEmail } = require('../utils/emailService');
 const bcrypt = require('bcryptjs');
+const logger = require('../utils/logger');
+const cache = require('../utils/cache');
+const User = require('../models/User');
 
 let razorpay = null;
 if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
@@ -25,13 +29,37 @@ exports.createRide = async (req, res) => {
       paymentMethod,
     } = req.body;
 
-    // Calculate a premium mock fare based on vehicle selection
-    let baseFare = 1500;
-    if (vehicleType?.toLowerCase().includes('mercedes')) baseFare = 3500;
-    else if (vehicleType?.toLowerCase().includes('bmw')) baseFare = 3000;
-    else if (vehicleType?.toLowerCase().includes('audi')) baseFare = 2800;
-    else if (vehicleType?.toLowerCase().includes('suv')) baseFare = 2200;
+    // Calculate a premium dynamic fare based on pickup/dropoff distance & vehicle selection (S-1)
+    const calculateFare = (pickup, dropoff, vType) => {
+      const combinedStr = (pickup || '') + (dropoff || '');
+      let hash = 0;
+      for (let i = 0; i < combinedStr.length; i++) {
+        hash += combinedStr.charCodeAt(i);
+      }
+      const distanceKm = 5 + (hash % 41); // deterministic mock distance between 5 and 45 km
+      
+      let basePrice = 500;
+      let perKmPrice = 40;
+      
+      const vehicle = (vType || '').toLowerCase();
+      if (vehicle.includes('mercedes')) {
+        basePrice = 1500;
+        perKmPrice = 80;
+      } else if (vehicle.includes('bmw')) {
+        basePrice = 1200;
+        perKmPrice = 70;
+      } else if (vehicle.includes('audi')) {
+        basePrice = 1000;
+        perKmPrice = 65;
+      } else if (vehicle.includes('suv')) {
+        basePrice = 800;
+        perKmPrice = 50;
+      }
+      
+      return basePrice + Math.round(distanceKm * perKmPrice);
+    };
 
+    const calculatedFare = calculateFare(pickupLocation, dropoffLocation, vehicleType);
     const isOnlinePayment = paymentMethod === 'card' || paymentMethod === 'upi';
 
     const ride = new Ride({
@@ -43,9 +71,9 @@ exports.createRide = async (req, res) => {
       vehicleType,
       passengerDetails,
       paymentMethod: paymentMethod || 'cash',
-      fare: baseFare,
+      fare: calculatedFare,
       status: 'pending',
-      paymentStatus: isOnlinePayment ? 'pending' : 'pending',
+      paymentStatus: 'pending',
     });
 
     // If it's an online payment, generate a Razorpay order
@@ -54,9 +82,9 @@ exports.createRide = async (req, res) => {
       if (!razorpay) {
         throw new Error('Razorpay integration is not configured on the server.');
       }
-      
+
       const options = {
-        amount: baseFare * 100, // in paise
+        amount: calculatedFare * 100, // in paise
         currency: 'INR',
         receipt: `receipt_${Date.now()}`,
       };
@@ -66,6 +94,9 @@ exports.createRide = async (req, res) => {
     }
 
     await ride.save();
+
+    // Invalidate dashboard stats cache
+    cache.clearDashboardCache();
 
     // Only broadcast the socket event immediately if it's cash!
     // For card/upi, we will broadcast AFTER verification in verifyPayment controller
@@ -86,15 +117,15 @@ exports.createRide = async (req, res) => {
           paymentStatus: ride.paymentStatus,
         });
       }
-      
+
       // Dispatch invoice email to client asynchronously for cash bookings
-      sendInvoiceEmail(ride).catch(err => console.error('Failed to send cash booking invoice email:', err));
+      sendInvoiceEmail(ride).catch(err => logger.error('Failed to send cash booking invoice email: %s', err.message));
     }
 
     return res.status(201).json({
       success: true,
-      message: isOnlinePayment 
-        ? 'Ride booked, payment order initiated' 
+      message: isOnlinePayment
+        ? 'Ride booked, payment order initiated'
         : 'Ride booked successfully, notifying drivers',
       ride,
       razorpayOrder: razorpayOrder ? {
@@ -105,41 +136,35 @@ exports.createRide = async (req, res) => {
       } : null
     });
   } catch (error) {
-    console.error('Error creating ride:', error);
+    logger.error('Error creating ride: %s', error.message);
     return res.status(500).json({
       success: false,
       message: 'Failed to create ride booking',
       error:
-            process.env.NODE_ENV === 'development'
-              ? error.message
-              : 'Internal Server Error'
-              });
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Internal Server Error'
+    });
   }
 };
 
 // Accept an available luxury ride booking with secure OTP generation & dispatch
 exports.acceptRide = async (req, res) => {
   try {
-    const crypto = require('crypto');
-    const { sendOtpEmail } = require('../utils/emailService');
-
     // Securely generate a 4-digit OTP
     const secureOtp = crypto.randomInt(1000, 10000).toString();
     // Hash OTP before storing
-    const hashedOtp = await bcrypt.hash(secureOtp, 10)
+    const hashedOtp = await bcrypt.hash(secureOtp, 10);
     // Expiry time 5 minutes window
-    const otpExpiryTime = new Date(Date.now() + 5 * 60 * 1000); 
-
-    console.log(`[DEBUG OTP] Generated OTP: ${secureOtp} for ride accept`); 
+    const otpExpiryTime = new Date(Date.now() + 5 * 60 * 1000);
 
     // Atomically find the ride and update status to driver_assigned
     const rideId = req.params.id || req.params.rideId;
     const ride = await Ride.findOneAndUpdate(
       { _id: rideId, status: 'pending' },
-      { 
-        driver: req.user._id, 
+      {
+        driver: req.user._id,
         status: 'driver_assigned',
-        rideOtp: secureOtp,
         rideOtpHash: hashedOtp,
         otpVerified: false,
         otpExpiresAt: otpExpiryTime,
@@ -158,6 +183,9 @@ exports.acceptRide = async (req, res) => {
     // Populate newly assigned driver and client details
     await ride.populate('client', 'fullName email phone');
     await ride.populate('driver', 'fullName phone vehicleNumber vehicleType');
+
+    // Invalidate dashboard stats cache
+    cache.clearDashboardCache();
 
     // Broadcast that booking was accepted in real-time
     const io = req.app.get('io');
@@ -181,11 +209,11 @@ exports.acceptRide = async (req, res) => {
     sendOtpEmail(ride, secureOtp, req.user.fullName)
       .then(sent => {
         if (!sent) {
-          console.warn(`[OTP] Email failed to send for ride ${ride._id}`);
+          logger.warn(`[OTP] Email failed to send for ride ${ride._id}`);
         }
       })
       .catch(err => {
-        console.error(`[OTP] Error sending email for ride ${ride._id}:`, err);
+        logger.error(`[OTP] Error sending email for ride ${ride._id}: %s`, err.message);
       });
 
     return res.status(200).json({
@@ -195,24 +223,21 @@ exports.acceptRide = async (req, res) => {
       ride,
     });
   } catch (error) {
-    console.error('Error accepting ride:', error);
+    logger.error('Error accepting ride: %s', error.message);
     return res.status(500).json({
       success: false,
       message: 'Failed to accept ride',
       error:
-            process.env.NODE_ENV === 'development'
-              ? error.message
-              : 'Internal Server Error'
-              });
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Internal Server Error'
+    });
   }
 };
 
 // Driver Arrived at client pickup location
 exports.driverArrived = async (req, res) => {
   try {
-    const crypto = require('crypto');
-    const { sendOtpEmail } = require('../utils/emailService');
-
     const ride = await Ride.findOne({ _id: req.params.id || req.params.rideId, driver: req.user._id });
 
     if (!ride) {
@@ -220,21 +245,18 @@ exports.driverArrived = async (req, res) => {
     }
 
     if (ride.status !== 'driver_assigned') {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Cannot trigger arrival because current status is: ${ride.status}` 
+      return res.status(400).json({
+        success: false,
+        message: `Cannot trigger arrival because current status is: ${ride.status}`
       });
     }
 
     // Generate fresh secure 4-digit code
     const secureOtp = crypto.randomInt(1000, 10000).toString();
     const hashedOtp = await bcrypt.hash(secureOtp, 10);
-    const otpExpiryTime = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes window
-
-    console.log(`[DEBUG OTP] Generated OTP: ${secureOtp} on driver arrival`);
+    const otpExpiryTime = new Date(Date.now() + 5 * 60 * 1000);
 
     ride.status = 'driver_arrived';
-    ride.rideOtp = secureOtp;
     ride.rideOtpHash = hashedOtp;
     ride.otpAttempts = 0;
     ride.otpExpiresAt = otpExpiryTime;
@@ -244,6 +266,9 @@ exports.driverArrived = async (req, res) => {
     // Populate client and driver details
     await ride.populate('client', 'fullName email phone');
     await ride.populate('driver', 'fullName phone vehicleNumber vehicleType');
+
+    // Invalidate dashboard stats cache
+    cache.clearDashboardCache();
 
     // Broadcast real-time status change to the client room (C-2)
     const io = req.app.get('io');
@@ -259,11 +284,11 @@ exports.driverArrived = async (req, res) => {
     sendOtpEmail(ride, secureOtp, req.user.fullName)
       .then(sent => {
         if (!sent) {
-          console.warn(`[OTP ARRIVAL] Email failed to send for ride ${ride._id}`);
+          logger.warn(`[OTP ARRIVAL] Email failed to send for ride ${ride._id}`);
         }
       })
       .catch(err => {
-        console.error(`[OTP ARRIVAL] Error sending email for ride ${ride._id}:`, err);
+        logger.error(`[OTP ARRIVAL] Error sending email for ride ${ride._id}: %s`, err.message);
       });
 
     return res.status(200).json({
@@ -273,15 +298,15 @@ exports.driverArrived = async (req, res) => {
       ride
     });
   } catch (error) {
-    console.error('Error in driverArrived:', error);
+    logger.error('Error in driverArrived: %s', error.message);
     return res.status(500).json({
       success: false,
       message: 'Failed to update chauffeur status',
       error:
-            process.env.NODE_ENV === 'development'
-              ? error.message
-              : 'Internal Server Error'
-              });
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Internal Server Error'
+    });
   }
 };
 
@@ -317,9 +342,9 @@ exports.verifyOtp = async (req, res) => {
 
     // Bruteforce defense: limit to max 5 verification attempts
     if (ride.otpAttempts >= 5) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Maximum OTP attempts reached (5). Please request a resend to generate a fresh OTP.' 
+      return res.status(400).json({
+        success: false,
+        message: 'Maximum OTP attempts reached (5). Please request a resend to generate a fresh OTP.'
       });
     }
 
@@ -345,9 +370,9 @@ exports.verifyOtp = async (req, res) => {
 
     if (!isMatch) {
       await ride.save();
-      return res.status(400).json({ 
-        success: false, 
-        message: `Invalid OTP code. Attempts remaining: ${5 - ride.otpAttempts}` 
+      return res.status(400).json({
+        success: false,
+        message: `Invalid OTP code. Attempts remaining: ${5 - ride.otpAttempts}`
       });
     }
 
@@ -363,6 +388,9 @@ exports.verifyOtp = async (req, res) => {
 
     await ride.populate('client', 'fullName email phone');
     await ride.populate('driver', 'fullName phone vehicleNumber vehicleType');
+
+    // Invalidate dashboard stats cache
+    cache.clearDashboardCache();
 
     // Notify client in room in real-time (C-2)
     const io = req.app.get('io');
@@ -380,7 +408,7 @@ exports.verifyOtp = async (req, res) => {
       ride
     });
   } catch (error) {
-    console.error('Error verifying OTP:', error);
+    logger.error('Error verifying OTP: %s', error.message);
     return res.status(500).json({
       success: false,
       message: 'Internal server error during verification',
@@ -388,16 +416,13 @@ exports.verifyOtp = async (req, res) => {
         process.env.NODE_ENV === 'development'
           ? error.message
           : 'Internal Server Error'
-          });
+    });
   }
 };
 
 // Resend Ride Start OTP
 exports.resendOtp = async (req, res) => {
   try {
-    const crypto = require('crypto');
-    const { sendOtpEmail } = require('../utils/emailService');
-
     const query = { _id: req.params.id || req.params.rideId };
     if (req.user.role === 'driver') {
       query.driver = req.user._id;
@@ -417,22 +442,19 @@ exports.resendOtp = async (req, res) => {
         message: 'OTP verification is not allowed at this stage.'
       });
     }
-      if (
-    ride.otpLastSentAt &&
-    Date.now() - ride.otpLastSentAt.getTime() < 30000
-  ) {
-    return res.status(429).json({
-      success: false,
-      message: 'Please wait before requesting another OTP.'
-    });
-  }
+    if (
+      ride.otpLastSentAt &&
+      Date.now() - ride.otpLastSentAt.getTime() < 30000
+    ) {
+      return res.status(429).json({
+        success: false,
+        message: 'Please wait before requesting another OTP.'
+      });
+    }
     // Generate fresh secure 4-digit code
     const freshOtp = crypto.randomInt(1000, 10000).toString();
-    
-    ride.rideOtp = freshOtp;
-    ride.rideOtpHash = await bcrypt.hash(freshOtp, 10);
 
-    console.log(`[DEBUG OTP] Resent fresh OTP: ${freshOtp} for ride: ${ride._id}`);
+    ride.rideOtpHash = await bcrypt.hash(freshOtp, 10);
     ride.otpAttempts = 0;
     ride.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // Reset for another 5 minutes
     ride.otpLastSentAt = new Date();
@@ -454,11 +476,11 @@ exports.resendOtp = async (req, res) => {
     sendOtpEmail(ride, freshOtp, ride.driver ? ride.driver.fullName : 'Chauffeur')
       .then(sent => {
         if (!sent) {
-          console.warn(`[OTP RESEND] Email failed to send for ride ${ride._id}`);
+          logger.warn(`[OTP RESEND] Email failed to send for ride ${ride._id}`);
         }
       })
       .catch(err => {
-        console.error(`[OTP RESEND] Error sending email for ride ${ride._id}:`, err);
+        logger.error(`[OTP RESEND] Error sending email for ride ${ride._id}: %s`, err.message);
       });
 
     return res.status(200).json({
@@ -466,15 +488,15 @@ exports.resendOtp = async (req, res) => {
       message: 'A fresh verification code has been dispatched to your email address.'
     });
   } catch (error) {
-    console.error('Error resending OTP:', error);
+    logger.error('Error resending OTP: %s', error.message);
     return res.status(500).json({
       success: false,
       message: 'Failed to resend OTP',
       error:
-          process.env.NODE_ENV === 'development'
-            ? error.message
-            : 'Internal Server Error'
-            });
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Internal Server Error'
+    });
   }
 };
 
@@ -489,9 +511,9 @@ exports.completeRide = async (req, res) => {
 
     // Enforce OTP starting restrictions
     if (!ride.otpVerified || ride.status !== 'ride_started') {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Ride cannot be completed because the journey was never verified/started using OTP.' 
+      return res.status(400).json({
+        success: false,
+        message: 'Ride cannot be completed because the journey was never verified/started using OTP.'
       });
     }
 
@@ -514,6 +536,9 @@ exports.completeRide = async (req, res) => {
       });
     }
 
+    // Invalidate dashboard stats cache
+    cache.clearDashboardCache();
+
     // Broadcast complete status to room (C-2)
     const io = req.app.get('io');
     if (io) {
@@ -523,21 +548,24 @@ exports.completeRide = async (req, res) => {
       });
     }
 
+    // Dispatch invoice email
+    sendInvoiceEmail(ride).catch(err => logger.error('Failed to send invoice email: %s', err.message));
+
     return res.status(200).json({
       success: true,
       message: 'Ride completed successfully. Invoice dispatched.',
       ride
     });
   } catch (error) {
-    console.error('Error completing ride:', error);
+    logger.error('Error completing ride: %s', error.message);
     return res.status(500).json({
       success: false,
       message: 'Failed to complete ride',
       error:
-            process.env.NODE_ENV === 'development'
-              ? error.message
-              : 'Internal Server Error'
-              });
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Internal Server Error'
+    });
   }
 };
 
@@ -568,6 +596,22 @@ exports.rateRide = async (req, res) => {
     ride.feedback = feedback || '';
     await ride.save();
 
+    // Update driver's overall rating (Phase 5)
+    if (ride.driver) {
+      const driverId = ride.driver;
+      // Get all completed rides with ratings for this driver
+      const driverRides = await Ride.find({ driver: driverId, rating: { $exists: true } }).select('rating');
+      const totalRatings = driverRides.length;
+      const sumRatings = driverRides.reduce((sum, r) => sum + r.rating, 0);
+      const averageRating = totalRatings > 0 ? Number((sumRatings / totalRatings).toFixed(2)) : 0;
+
+      await User.findByIdAndUpdate(driverId, {
+        totalRatings,
+        averageRating
+      });
+      logger.info(`[RATING UPDATE] Chauffeur ${driverId} overall stats updated: averageRating=${averageRating}, totalRatings=${totalRatings}`);
+    }
+
     // Broadcast rating/feedback update to room in real-time (C-2)
     const io = req.app.get('io');
     if (io) {
@@ -583,70 +627,134 @@ exports.rateRide = async (req, res) => {
       ride
     });
   } catch (error) {
-    console.error('Error rating ride:', error);
+    logger.error('Error rating ride: %s', error.message);
     return res.status(500).json({
       success: false,
       message: 'Failed to rate ride',
       error:
-            process.env.NODE_ENV === 'development'
-              ? error.message
-              : 'Internal Server Error'
-              });
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Internal Server Error'
+    });
   }
 };
 
-// Cancel an active ride booking (driver cancelling the pickup)
+// Cancel an active ride booking (handles both driver and client cancellation with refunds)
 exports.cancelRide = async (req, res) => {
   try {
-    const ride = await Ride.findOne({
-      _id: req.params.id || req.params.rideId,
-      driver: req.user._id
-    });
+    const ride = await Ride.findById(req.params.id || req.params.rideId);
 
     if (!ride) {
       return res.status(404).json({ success: false, message: 'Ride not found' });
     }
 
-    // Update status to cancelled with status check guard (M-5)
-    const allowedStatuses = ['driver_assigned', 'driver_arrived'];
-    if (!allowedStatuses.includes(ride.status)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Cannot cancel a ride with status: ${ride.status}` 
-      });
+    // Check ownership/permissions
+    if (req.user.role === 'client') {
+      if (ride.client.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ success: false, message: 'Forbidden: You do not own this ride booking' });
+      }
+      // Clients can cancel pending or driver_assigned
+      const allowedClientStatuses = ['pending', 'driver_assigned'];
+      if (!allowedClientStatuses.includes(ride.status)) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot cancel a ride with status: ${ride.status}`
+        });
+      }
+    } else if (req.user.role === 'driver') {
+      if (!ride.driver || ride.driver.toString() !== req.user._id.toString()) {
+        return res.status(403).json({ success: false, message: 'Forbidden: You are not the chauffeur assigned to this ride' });
+      }
+      // Drivers can cancel driver_assigned or driver_arrived
+      const allowedDriverStatuses = ['driver_assigned', 'driver_arrived'];
+      if (!allowedDriverStatuses.includes(ride.status)) {
+        return res.status(400).json({
+          success: false,
+          message: `Cannot cancel a ride with status: ${ride.status}`
+        });
+      }
+    } else if (req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Unauthorized role.' });
+    }
+
+    // Handle online payment refund (Phase 5)
+    let refundSuccessful = false;
+    let refundId = null;
+
+    if (ride.paymentStatus === 'paid' && ride.razorpayPaymentId) {
+      if (razorpay) {
+        try {
+          const refundResponse = await razorpay.payments.refund(ride.razorpayPaymentId, {
+            amount: ride.fare * 100, // Razorpay amount in paise
+            notes: {
+              rideId: ride._id.toString(),
+              reason: `Ride cancelled by ${req.user.role} (${req.user.fullName})`
+            }
+          });
+          refundSuccessful = true;
+          refundId = refundResponse.id;
+          
+          // Create a transaction ledger record for the refund
+          await Transaction.create({
+            user: ride.client,
+            ride: ride._id,
+            amount: ride.fare,
+            type: 'refund',
+            paymentMethod: ride.paymentMethod || 'card',
+            razorpayPaymentId: ride.razorpayPaymentId,
+            status: 'success'
+          });
+          
+          ride.paymentStatus = 'refunded';
+          logger.info(`[REFUND SUCCESS] Razorpay refund issued for ride ${ride._id}. Refund ID: ${refundId}`);
+        } catch (refundError) {
+          logger.error(`[REFUND ERROR] Razorpay refund failed for ride ${ride._id}: %s`, refundError.message);
+          // Do not block the cancellation if refund fails, but log it
+        }
+      } else {
+        logger.warn(`[REFUND SKIPPED] Razorpay client not configured; refund skipped for ride ${ride._id}`);
+      }
     }
 
     ride.status = 'cancelled';
     await ride.save();
+
+    // Invalidate dashboard stats cache
+    cache.clearDashboardCache();
 
     // Broadcast that the ride is cancelled
     const io = req.app.get('io');
     if (io) {
       io.emit('ride-cancelled', {
         rideId: ride._id,
-        driverId: req.user._id,
+        cancelledBy: req.user._id,
+        role: req.user.role
+      });
+      io.to(`ride_${ride._id}`).emit(`ride_status_${ride._id}`, {
+        status: 'cancelled',
+        paymentStatus: ride.paymentStatus
       });
     }
 
     return res.status(200).json({
       success: true,
-      message: 'Ride cancelled successfully',
+      message: 'Ride cancelled successfully' + (ride.paymentStatus === 'refunded' ? ' and refund processed.' : '.'),
       ride,
     });
   } catch (error) {
-    console.error('Error cancelling ride:', error);
+    logger.error('Error cancelling ride: %s', error.message);
     return res.status(500).json({
       success: false,
       message: 'Failed to cancel ride',
       error:
-            process.env.NODE_ENV === 'development'
-              ? error.message
-              : 'Internal Server Error'
-              });
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Internal Server Error'
+    });
   }
 };
 
-// Get all active rides or past rides depending on role
+// Get all active rides or past rides depending on role (supports backward-compatible pagination)
 exports.getRides = async (req, res) => {
   try {
     let query = {};
@@ -669,22 +777,36 @@ exports.getRides = async (req, res) => {
       };
     }
 
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 100; // default 100 for backward compatibility
+    const skip = (page - 1) * limit;
+
+    const total = await Ride.countDocuments(query);
     const rides = await Ride.find(query)
       .populate('client', 'fullName email phone')
       .populate('driver', 'fullName phone vehicleNumber vehicleType')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    return res.status(200).json({ success: true, rides });
+    return res.status(200).json({ 
+      success: true, 
+      count: rides.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      rides 
+    });
   } catch (error) {
-    console.error('Error fetching rides:', error);
+    logger.error('Error fetching rides: %s', error.message);
     return res.status(500).json({
       success: false,
       message: 'Failed to fetch rides',
       error:
-            process.env.NODE_ENV === 'development'
-              ? error.message
-              : 'Internal Server Error'
-              });
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Internal Server Error'
+    });
   }
 };
 
@@ -713,15 +835,15 @@ exports.getRideById = async (req, res) => {
 
     return res.status(200).json({ success: true, ride });
   } catch (error) {
-    console.error('Error fetching ride by ID:', error);
+    logger.error('Error fetching ride by ID: %s', error.message);
     return res.status(500).json({
       success: false,
       message: 'Failed to fetch ride details',
       error:
-            process.env.NODE_ENV === 'development'
-              ? error.message
-              : 'Internal Server Error'
-              });
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Internal Server Error'
+    });
   }
 };
 
@@ -738,13 +860,16 @@ exports.deleteRide = async (req, res) => {
     }
 
     if (ride.status !== 'pending') {
-      return res.status(400).json({ 
-        success: false, 
-        message: `Cannot delete a ride that is already ${ride.status}. Only pending rides can be deleted.` 
+      return res.status(400).json({
+        success: false,
+        message: `Cannot delete a ride that is already ${ride.status}. Only pending rides can be deleted.`
       });
     }
 
     await Ride.findByIdAndDelete(ride._id);
+
+    // Invalidate dashboard stats cache
+    cache.clearDashboardCache();
 
     // Broadcast deletion event
     const io = req.app.get('io');
@@ -754,14 +879,14 @@ exports.deleteRide = async (req, res) => {
 
     return res.status(200).json({ success: true, message: 'Ride booking deleted successfully.' });
   } catch (error) {
-    console.error('Error deleting ride:', error);
+    logger.error('Error deleting ride: %s', error.message);
     return res.status(500).json({
       success: false,
       message: 'Failed to delete ride booking',
       error:
-            process.env.NODE_ENV === 'development'
-              ? error.message
-              : 'Internal Server Error'
-              });
+        process.env.NODE_ENV === 'development'
+          ? error.message
+          : 'Internal Server Error'
+    });
   }
 };

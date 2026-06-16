@@ -3,32 +3,7 @@ const User = require('../models/User');
 const { sendInquiryEmail } = require('../utils/emailService');
 const { uploadBase64Document } = require('../utils/cloudinary');
 const logger = require('../utils/logger');
-
-/**
- * Determine if the server is running in a deployed (non-local) environment.
- * Uses multiple signals for robustness:
- * 1. NODE_ENV === 'production' → deployed
- * 2. NODE_ENV === 'development' → local
- * 3. process.env.RENDER is set (Render auto-sets this to 'true')
- * 4. CLIENT_URL contains 'https://' (indicates deployed frontend)
- * This ensures cross-origin cookies always work on Render/Vercel deployments
- * even if NODE_ENV is accidentally left unset or misconfigured.
- */
-const isDeployed = () => {
-  if (process.env.NODE_ENV === 'production') return true;
-  if (process.env.RENDER) return true; // Render auto-sets RENDER=true
-  if (process.env.NODE_ENV === 'development') return false;
-  // Fallback: if CLIENT_URL has https origins, we're deployed
-  const clientUrl = process.env.CLIENT_URL || '';
-  return clientUrl.includes('https://');
-};
-
-const getCookieOptions = () => ({
-  httpOnly: true,
-  secure: isDeployed(),
-  sameSite: isDeployed() ? 'none' : 'lax',
-  path: '/',
-});
+const { isDeployed, getCookieOptions } = require('../utils/env');
 
 // Log cookie mode at startup for diagnostics
 logger.info('Cookie config: isDeployed=%s, NODE_ENV=%s, RENDER=%s, CLIENT_URL=%s',
@@ -204,7 +179,7 @@ exports.register = async (req, res, next) => {
 
     sendToken(res, user);
   } catch (error) {
-    console.error('Register error:', error);
+    logger.error('Register error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Registration failed. Please try again.' });
   }
 };
@@ -238,7 +213,7 @@ exports.login = async (req, res, next) => {
 
     sendToken(res, user);
   } catch (error) {
-    console.error('Login error:', error);
+    logger.error('Login error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Login failed. Please try again.' });
   }
 };
@@ -278,7 +253,7 @@ exports.logout = async (req, res, next) => {
 
     res.status(200).json({ success: true, message: 'Logged out successfully' });
   } catch (error) {
-    console.error('Logout error:', error);
+    logger.error('Logout error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Logout failed.' });
   }
 };
@@ -380,7 +355,7 @@ exports.updateProfile = async (req, res, next) => {
       user: updatedUser,
     });
   } catch (error) {
-    console.error('Update profile error:', error);
+    logger.error('Update profile error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Profile update failed. Please try again.' });
   }
 };
@@ -401,7 +376,7 @@ exports.contactInquiry = async (req, res, next) => {
       return res.status(500).json({ success: false, message: 'Failed to send inquiry email' });
     }
   } catch (error) {
-    console.error('Contact inquiry controller error:', error);
+    logger.error('Contact inquiry controller error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Failed to submit inquiry. Please try again.' });
   }
 };
@@ -438,7 +413,7 @@ exports.deleteAccount = async (req, res, next) => {
       message: 'Your account has been deleted successfully. You have been logged out.',
     });
   } catch (error) {
-    console.error('Delete account error:', error);
+    logger.error('Delete account error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Failed to delete account. Please try again.' });
   }
 };

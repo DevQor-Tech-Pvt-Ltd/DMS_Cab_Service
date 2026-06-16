@@ -1,7 +1,9 @@
 const crypto = require('crypto');
+const logger = require('./logger');
 
 // AES-256-CBC configuration
 const ALGORITHM = 'aes-256-cbc';
+const SALT = 'dms-luxe-aadhaar-salt'; // Static salt for KDF consistency
 
 const getEncryptionKey = () => {
   // Key must be exactly 32 bytes (256 bits).
@@ -9,7 +11,8 @@ const getEncryptionKey = () => {
   if (!secret) {
     throw new Error('AADHAAR_KEY environment variable is not configured. Encryption is required for sensitive fields.');
   }
-  return crypto.createHash('sha256').update(String(secret)).digest();
+  // Strong Key Derivation Function (KDF) using scrypt (H-5)
+  return crypto.scryptSync(String(secret), SALT, 32);
 };
 
 const encrypt = (text) => {
@@ -24,7 +27,7 @@ const encrypt = (text) => {
     // Return IV and ciphertext combined as hex
     return `${iv.toString('hex')}:${encrypted}`;
   } catch (error) {
-    console.error('Encryption failed:', error);
+    logger.error('Encryption failed: %s', error.message);
     return text;
   }
 };
@@ -45,7 +48,7 @@ const decrypt = (encryptedText) => {
     decrypted += decipher.final('utf8');
     return decrypted;
   } catch (error) {
-    console.error('Decryption failed:', error);
+    logger.error('Decryption failed: %s', error.message);
     return encryptedText; // Fallback to returning the stored string
   }
 };

@@ -857,10 +857,10 @@ const DriverDashboard = () => {
                       )}
                     </div>
                     <div className="relative bg-slate-50 border border-slate-200 rounded-2xl h-80 overflow-hidden shadow-inner">
-                      <TrackingMap 
-                        role="driver" 
-                        rideId={activeRide?._id} 
-                        userId={user?._id} 
+                      <TrackingMap
+                        role="driver"
+                        rideId={activeRide?._id}
+                        userId={user?._id}
                         pickupLocation={activeRide?.pickupLocation}
                         dropoffLocation={activeRide?.dropoffLocation}
                         onDistanceUpdate={handleDistanceUpdate}
@@ -930,11 +930,10 @@ const DriverDashboard = () => {
                         <button
                           onClick={() => handleCompleteRide(activeRide._id)}
                           disabled={btnLoading}
-                          className={`w-full flex items-center justify-center space-x-2 py-3.5 rounded-xl transition-all font-bold text-sm cursor-pointer disabled:opacity-50 text-white ${
-                            distanceToDestination !== null && distanceToDestination <= 500
+                          className={`w-full flex items-center justify-center space-x-2 py-3.5 rounded-xl transition-all font-bold text-sm cursor-pointer disabled:opacity-50 text-white ${distanceToDestination !== null && distanceToDestination <= 500
                               ? 'bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-600/30 border border-emerald-400 ring-2 ring-emerald-300 ring-offset-2 animate-bounce'
                               : 'bg-emerald-600 hover:bg-emerald-500'
-                          }`}
+                            }`}
                         >
                           {btnLoading ? (
                             <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -1214,10 +1213,10 @@ const DriverDashboard = () => {
                       <div>
                         <div className="flex items-center space-x-2 mb-2">
                           <span className={`text-[9px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wider ${isCompleted
-                              ? 'bg-emerald-100 text-emerald-600 border border-emerald-200'
-                              : isCancelled
-                                ? 'bg-red-100 text-red-600 border border-red-200'
-                                : 'bg-blue-100 text-blue-600 border border-blue-200'
+                            ? 'bg-emerald-100 text-emerald-600 border border-emerald-200'
+                            : isCancelled
+                              ? 'bg-red-100 text-red-600 border border-red-200'
+                              : 'bg-blue-100 text-blue-600 border border-blue-200'
                             }`}>
                             {ride.status.replace('_', ' ')}
                           </span>
@@ -1481,8 +1480,8 @@ const DriverDashboard = () => {
                       key={item.id}
                       onClick={() => handleTabChange(item.id)}
                       className={`w-full flex items-center space-x-4 px-5 py-3.5 rounded-2xl font-bold text-xs uppercase tracking-wider transition-all text-left cursor-pointer ${isActive
-                          ? 'bg-[#eef4ff] border border-[#d0e0fc] text-[#003893]'
-                          : 'text-[#64748b] hover:text-[#003893] hover:bg-slate-100/50 border border-transparent'
+                        ? 'bg-[#eef4ff] border border-[#d0e0fc] text-[#003893]'
+                        : 'text-[#64748b] hover:text-[#003893] hover:bg-slate-100/50 border border-transparent'
                         }`}
                     >
                       <IconComponent size={18} />
