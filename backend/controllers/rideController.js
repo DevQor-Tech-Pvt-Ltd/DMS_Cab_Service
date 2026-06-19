@@ -97,17 +97,21 @@ exports.createRide = async (req, res) => {
     let razorpayOrder = null;
     if (isOnlinePayment) {
       if (!razorpay) {
-        throw new Error('Razorpay integration is not configured on the server.');
+        logger.warn('Razorpay integration is not configured on the server. Falling back to mock checkout.');
+      } else {
+        try {
+          const options = {
+            amount: calculatedFare * 100, // in paise
+            currency: 'INR',
+            receipt: `receipt_${Date.now()}`,
+          };
+
+          razorpayOrder = await razorpay.orders.create(options);
+          ride.razorpayOrderId = razorpayOrder.id;
+        } catch (razorpayError) {
+          logger.error('Failed to create Razorpay order: %s. Falling back to mock checkout.', razorpayError.message);
+        }
       }
-
-      const options = {
-        amount: calculatedFare * 100, // in paise
-        currency: 'INR',
-        receipt: `receipt_${Date.now()}`,
-      };
-
-      razorpayOrder = await razorpay.orders.create(options);
-      ride.razorpayOrderId = razorpayOrder.id;
     }
 
     await ride.save();
