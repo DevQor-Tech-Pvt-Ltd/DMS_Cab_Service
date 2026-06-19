@@ -147,7 +147,7 @@ const rideSchema = new mongoose.Schema(
 );
 
 // Pre-validate middleware to combine string pickupDate and pickupTime into unified Date field
-rideSchema.pre('validate', function (next) {
+rideSchema.pre('validate', function () {
   if (this.pickupDate && this.pickupTime) {
     try {
       const combined = new Date(`${this.pickupDate}T${this.pickupTime}`);
@@ -158,7 +158,6 @@ rideSchema.pre('validate', function (next) {
       // ignore
     }
   }
-  next();
 });
 
 // INDEXES FOR PERFORMANCE & FAST QUERIES

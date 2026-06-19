@@ -240,7 +240,7 @@ const GetStartedPage = () => {
             key: razorpayOrder.key,
             amount: razorpayOrder.amount,
             currency: razorpayOrder.currency,
-            name: 'DMS Cab Servicese Chauffeur',
+            name: 'DMS Cab Services Chauffeur',
             description: `Elite Transfer: ${ride.pickupLocation.substring(0, 15)}... ➔ ${ride.dropoffLocation.substring(0, 15)}...`,
             order_id: razorpayOrder.id,
             handler: async (paymentResponse) => {
