@@ -62,6 +62,23 @@ exports.createRide = async (req, res) => {
     const calculatedFare = calculateFare(pickupLocation, dropoffLocation, vehicleType);
     const isOnlinePayment = paymentMethod === 'card' || paymentMethod === 'upi';
 
+    // Verify wallet balance first
+    let updatedUser = null;
+    if (paymentMethod === 'wallet') {
+      const user = await User.findById(req.user._id);
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
+      }
+      if (user.walletBalance < calculatedFare) {
+        return res.status(400).json({
+          success: false,
+          message: `Insufficient wallet balance. Your balance is ₹${user.walletBalance.toLocaleString()}, but the fare is ₹${calculatedFare.toLocaleString()}.`
+        });
+      }
+      user.walletBalance -= calculatedFare;
+      updatedUser = await user.save();
+    }
+
     const ride = new Ride({
       client: req.user._id,
       pickupLocation,
@@ -73,7 +90,7 @@ exports.createRide = async (req, res) => {
       paymentMethod: paymentMethod || 'cash',
       fare: calculatedFare,
       status: 'pending',
-      paymentStatus: 'pending',
+      paymentStatus: paymentMethod === 'wallet' ? 'paid' : 'pending',
     });
 
     // If it's an online payment, generate a Razorpay order
@@ -98,7 +115,7 @@ exports.createRide = async (req, res) => {
     // Invalidate dashboard stats cache
     cache.clearDashboardCache();
 
-    // Only broadcast the socket event immediately if it's cash!
+    // Only broadcast the socket event immediately if it's cash or wallet!
     // For card/upi, we will broadcast AFTER verification in verifyPayment controller
     if (!isOnlinePayment) {
       const io = req.app.get('io');
@@ -118,8 +135,20 @@ exports.createRide = async (req, res) => {
         });
       }
 
-      // Dispatch invoice email to client asynchronously for cash bookings
-      sendInvoiceEmail(ride).catch(err => logger.error('Failed to send cash booking invoice email: %s', err.message));
+      // If paymentMethod is wallet, create a transaction record for it!
+      if (paymentMethod === 'wallet') {
+        await Transaction.create({
+          user: req.user._id,
+          ride: ride._id,
+          amount: ride.fare,
+          type: 'payment',
+          paymentMethod: 'wallet',
+          status: 'success'
+        });
+      }
+
+      // Dispatch invoice email to client asynchronously for cash/wallet bookings
+      sendInvoiceEmail(ride).catch(err => logger.error('Failed to send cash/wallet booking invoice email: %s', err.message));
     }
 
     return res.status(201).json({
@@ -128,6 +157,7 @@ exports.createRide = async (req, res) => {
         ? 'Ride booked, payment order initiated'
         : 'Ride booked successfully, notifying drivers',
       ride,
+      user: updatedUser ? updatedUser.toJSON() : undefined,
       razorpayOrder: razorpayOrder ? {
         id: razorpayOrder.id,
         amount: razorpayOrder.amount,
@@ -165,6 +195,7 @@ exports.acceptRide = async (req, res) => {
       {
         driver: req.user._id,
         status: 'driver_assigned',
+        rideOtp: secureOtp,
         rideOtpHash: hashedOtp,
         otpVerified: false,
         otpExpiresAt: otpExpiryTime,
@@ -257,6 +288,7 @@ exports.driverArrived = async (req, res) => {
     const otpExpiryTime = new Date(Date.now() + 5 * 60 * 1000);
 
     ride.status = 'driver_arrived';
+    ride.rideOtp = secureOtp;
     ride.rideOtpHash = hashedOtp;
     ride.otpAttempts = 0;
     ride.otpExpiresAt = otpExpiryTime;
@@ -454,6 +486,7 @@ exports.resendOtp = async (req, res) => {
     // Generate fresh secure 4-digit code
     const freshOtp = crypto.randomInt(1000, 10000).toString();
 
+    ride.rideOtp = freshOtp;
     ride.rideOtpHash = await bcrypt.hash(freshOtp, 10);
     ride.otpAttempts = 0;
     ride.otpExpiresAt = new Date(Date.now() + 5 * 60 * 1000); // Reset for another 5 minutes
@@ -782,7 +815,11 @@ exports.getRides = async (req, res) => {
     const skip = (page - 1) * limit;
 
     const total = await Ride.countDocuments(query);
-    const rides = await Ride.find(query)
+    let rideQuery = Ride.find(query);
+    if (req.user.role === 'client') {
+      rideQuery = rideQuery.select('+rideOtp');
+    }
+    const rides = await rideQuery
       .populate('client', 'fullName email phone')
       .populate('driver', 'fullName phone vehicleNumber vehicleType')
       .sort({ createdAt: -1 })
@@ -813,7 +850,11 @@ exports.getRides = async (req, res) => {
 // Get a single ride by ID (ownership is enforced by ownershipMiddleware)
 exports.getRideById = async (req, res) => {
   try {
-    const ride = await Ride.findById(req.params.id || req.params.rideId)
+    let rideQuery = Ride.findById(req.params.id || req.params.rideId);
+    if (req.user.role === 'client') {
+      rideQuery = rideQuery.select('+rideOtp');
+    }
+    const ride = await rideQuery
       .populate('client', 'fullName email phone')
       .populate('driver', 'fullName phone vehicleNumber vehicleType');
 

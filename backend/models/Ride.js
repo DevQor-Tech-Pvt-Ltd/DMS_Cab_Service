@@ -28,6 +28,10 @@ const rideSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    pickupDateTime: {
+      type: Date,
+      required: true,
+    },
     vehicleType: {
       type: String,
       required: true,
@@ -40,7 +44,7 @@ const rideSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['cash', 'card', 'upi'],
+      enum: ['cash', 'card', 'upi', 'wallet'],
       default: 'cash',
     },
     paymentStatus: {
@@ -74,6 +78,16 @@ const rideSchema = new mongoose.Schema(
       type: String,
       default: null,
       select: false,
+      set: function (val) {
+        if (!val) return val;
+        const { encrypt } = require('../utils/crypto');
+        return encrypt(val);
+      },
+      get: function (val) {
+        if (!val) return val;
+        const { decrypt } = require('../utils/crypto');
+        return decrypt(val);
+      }
     },
     rideOtpHash: {
       type: String,
@@ -125,13 +139,33 @@ const rideSchema = new mongoose.Schema(
       default: null,
     },
   },
-  { timestamps: true }
+  {
+    timestamps: true,
+    toJSON: { getters: true },
+    toObject: { getters: true }
+  }
 );
+
+// Pre-validate middleware to combine string pickupDate and pickupTime into unified Date field
+rideSchema.pre('validate', function (next) {
+  if (this.pickupDate && this.pickupTime) {
+    try {
+      const combined = new Date(`${this.pickupDate}T${this.pickupTime}`);
+      if (!isNaN(combined.getTime())) {
+        this.pickupDateTime = combined;
+      }
+    } catch (err) {
+      // ignore
+    }
+  }
+  next();
+});
 
 // INDEXES FOR PERFORMANCE & FAST QUERIES
 rideSchema.index({ client: 1, status: 1 });
 rideSchema.index({ driver: 1, status: 1 });
 rideSchema.index({ status: 1, paymentMethod: 1, paymentStatus: 1 });
 rideSchema.index({ createdAt: -1 });
+rideSchema.index({ pickupDateTime: 1 });
 
 module.exports = mongoose.model('Ride', rideSchema);

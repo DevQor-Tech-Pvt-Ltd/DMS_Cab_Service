@@ -33,6 +33,14 @@ exports.protect = async (req, res, next) => {
       // If token is missing, attempt to refresh automatically using refresh token
       return handleRefresh(req, res, next);
     }
+
+    // Check if token is blacklisted
+    const BlacklistedToken = require('../models/BlacklistedToken');
+    const isBlacklisted = await BlacklistedToken.exists({ token });
+    if (isBlacklisted) {
+      logger.warn('Auth protect: Token is blacklisted');
+      return res.status(401).json({ success: false, message: 'Session expired, please login again' });
+    }
     
     if (!process.env.JWT_SECRET) {
       throw new Error("JWT_SECRET is missing in environment variables");
@@ -70,6 +78,14 @@ async function handleRefresh(req, res, next, originalError = null) {
     if (!refreshToken) {
       const message = originalError ? 'Session expired, please login again' : 'Not authorized, missing token';
       return res.status(401).json({ success: false, message });
+    }
+
+    // Check if refresh token is blacklisted
+    const BlacklistedToken = require('../models/BlacklistedToken');
+    const isRefreshBlacklisted = await BlacklistedToken.exists({ token: refreshToken });
+    if (isRefreshBlacklisted) {
+      logger.warn('Auth refresh: Refresh token is blacklisted');
+      return res.status(401).json({ success: false, message: 'Session expired, please login again' });
     }
 
     if (!process.env.JWT_REFRESH_SECRET) {

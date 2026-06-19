@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin, Calendar, Clock, Car, User,
   ArrowRight, ArrowLeft, CreditCard, DollarSign,
-  Smartphone, Shield, CheckCircle2, ChevronRight
+  Smartphone, Shield, CheckCircle2, ChevronRight, Wallet
 } from '../utils/icons';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
@@ -44,7 +44,7 @@ const fleetOptions = [
 ];
 
 const GetStartedPage = () => {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, updateUser } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const [step, setStep] = useState(1);
@@ -183,7 +183,24 @@ const GetStartedPage = () => {
     if (step > 1) setStep(step - 1);
   };
 
+  const getWalletBalance = () => {
+    const localVal = localStorage.getItem(`dms_luxe_wallet_balance_${user?._id}`);
+    if (localVal !== null) {
+      return parseFloat(localVal);
+    }
+    return user?.walletBalance || 0;
+  };
+
   const handleConfirmBooking = async () => {
+    const estFare = getSelectedVehicle().baseFare;
+    if (formData.paymentMethod === 'wallet') {
+      const balance = getWalletBalance();
+      if (balance < estFare) {
+        alert(`Insufficient wallet balance. Your balance is ₹${balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}, but the fare is ₹${estFare.toLocaleString()}. Please choose another payment method or top up your wallet.`);
+        return;
+      }
+    }
+
     setLoading(true);
     try {
       const response = await api.post(
@@ -192,7 +209,24 @@ const GetStartedPage = () => {
       );
 
       if (response.data.success) {
-        const { ride, razorpayOrder } = response.data;
+        const { ride, razorpayOrder, user: updatedUser } = response.data;
+
+        if (updatedUser) {
+          updateUser(updatedUser);
+          localStorage.setItem(`dms_luxe_wallet_balance_${updatedUser._id}`, updatedUser.walletBalance.toString());
+          
+          const localTxns = localStorage.getItem(`dms_luxe_transactions_${updatedUser._id}`);
+          const txnsList = localTxns ? JSON.parse(localTxns) : [];
+          const newTxn = {
+            type: 'Ride Payment',
+            desc: `${ride.vehicleType || 'Premium Cab'} • ${ride.pickupLocation.split(',')[0]} to ${ride.dropoffLocation.split(',')[0]}`,
+            amt: `- ₹${(ride.fare || 0).toLocaleString()}`,
+            date: new Date().toLocaleString(),
+            minus: true,
+            value: ride.fare || 0
+          };
+          localStorage.setItem(`dms_luxe_transactions_${updatedUser._id}`, JSON.stringify([newTxn, ...txnsList]));
+        }
 
         // If Razorpay order was generated on the server, launch Razorpay Checkout UI
         if (razorpayOrder) {
@@ -251,7 +285,7 @@ const GetStartedPage = () => {
           const rzp = new window.Razorpay(options);
           rzp.open();
         } else {
-          // Standard cash reservation
+          // Standard cash or wallet reservation
           setCreatedRide(ride);
           setBookingSuccess(true);
         }
@@ -747,6 +781,26 @@ const GetStartedPage = () => {
                       </div>
                       <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${formData.paymentMethod === 'upi' ? 'border-[#003893]' : 'border-slate-300'}`}>
                         {formData.paymentMethod === 'upi' && <div className="w-2 h-2 rounded-full bg-[#003893]"></div>}
+                      </div>
+                    </button>
+
+                    {/* Wallet */}
+                    <button
+                      onClick={() => selectPayment('wallet')}
+                      type="button"
+                      className={`w-full flex items-center justify-between p-4 rounded-xl border transition-all text-left ${formData.paymentMethod === 'wallet' ? 'bg-[#003893]/5 border-[#003893] text-slate-900' : 'bg-white border-slate-200 text-slate-500 hover:border-slate-300'}`}
+                    >
+                      <div className="flex items-center space-x-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${formData.paymentMethod === 'wallet' ? 'bg-[#003893] text-white shadow-lg' : 'bg-slate-100 text-slate-500'}`}>
+                          <Wallet size={18} />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-slate-800">DMS Wallet</p>
+                          <p className="text-[10px] text-slate-400">Balance: ₹{getWalletBalance().toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                        </div>
+                      </div>
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${formData.paymentMethod === 'wallet' ? 'border-[#003893]' : 'border-slate-300'}`}>
+                        {formData.paymentMethod === 'wallet' && <div className="w-2 h-2 rounded-full bg-[#003893]"></div>}
                       </div>
                     </button>
                   </div>

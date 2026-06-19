@@ -23,10 +23,14 @@ const transactionSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ['cash', 'card', 'upi'],
-      required: [true, 'Payment method must be cash, card, or upi']
+      enum: ['cash', 'card', 'upi', 'wallet'],
+      required: [true, 'Payment method must be cash, card, upi, or wallet']
     },
     razorpayPaymentId: {
+      type: String,
+      default: null
+    },
+    razorpayOrderId: {
       type: String,
       default: null
     },

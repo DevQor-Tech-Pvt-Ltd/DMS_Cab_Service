@@ -37,10 +37,9 @@ const userSchema = new mongoose.Schema(
           if (v && (v.startsWith('$2a$') || v.startsWith('$2b$'))) {
             return true;
           }
-          // Must contain at least one letter and one number
-          return /^(?=.*[a-zA-Z])(?=.*\d)/.test(v);
+          return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9])/.test(v);
         },
-        message: 'Password must be alphanumeric (contain both letters and numbers)',
+        message: 'Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.',
       },
       select: false,
     },

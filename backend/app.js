@@ -47,6 +47,22 @@ app.use(
 );
 app.use(globalLimiter);
 app.use(express.json({ limit: '10mb' }));
+
+// API response envelope decorator middleware
+app.use((req, res, next) => {
+  const originalJson = res.json;
+  res.json = function (data) {
+    if (data && typeof data === 'object') {
+      if (data.success === false || data.success === true) {
+        if (!data.hasOwnProperty('errors')) {
+          data.errors = [];
+        }
+      }
+    }
+    return originalJson.call(this, data);
+  };
+  next();
+});
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Express 5 req.query read-only bypass for express-mongo-sanitize & hpp compatibility
@@ -151,6 +167,7 @@ app.use((err, req, res, next) => {
             process.env.NODE_ENV === 'development'
                 ? err.message
                 : 'Internal Server Error',
+        errors: err.errors || []
     });
 });
 

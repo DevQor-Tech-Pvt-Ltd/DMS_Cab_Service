@@ -13,6 +13,33 @@ const startServer = async () => {
   await connectDB();
   await createAdmin();
 
+  // Database Migration: Combine pickupDate and pickupTime strings into pickupDateTime Date objects for legacy records
+  try {
+    const Ride = require('./models/Ride');
+    const legacyRides = await Ride.find({ pickupDateTime: { $exists: false } });
+    if (legacyRides.length > 0) {
+      logger.info(`[MIGRATION] Found ${legacyRides.length} legacy ride records requiring pickupDateTime migration`);
+      let migratedCount = 0;
+      for (const ride of legacyRides) {
+        if (ride.pickupDate && ride.pickupTime) {
+          try {
+            const combined = new Date(`${ride.pickupDate}T${ride.pickupTime}`);
+            if (!isNaN(combined.getTime())) {
+              ride.pickupDateTime = combined;
+              await ride.save();
+              migratedCount++;
+            }
+          } catch (err) {
+            logger.error(`[MIGRATION] Failed to migrate ride ${ride._id}: %s`, err.message);
+          }
+        }
+      }
+      logger.info(`[MIGRATION] Successfully migrated ${migratedCount}/${legacyRides.length} ride records`);
+    }
+  } catch (migrationError) {
+    logger.error(`[MIGRATION] Critical error during date migration: %s`, migrationError.message);
+  }
+
   const server = http.createServer(app);
 
   // Setup Socket.IO
@@ -50,6 +77,13 @@ const startServer = async () => {
       const token = socket.handshake.auth?.token || socket.handshake.query?.token || cookieToken;
       if (!token) {
         return next(new Error('Unauthorized: No authentication token provided'));
+      }
+
+      // Check if token is blacklisted
+      const BlacklistedToken = require('./models/BlacklistedToken');
+      const isBlacklisted = await BlacklistedToken.exists({ token });
+      if (isBlacklisted) {
+        return next(new Error('Unauthorized: Session expired'));
       }
 
       const decoded = jwt.verify(token, process.env.JWT_SECRET);

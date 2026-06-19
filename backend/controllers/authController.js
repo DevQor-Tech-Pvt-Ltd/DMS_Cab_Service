@@ -98,9 +98,9 @@ exports.register = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Passwords do not match' });
     }
 
-    const isAlphanumeric = /^(?=.*[a-zA-Z])(?=.*\d)/.test(password);
-    if (!isAlphanumeric) {
-      return res.status(400).json({ success: false, message: 'Password must be alphanumeric (contain both letters and numbers)' });
+    const isStrongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9])/.test(password);
+    if (!isStrongPassword) {
+      return res.status(400).json({ success: false, message: 'Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character' });
     }
 
     // Only 'client' and 'driver' roles are allowed via public registration
@@ -241,6 +241,29 @@ exports.getMe = async (req, res, next) => {
 
 exports.logout = async (req, res, next) => {
   try {
+    const token = req.cookies?.token || (req.headers.authorization && req.headers.authorization.startsWith('Bearer') ? req.headers.authorization.split(' ')[1] : null);
+    const refreshToken = req.cookies?.refreshToken;
+    
+    const BlacklistedToken = require('../models/BlacklistedToken');
+    
+    const blacklistToken = async (t) => {
+      if (!t) return;
+      try {
+        const decoded = jwt.decode(t);
+        if (decoded && decoded.exp) {
+          const expiresAt = new Date(decoded.exp * 1000);
+          await BlacklistedToken.create({ token: t, expiresAt });
+        }
+      } catch (err) {
+        logger.error('Failed to blacklist token: %s', err.message);
+      }
+    };
+
+    await Promise.all([
+      blacklistToken(token),
+      blacklistToken(refreshToken)
+    ]);
+
     const cookieOpts = getCookieOptions();
     res.cookie('token', '', {
       ...cookieOpts,
@@ -337,9 +360,9 @@ exports.updateProfile = async (req, res, next) => {
       if (newPassword.length < 8) {
         return res.status(400).json({ success: false, message: 'New password must be at least 8 characters long' });
       }
-      const isAlphanumeric = /^(?=.*[a-zA-Z])(?=.*\d)/.test(newPassword);
-      if (!isAlphanumeric) {
-        return res.status(400).json({ success: false, message: 'New password must be alphanumeric (contain both letters and numbers)' });
+      const isStrongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9])/.test(newPassword);
+      if (!isStrongPassword) {
+        return res.status(400).json({ success: false, message: 'New password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character' });
       }
       user.password = newPassword;
     }
