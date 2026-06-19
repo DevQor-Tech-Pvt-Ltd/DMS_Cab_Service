@@ -44,6 +44,10 @@ const transactionSchema = new mongoose.Schema(
 );
 
 // Indexes to speed up queries
+transactionSchema.index({ user: 1 });
+transactionSchema.index({ status: 1 });
+transactionSchema.index({ razorpayPaymentId: 1 }, { unique: true, sparse: true });
+transactionSchema.index({ razorpayOrderId: 1 }, { sparse: true });
 transactionSchema.index({ user: 1, type: 1 });
 transactionSchema.index({ ride: 1 });
 transactionSchema.index({ createdAt: -1 });

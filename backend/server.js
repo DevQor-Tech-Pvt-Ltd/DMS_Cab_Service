@@ -1,4 +1,14 @@
 require('dotenv').config();
+const Sentry = require("@sentry/node");
+
+if (process.env.SENTRY_DSN) {
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    tracesSampleRate: 1.0,
+  });
+  console.log("[Sentry] Backend instrumentation successfully initialized.");
+}
+
 const http = require('http');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');

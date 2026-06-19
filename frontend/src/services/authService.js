@@ -1,15 +1,6 @@
-import axios from 'axios';
-import { getApiUrl } from '../utils/urls';
+import apiClient from './apiClient';
 
-const baseURL = getApiUrl();
-
-export const api = axios.create({
-  baseURL,
-  withCredentials: true,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+export const api = apiClient;
 
 // Stub setAuthToken for compatibility with other files (safe to deprecate)
 export const setAuthToken = (token) => {};

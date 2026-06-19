@@ -7,7 +7,7 @@ const StatCard = ({ icon: Icon, image, imageClass = "w-14 h-14", label, value, t
   >
     <div className="flex items-start justify-between mb-4">
       {image ? (
-        <img src={image} alt={label} className={`${imageClass} object-contain`} />
+        <img src={image} alt={label} className={`${imageClass} object-contain`} loading="lazy" />
       ) : (
         <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white text-[#003893] border border-[#003893]/20 shadow-sm">
           <Icon size={22} />

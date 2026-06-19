@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { CreditCard, ShieldCheck, Smartphone, History, Car, ChevronRight, Wallet } from '../../utils/icons';
+import { motion, AnimatePresence } from 'framer-motion';
+import { CreditCard, ShieldCheck, Smartphone, History, Car, ChevronRight, Wallet, X, Shield, CheckCircle2, AlertCircle } from '../../utils/icons';
 import { api } from '../../services/authService';
 
 const ClientWallet = ({
@@ -16,17 +17,36 @@ const ClientWallet = ({
   onBalanceUpdate
 }) => {
   const [depositing, setDepositing] = useState(false);
+  const [depositAmount, setDepositAmount] = useState('');
+  const [showAddMoneyModal, setShowAddMoneyModal] = useState(false);
+  const [depositError, setDepositError] = useState('');
+  const [toast, setToast] = useState(null);
+  const [paymentState, setPaymentState] = useState('idle'); // 'idle', 'initiating', 'checkout', 'verifying', 'success', 'failed'
 
-  const handleAddMoney = async () => {
-    const amountStr = prompt("Enter the amount you would like to top up (INR):");
-    if (!amountStr) return;
-    const amount = parseFloat(amountStr);
+  const showToast = (message, type = 'error') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), type === 'success' ? 3000 : 5000);
+  };
+
+  const handleAddMoney = () => {
+    setDepositAmount('');
+    setDepositError('');
+    setShowAddMoneyModal(true);
+  };
+
+  const handleAddMoneySubmit = async (e) => {
+    if (e) e.preventDefault();
+    const amount = parseFloat(depositAmount);
     if (isNaN(amount) || amount <= 0) {
-      alert("Please enter a valid positive number.");
+      setDepositError("Please enter a valid positive number.");
       return;
     }
 
+    setDepositError('');
+    setShowAddMoneyModal(false);
     setDepositing(true);
+    setPaymentState('initiating');
+
     try {
       // 1. Create deposit order in backend
       const response = await api.post('/payment/wallet/deposit', { amount });
@@ -38,10 +58,13 @@ const ClientWallet = ({
 
       // Check if Razorpay script is loaded
       if (!window.Razorpay) {
-        alert('Razorpay SDK is loading, please try again in a few seconds.');
+        showToast('Razorpay SDK is loading, please try again in a few seconds.', 'error');
         setDepositing(false);
+        setPaymentState('idle');
         return;
       }
+
+      setPaymentState('checkout');
 
       // 2. Open Razorpay checkout
       const options = {
@@ -54,6 +77,7 @@ const ClientWallet = ({
         handler: async (paymentResponse) => {
           try {
             setDepositing(true);
+            setPaymentState('verifying');
             // Verify payment
             const verifyResponse = await api.post('/payment/wallet/verify', {
               razorpay_payment_id: paymentResponse.razorpay_payment_id,
@@ -62,7 +86,8 @@ const ClientWallet = ({
             });
 
             if (verifyResponse.data.success) {
-              alert(`Successfully deposited ₹${amount.toLocaleString()} to your wallet!`);
+              showToast(`Successfully deposited ₹${amount.toLocaleString()} to your wallet!`, 'success');
+              setPaymentState('success');
               // Update local state / user info
               if (verifyResponse.data.user) {
                 updateUser(verifyResponse.data.user);
@@ -73,9 +98,11 @@ const ClientWallet = ({
             }
           } catch (verifyError) {
             console.error('Wallet verification failed:', verifyError);
-            alert(verifyError.response?.data?.message || 'Deposit verification failed.');
+            showToast(verifyError.response?.data?.message || 'Deposit verification failed.', 'error');
+            setPaymentState('failed');
           } finally {
             setDepositing(false);
+            setTimeout(() => setPaymentState('idle'), 2000);
           }
         },
         prefill: {
@@ -89,7 +116,8 @@ const ClientWallet = ({
         modal: {
           ondismiss: () => {
             setDepositing(false);
-            alert('Deposit transaction cancelled.');
+            setPaymentState('idle');
+            showToast('Deposit transaction cancelled.', 'info');
           }
         }
       };
@@ -98,8 +126,10 @@ const ClientWallet = ({
       rzp.open();
     } catch (err) {
       console.error('Deposit initiation failed:', err);
-      alert(err.response?.data?.message || err.message || 'Deposit failed.');
+      showToast(err.response?.data?.message || err.message || 'Deposit failed.', 'error');
       setDepositing(false);
+      setPaymentState('failed');
+      setTimeout(() => setPaymentState('idle'), 2000);
     }
   };
 
@@ -128,7 +158,7 @@ const ClientWallet = ({
             >
               {depositing ? 'Processing...' : '+ Add Money'}
             </button>
-            <button onClick={() => alert('Transfer functionality is coming soon!')} className="flex-1 sm:flex-initial bg-transparent border border-slate-200 hover:bg-slate-100 text-slate-800 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all">Transfer</button>
+            <button onClick={() => showToast('Transfer functionality is coming soon!', 'info')} className="flex-1 sm:flex-initial bg-transparent border border-slate-200 hover:bg-slate-100 text-slate-800 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all">Transfer</button>
           </div>
         </div>
 
@@ -214,6 +244,154 @@ const ClientWallet = ({
           <p className="text-[10px] text-slate-400 leading-relaxed font-sans">Your credit card data is encrypted using military-grade AES-256 standard protocols. DMS Cab Services never stores CVV code records on its servers.</p>
         </div>
       </div>
+
+      {/* Add Money Modal */}
+      <AnimatePresence>
+        {showAddMoneyModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4 font-sans"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl border border-slate-100 relative text-left"
+            >
+              <button
+                onClick={() => setShowAddMoneyModal(false)}
+                className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 transition-colors p-1"
+              >
+                <X size={18} />
+              </button>
+
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#003893] flex items-center justify-center border border-blue-100 shadow-sm">
+                  <Wallet size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-serif font-bold text-slate-900">Wallet Top-up</h3>
+                  <p className="text-[10px] text-slate-400">Instantly deposit funds using Razorpay</p>
+                </div>
+              </div>
+
+              <form onSubmit={handleAddMoneySubmit} className="space-y-4">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">Enter Amount (INR)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">₹</span>
+                    <input
+                      id="deposit-amount-input"
+                      type="number"
+                      value={depositAmount}
+                      onChange={(e) => {
+                        setDepositAmount(e.target.value);
+                        if (depositError) setDepositError('');
+                      }}
+                      className="w-full bg-white border border-slate-200 focus:border-[#003893] focus:outline-none rounded-xl py-3 pl-8 pr-4 text-slate-900 font-bold text-sm"
+                      placeholder="500"
+                      autoFocus
+                    />
+                  </div>
+                  {depositError && <p className="text-red-500 text-[10px] mt-1.5 flex items-center"><AlertCircle size={12} className="mr-1" /> {depositError}</p>}
+                </div>
+
+                <div className="grid grid-cols-4 gap-2">
+                  {[500, 1000, 2000, 5000].map((amt) => (
+                    <button
+                      key={amt}
+                      type="button"
+                      onClick={() => {
+                        setDepositAmount(amt.toString());
+                        setDepositError('');
+                      }}
+                      className="bg-slate-50 border border-slate-200 hover:border-[#003893] hover:bg-blue-50 text-slate-700 hover:text-[#003893] font-bold py-2 rounded-xl text-xs transition-all shadow-sm"
+                    >
+                      +₹{amt}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full bg-[#003893] hover:bg-[#002d72] text-white font-bold py-3.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center space-x-2"
+                >
+                  <span>Proceed to Deposit</span>
+                  <ChevronRight size={14} />
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Processing/Loader Overlay */}
+      <AnimatePresence>
+        {depositing && paymentState !== 'idle' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 font-sans"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl border border-slate-100"
+            >
+              <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+                <div className="absolute inset-0 border-4 border-[#003893]/10 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-t-[#003893] rounded-full animate-spin"></div>
+                <Shield className="text-[#003893]" size={30} />
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-xl font-serif font-bold text-slate-900">
+                  {paymentState === 'initiating' && 'Initiating Secured Deposit...'}
+                  {paymentState === 'checkout' && 'Awaiting Deposit Payment...'}
+                  {paymentState === 'verifying' && 'Verifying Wallet Credit...'}
+                  {paymentState === 'success' && 'Deposit Approved!'}
+                  {paymentState === 'failed' && 'Deposit Failed'}
+                </h3>
+                <p className="text-slate-500 text-xs leading-relaxed max-w-xs mx-auto font-sans">
+                  {paymentState === 'initiating' && 'Creating payment order on secured servers. Please hold.'}
+                  {paymentState === 'checkout' && 'Please complete the payment in the opened Razorpay portal.'}
+                  {paymentState === 'verifying' && 'Validating signature ledger and updating wallet balance. Do not refresh.'}
+                  {paymentState === 'success' && 'Your wallet balance has been successfully credited.'}
+                  {paymentState === 'failed' && 'An error occurred during verification. Please check your banking ledger.'}
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className={`fixed top-24 left-1/2 transform -translate-x-1/2 z-[100] flex items-center space-x-3 px-6 py-4 rounded-xl shadow-2xl border text-sm font-sans min-w-[320px] max-w-md ${
+              toast.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : toast.type === 'info'
+                ? 'bg-blue-50 border-blue-200 text-blue-800'
+                : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}
+          >
+            {toast.type === 'error' && <AlertCircle className="text-rose-500 flex-shrink-0" size={18} />}
+            {toast.type === 'success' && <CheckCircle2 className="text-emerald-500 flex-shrink-0" size={18} />}
+            {toast.type === 'info' && <AlertCircle className="text-blue-500 flex-shrink-0" size={18} />}
+            <div className="flex-grow">{toast.message}</div>
+            <button onClick={() => setToast(null)} className="text-slate-400 hover:text-slate-600 transition-colors font-bold text-lg">×</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

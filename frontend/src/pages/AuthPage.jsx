@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Phone, ArrowRight, Briefcase, Eye, EyeOff, Car, CreditCard, Upload, FileText, Shield, Clock, Star, MapPin, Calendar, Map, Award } from '../utils/icons';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
-import { login as loginRequest, register as registerRequest } from '../services/authService.js';
+import { login as loginRequest, register as registerRequest, api } from '../services/authService.js';
 import { isMobile } from '../utils/motion';
 
 const AuthPage = () => {
@@ -39,6 +39,19 @@ const AuthPage = () => {
   const { login } = useAuth();
   const redirect = searchParams.get('redirect');
 
+  const [authMethod, setAuthMethod] = useState('phone'); // 'email' or 'phone'
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [countdown, setCountdown] = useState(0);
+
+  useEffect(() => {
+    let timer;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
+
   const handleFileChange = (e, setFile, setFileName) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -60,11 +73,91 @@ const AuthPage = () => {
     reader.readAsDataURL(file);
   };
 
+  const handleResendOtp = async () => {
+    setError('');
+    setIsSubmitting(true);
+    try {
+      const response = await api.post('/auth/phone-login/send', { phone });
+      if (response.data?.success) {
+        setCountdown(30);
+        setOtpCode('');
+      } else {
+        throw new Error(response.data?.message || 'Failed to resend OTP.');
+      }
+    } catch (err) {
+      setError(err?.response?.data?.message || err.message || 'Unable to resend OTP');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setShowColdStartWarning(false);
 
+    if (authMethod === 'phone' && isLogin) {
+      if (!phone.trim()) {
+        setError('Phone number is required.');
+        return;
+      }
+      setIsSubmitting(true);
+      const warningTimeout = setTimeout(() => {
+        setShowColdStartWarning(true);
+      }, 4000);
+
+      try {
+        if (!otpSent) {
+          // Request OTP
+          const response = await api.post('/auth/phone-login/send', { phone });
+          if (response.data?.success) {
+            setOtpSent(true);
+            setCountdown(30);
+          } else {
+            throw new Error(response.data?.message || 'Failed to send OTP.');
+          }
+        } else {
+          // Verify OTP
+          if (!otpCode.trim()) {
+            setError('Please enter the 6-digit OTP verification code.');
+            setIsSubmitting(false);
+            clearTimeout(warningTimeout);
+            return;
+          }
+          const response = await api.post('/auth/phone-login/verify', { phone, otp: otpCode, role });
+          const data = response.data;
+          
+          if (data?.success && data?.user) {
+            login(data.user);
+            if (redirect && ['activity', 'wallet'].includes(redirect)) {
+              navigate(`/client/dashboard?tab=${redirect}`);
+            } else if (redirect === 'get-started') {
+              navigate('/get-started');
+            } else {
+              if (data.user.role === 'admin') {
+                navigate('/admin/dashboard');
+              } else if (data.user.role === 'driver') {
+                navigate('/driver/dashboard');
+              } else {
+                navigate('/');
+              }
+            }
+          } else {
+            throw new Error(data?.message || 'Verification failed.');
+          }
+        }
+      } catch (err) {
+        const message = err?.response?.data?.message || err.message || 'Unable to authenticate';
+        setError(message);
+      } finally {
+        clearTimeout(warningTimeout);
+        setIsSubmitting(false);
+        setShowColdStartWarning(false);
+      }
+      return;
+    }
+
+    // Standard Email Login & Signup
     if (!email.trim() || !password.trim()) {
       setError('Email and password are required.');
       return;
@@ -125,9 +218,9 @@ const AuthPage = () => {
         return;
       }
 
-      const isAlphanumeric = /^(?=.*[a-zA-Z])(?=.*\d)/.test(password);
-      if (!isAlphanumeric) {
-        setError('Password must be alphanumeric (contain both letters and numbers).');
+      const isStrongPassword = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9])/.test(password);
+      if (!isStrongPassword) {
+        setError('Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.');
         return;
       }
     }
@@ -313,6 +406,41 @@ const AuthPage = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Method switcher for login */}
+                {isLogin && (
+                  <div className="flex border border-slate-100 mb-6 bg-slate-50 p-1 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMethod('phone');
+                        setError('');
+                      }}
+                      className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+                        authMethod === 'phone'
+                          ? 'bg-[#003893] text-white shadow-sm'
+                          : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      Phone OTP
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthMethod('email');
+                        setError('');
+                      }}
+                      className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+                        authMethod === 'email'
+                          ? 'bg-[#003893] text-white shadow-sm'
+                          : 'text-slate-500 hover:text-slate-900'
+                      }`}
+                    >
+                      Email / Password
+                    </button>
+                  </div>
+                )}
+
+                {/* 1. Full Name - Only on Sign Up */}
                 {!isLogin && (
                   <motion.div layout={!isMobile}>
                     <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Full Name</label>
@@ -330,22 +458,26 @@ const AuthPage = () => {
                   </motion.div>
                 )}
 
-                <motion.div layout={!isMobile}>
-                  <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Email Address</label>
-                  <div className="relative">
-                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
-                      placeholder="john@example.com"
-                    />
-                  </div>
-                </motion.div>
+                {/* 2. Email Address - On Sign Up OR Email Login */}
+                {(!isLogin || (isLogin && authMethod === 'email')) && (
+                  <motion.div layout={!isMobile}>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Email Address</label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
+                        placeholder="john@example.com"
+                      />
+                    </div>
+                  </motion.div>
+                )}
 
-                {!isLogin && (
+                {/* 3. Contact Number - On Sign Up OR Phone OTP Login */}
+                {(!isLogin || (isLogin && authMethod === 'phone')) && (
                   <motion.div layout={!isMobile}>
                     <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Contact Number</label>
                     <div className="relative">
@@ -355,14 +487,68 @@ const AuthPage = () => {
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
                         required
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
+                        disabled={isLogin && otpSent}
+                        className={`w-full border rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all ${
+                          isLogin && otpSent ? 'bg-slate-100 border-slate-300 text-slate-500 cursor-not-allowed' : 'bg-slate-50 border-slate-200'
+                        }`}
                         placeholder="+91 000-000-0000"
+                      />
+                      {isLogin && otpSent && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setOtpSent(false);
+                            setOtpCode('');
+                          }}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[#003893] hover:underline"
+                        >
+                          Change
+                        </button>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* 4. OTP Verification Code Input - Only on Phone OTP Login when code is sent */}
+                {isLogin && authMethod === 'phone' && otpSent && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-1.5"
+                  >
+                    <div className="flex justify-between items-center">
+                      <label className="block text-xs text-slate-500 font-medium uppercase tracking-wider">6-Digit Verification Code</label>
+                      {countdown > 0 ? (
+                        <span className="text-xs text-slate-500 font-medium flex items-center space-x-1">
+                          <Clock size={12} className="inline animate-spin mr-1 text-[#003893]" />
+                          Resend in {countdown}s
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleResendOtp}
+                          className="text-xs font-semibold text-[#003893] hover:underline focus:outline-none"
+                        >
+                          Resend Code
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                        className="w-full text-center text-xl font-bold tracking-[0.5em] bg-slate-50 border border-slate-200 rounded-xl py-3 focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all placeholder:text-slate-300"
+                        placeholder="000000"
+                        required
                       />
                     </div>
                   </motion.div>
                 )}
 
-                {!isLogin && (
+                {/* 5. Account Role - On Sign Up OR Phone OTP Login (to allow registration role routing) */}
+                {(!isLogin || (isLogin && authMethod === 'phone')) && (
                   <motion.div layout={!isMobile}>
                     <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Account Role</label>
                     <div className="relative">
@@ -371,7 +557,10 @@ const AuthPage = () => {
                         value={role}
                         onChange={(e) => setRole(e.target.value)}
                         required
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all appearance-none"
+                        disabled={isLogin && otpSent}
+                        className={`w-full border rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all appearance-none ${
+                          isLogin && otpSent ? 'bg-slate-100 border-slate-300 text-slate-500 cursor-not-allowed' : 'bg-slate-50 border-slate-200'
+                        }`}
                       >
                         <option value="client">Client / Passenger</option>
                         <option value="driver">Chauffeur / Driver</option>
@@ -380,6 +569,7 @@ const AuthPage = () => {
                   </motion.div>
                 )}
 
+                {/* 6. Chauffeur-specific Details (Only on Signup as Driver) */}
                 {!isLogin && role === 'driver' && (
                   <>
                     {/* Current City */}
@@ -677,52 +867,57 @@ const AuthPage = () => {
                   </>
                 )}
 
-                <motion.div layout={!isMobile}>
-                  <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Password</label>
-                  <div className="relative">
-                    <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
-                    <input
-                      type={showPassword ? 'text' : 'password'}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      required
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-12 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
-                      placeholder="••••••••"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#003893] transition-colors"
-                      tabIndex={-1}
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  </div>
-                </motion.div>
+                {/* 7. Password / Confirm Password (Only on Signup OR Email Login) */}
+                {(!isLogin || (isLogin && authMethod === 'email')) && (
+                  <>
+                    <motion.div layout={!isMobile}>
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Password</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                        <input
+                          type={showPassword ? 'text' : 'password'}
+                          value={password}
+                          onChange={(e) => setPassword(e.target.value)}
+                          required
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-12 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
+                          placeholder="••••••••"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#003893] transition-colors"
+                          tabIndex={-1}
+                        >
+                          {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                        </button>
+                      </div>
+                    </motion.div>
 
-                {!isLogin && (
-                  <motion.div layout={!isMobile}>
-                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Confirm Password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-12 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#003893] transition-colors"
-                        tabIndex={-1}
-                      >
-                        {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                      </button>
-                    </div>
-                  </motion.div>
+                    {!isLogin && (
+                      <motion.div layout={!isMobile}>
+                        <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Confirm Password</label>
+                        <div className="relative">
+                          <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
+                          <input
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            required
+                            className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-12 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
+                            placeholder="••••••••"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-[#003893] transition-colors"
+                            tabIndex={-1}
+                          >
+                            {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </>
                 )}
 
                 {error && (
@@ -759,11 +954,27 @@ const AuthPage = () => {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      <span>{isLogin ? 'Signing In...' : 'Creating Account...'}</span>
+                      <span>
+                        {isLogin
+                          ? authMethod === 'phone'
+                            ? otpSent
+                              ? 'Verifying...'
+                              : 'Sending Code...'
+                            : 'Signing In...'
+                          : 'Creating Account...'}
+                      </span>
                     </>
                   ) : (
                     <>
-                      <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+                      <span>
+                        {isLogin
+                          ? authMethod === 'phone'
+                            ? otpSent
+                              ? 'Verify & Sign In'
+                              : 'Send Verification Code'
+                            : 'Sign In'
+                          : 'Create Account'}
+                      </span>
                       <ArrowRight size={18} />
                     </>
                   )}

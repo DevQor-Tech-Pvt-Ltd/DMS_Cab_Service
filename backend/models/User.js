@@ -29,10 +29,11 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: [true, 'Password is required'],
+      required: false,
       minlength: [8, 'Password must be at least 8 characters'],
       validate: {
         validator: function (v) {
+          if (!v) return true;
           // If the password starts with $2a$ or $2b$, it is a bcrypt hash (e.g. from seed/admin creation)
           if (v && (v.startsWith('$2a$') || v.startsWith('$2b$'))) {
             return true;
@@ -131,5 +132,6 @@ userSchema.methods.toJSON = function () {
 // Add compound indexes for authentication and admin query optimization
 userSchema.index({ email: 1, role: 1 });
 userSchema.index({ role: 1, status: 1 });
+userSchema.index({ phone: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model('User', userSchema);

@@ -440,3 +440,124 @@ exports.deleteAccount = async (req, res, next) => {
     return res.status(500).json({ success: false, message: 'Failed to delete account. Please try again.' });
   }
 };
+
+/**
+ * Request Phone Verification OTP Code
+ */
+exports.sendPhoneOtp = async (req, res, next) => {
+  try {
+    const { phone } = req.body;
+    if (!phone || !/^[+]?[\d\s\-().]{7,15}$/.test(phone)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid phone number.' });
+    }
+
+    const crypto = require('crypto');
+    const bcrypt = require('bcryptjs');
+    const PhoneOtp = require('../models/PhoneOtp');
+    const smsService = require('../services/smsService');
+
+    // Generate secure 6-digit OTP
+    const otp = crypto.randomInt(100000, 1000000).toString();
+    const otpHash = await bcrypt.hash(otp, 10);
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes validity
+
+    // Upsert verification record
+    await PhoneOtp.findOneAndUpdate(
+      { phone },
+      { otpHash, expiresAt, attempts: 0, verified: false },
+      { upsert: true, new: true }
+    );
+
+    // Dispatch SMS asynchronously
+    const message = `Your DMS Luxe authentication code is ${otp}. Valid for 5 minutes. Do not share this code.`;
+    smsService.sendSMS(phone, message).catch(err => logger.error(`[SMS Dispatch Error] phone=${phone}: ${err.message}`));
+
+    return res.status(200).json({
+      success: true,
+      message: 'OTP verification code sent successfully.'
+    });
+  } catch (error) {
+    logger.error('Send phone OTP error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Failed to dispatch verification code.' });
+  }
+};
+
+/**
+ * Verify OTP Code and Login/Register User
+ */
+exports.verifyPhoneOtp = async (req, res, next) => {
+  try {
+    const { phone, otp, role } = req.body;
+    if (!phone || !otp) {
+      return res.status(400).json({ success: false, message: 'Phone and verification code are required.' });
+    }
+
+    const bcrypt = require('bcryptjs');
+    const PhoneOtp = require('../models/PhoneOtp');
+    const User = require('../models/User');
+
+    // Retrieve verification record
+    const record = await PhoneOtp.findOne({ phone });
+    if (!record) {
+      return res.status(400).json({ success: false, message: 'Verification code has expired or is invalid.' });
+    }
+
+    // Attempt lockout protection
+    if (record.attempts >= 3) {
+      return res.status(400).json({ success: false, message: 'Too many verification failures. Please request a new OTP code.' });
+    }
+
+    // Increment attempts
+    record.attempts += 1;
+    await record.save();
+
+    // Verify OTP code
+    const isMatch = await bcrypt.compare(otp, record.otpHash);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Invalid verification code.' });
+    }
+
+    // Find user or register automatically (Uber/Ola style dynamic sign-up/sign-in)
+    let user = await User.findOne({ phone });
+    
+    if (!user) {
+      // Create user with sparse email placeholder
+      const cleanPhone = phone.replace(/[^0-9]/g, '');
+      const uniqueSuffix = Math.random().toString(36).substring(2, 6);
+      const emailPlaceholder = `user_${cleanPhone}_${uniqueSuffix}@dms-luxe.com`;
+      
+      const selectRole = role && ['client', 'driver'].includes(role) ? role : 'client';
+      
+      user = await User.create({
+        fullName: `User_${cleanPhone.slice(-4) || 'Luxe'}`,
+        phone,
+        email: emailPlaceholder,
+        role: selectRole,
+        status: selectRole === 'driver' ? 'pending' : 'approved',
+        isApproved: selectRole === 'driver' ? false : true
+      });
+    }
+
+    if (user.isActive === false) {
+      return res.status(403).json({ success: false, message: 'This account has been deactivated/deleted.' });
+    }
+
+    // Check if driver is approved
+    if (user.role === 'driver' && user.status !== 'approved') {
+      return res.status(403).json({
+        success: false,
+        message: 'Your chauffeur account is pending admin approval.',
+        status: user.status
+      });
+    }
+
+    // OTP verified, remove record
+    await PhoneOtp.deleteOne({ phone });
+
+    // Issues session cookies and returns user details
+    sendToken(res, user);
+  } catch (error) {
+    logger.error('Verify phone OTP error: %s', error.message);
+    return res.status(500).json({ success: false, message: 'Verification failed. Please try again.' });
+  }
+};

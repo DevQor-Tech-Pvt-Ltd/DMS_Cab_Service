@@ -9,6 +9,7 @@ const compression = require('compression');
 const timeout = require('connect-timeout');
 const globalLimiter = require('./middleware/globalRateLimiter');
 const { isOriginAllowed } = require('./utils/corsOriginValidator');
+const securitySanitizer = require('./middleware/securitySanitizer');
 
 
 
@@ -24,11 +25,24 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
 // Security Middlewares
-// app.use(helmet());
 app.use(
     helmet({
         crossOriginResourcePolicy: {
             policy: 'cross-origin',
+        },
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'", "https://checkout.razorpay.com"],
+                styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://unpkg.com"],
+                imgSrc: ["'self'", "data:", "https://res.cloudinary.com", "https://images.unsplash.com", "https://*.tile.openstreetmap.org"],
+                connectSrc: ["'self'", "https://api.razorpay.com", "https://lumberjack.razorpay.com", "wss://*.onrender.com", "ws://localhost:*", "http://localhost:*"],
+                frameSrc: ["'self'", "https://api.razorpay.com", "https://checkout.razorpay.com"],
+                fontSrc: ["'self'", "https://fonts.gstatic.com"],
+                objectSrc: ["'none'"],
+                mediaSrc: ["'self'"],
+                upgradeInsecureRequests: [],
+            },
         },
     })
 );
@@ -46,7 +60,16 @@ app.use(
     })
 );
 app.use(globalLimiter);
-app.use(express.json({ limit: '10mb' }));
+app.use(
+    express.json({
+        limit: '10mb',
+        verify: (req, res, buf, encoding) => {
+            if (req.originalUrl && req.originalUrl.includes('/webhook')) {
+                req.rawBody = buf.toString(encoding || 'utf8');
+            }
+        }
+    })
+);
 
 // API response envelope decorator middleware
 app.use((req, res, next) => {
@@ -77,6 +100,7 @@ app.use((req, res, next) => {
 });
 
 app.use(mongoSanitize());
+app.use(securitySanitizer);
 app.use(hpp());
 app.use(compression());
 app.use(cookieParser());
@@ -158,17 +182,6 @@ app.use((err, req, res, next) => {
 });
 
 // Error handling middleware
-const logger = require('./utils/logger');
-app.use((err, req, res, next) => {
-    logger.error('API Error: %s', err.stack || err.message || err);
-    res.status(err.status || 500).json({
-        success: false,
-        message:
-            process.env.NODE_ENV === 'development'
-                ? err.message
-                : 'Internal Server Error',
-        errors: err.errors || []
-    });
-});
+app.use(require('./middleware/errorMiddleware'));
 
 module.exports = app;

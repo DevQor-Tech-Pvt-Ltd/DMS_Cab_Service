@@ -161,6 +161,11 @@ rideSchema.pre('validate', function () {
 });
 
 // INDEXES FOR PERFORMANCE & FAST QUERIES
+rideSchema.index({ client: 1 });
+rideSchema.index({ driver: 1 });
+rideSchema.index({ status: 1 });
+rideSchema.index({ paymentStatus: 1 });
+rideSchema.index({ razorpayOrderId: 1 }, { unique: true, sparse: true });
 rideSchema.index({ client: 1, status: 1 });
 rideSchema.index({ driver: 1, status: 1 });
 rideSchema.index({ status: 1, paymentMethod: 1, paymentStatus: 1 });

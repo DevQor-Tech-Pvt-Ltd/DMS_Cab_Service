@@ -94,6 +94,37 @@ exports.verifyPayment = async (req, res) => {
         message: 'Payment already verified.'
       });
     }
+
+    // Check if signature has already been used to prevent replay attacks
+    const signatureUsed = await Ride.exists({ razorpaySignature: razorpay_signature });
+    if (signatureUsed) {
+      logger.warn(`[REPLAY ATTACK DETECTED] Signature ${razorpay_signature} already used previously.`);
+      return res.status(400).json({
+        success: false,
+        message: 'Payment verification failed. Replay attack detected.'
+      });
+    }
+
+    // Verify order amount matches ride fare via Razorpay API to prevent parameter manipulation
+    if (razorpay) {
+      try {
+        const razorpayOrderDetails = await razorpay.orders.fetch(razorpay_order_id);
+        if (razorpayOrderDetails.amount !== Math.round(ride.fare * 100)) {
+          logger.error(`[TAMPER DETECTED] Amount mismatch: Razorpay Order Amount (${razorpayOrderDetails.amount} paise) vs Ride Fare (${Math.round(ride.fare * 100)} paise).`);
+          return res.status(400).json({
+            success: false,
+            message: 'Payment verification failed. Amount mismatch detected.'
+          });
+        }
+      } catch (fetchError) {
+        logger.error(`[Razorpay Order Fetch Error] order=${razorpay_order_id}: ${fetchError.message}`);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to retrieve verification details from payment provider.'
+        });
+      }
+    }
+
     // Update ride payment details and status
     ride.paymentStatus = 'paid';
     ride.razorpayPaymentId = razorpay_payment_id;
@@ -268,6 +299,36 @@ exports.verifyWallet = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Forbidden: You do not own this transaction.' });
     }
 
+    // Check if signature/payment has already been used to prevent replay attacks
+    const signatureUsed = await Transaction.exists({ razorpayPaymentId: razorpay_payment_id });
+    if (signatureUsed) {
+      logger.warn(`[REPLAY ATTACK DETECTED] Wallet signature already used. payment_id=${razorpay_payment_id}`);
+      return res.status(400).json({
+        success: false,
+        message: 'Payment verification failed. Replay attack detected.'
+      });
+    }
+
+    // Verify order amount matches transaction amount via Razorpay API to prevent parameter manipulation
+    if (razorpay) {
+      try {
+        const razorpayOrderDetails = await razorpay.orders.fetch(razorpay_order_id);
+        if (razorpayOrderDetails.amount !== Math.round(txn.amount * 100)) {
+          logger.error(`[TAMPER DETECTED] Wallet Amount mismatch: Razorpay Order Amount (${razorpayOrderDetails.amount} paise) vs Txn Amount (${Math.round(txn.amount * 100)} paise).`);
+          return res.status(400).json({
+            success: false,
+            message: 'Payment verification failed. Amount mismatch detected.'
+          });
+        }
+      } catch (fetchError) {
+        logger.error(`[Razorpay Order Fetch Error] order=${razorpay_order_id}: ${fetchError.message}`);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to retrieve verification details from payment provider.'
+        });
+      }
+    }
+
     // Mark transaction as successful
     txn.status = 'success';
     txn.razorpayPaymentId = razorpay_payment_id;
@@ -296,3 +357,199 @@ exports.verifyWallet = async (req, res) => {
     });
   }
 };
+
+/**
+ * Handle incoming Razorpay webhook events asynchronously (Phase 5)
+ */
+exports.razorpayWebhook = async (req, res) => {
+  const WebhookEvent = require('../models/WebhookEvent');
+  let webhookLog = null;
+  try {
+    const signature = req.headers['x-razorpay-signature'];
+    const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+    if (!secret) {
+      logger.error('[Razorpay Webhook] RAZORPAY_WEBHOOK_SECRET is not configured on the server.');
+      return res.status(500).json({ success: false, message: 'Webhook secret not configured' });
+    }
+
+    if (!signature) {
+      logger.warn('[Razorpay Webhook] Missing x-razorpay-signature header.');
+      return res.status(400).json({ success: false, message: 'Missing signature header' });
+    }
+
+    const payloadString = req.rawBody || JSON.stringify(req.body);
+    const shasum = crypto.createHmac('sha256', secret);
+    shasum.update(payloadString);
+    const digest = shasum.digest('hex');
+
+    const expectedBuffer = Buffer.from(digest);
+    const receivedBuffer = Buffer.from(signature);
+
+    const isVerified =
+      expectedBuffer.length === receivedBuffer.length &&
+      crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+
+    if (!isVerified) {
+      logger.warn('[Razorpay Webhook] Webhook verification failed. Signature mismatch.');
+      return res.status(400).json({ success: false, message: 'Invalid webhook signature' });
+    }
+
+    const event = req.body.event;
+    const payload = req.body.payload;
+    const eventId = req.headers['x-razorpay-event-id'] || req.body.id || req.body.event_id;
+
+    logger.info(`[Razorpay Webhook] Signature verified. Event ID: ${eventId}, Event Type: ${event}`);
+
+    // Idempotency: skip already processed events
+    if (eventId) {
+      const exists = await WebhookEvent.findOne({ eventId });
+      if (exists) {
+        logger.info(`[Razorpay Webhook] Event ${eventId} already processed previously (Idempotency triggered).`);
+        return res.status(200).json({ success: true, message: 'Duplicate event ignored.' });
+      }
+
+      // Log event to DB
+      webhookLog = await WebhookEvent.create({
+        eventId,
+        event,
+        payload: req.body,
+        processed: false,
+        status: 'failed'
+      });
+    }
+
+    if (event === 'order.paid' || event === 'payment.captured') {
+      let orderId = null;
+      let paymentId = null;
+
+      if (payload.order && payload.order.entity) {
+        orderId = payload.order.entity.id;
+      }
+      if (payload.payment && payload.payment.entity) {
+        paymentId = payload.payment.entity.id;
+        orderId = orderId || payload.payment.entity.order_id;
+      }
+
+      if (!orderId) {
+        logger.warn('[Razorpay Webhook] No orderId found in webhook payload');
+        if (webhookLog) {
+          webhookLog.processed = true;
+          webhookLog.status = 'success';
+          await webhookLog.save();
+        }
+        return res.status(200).json({ success: true, message: 'Ignored, no orderId' });
+      }
+
+      // A. Check if Ride Booking
+      const ride = await Ride.findOne({ razorpayOrderId: orderId });
+      if (ride) {
+        if (ride.paymentStatus !== 'paid') {
+          ride.paymentStatus = 'paid';
+          if (paymentId) ride.razorpayPaymentId = paymentId;
+          await ride.save();
+
+          // Create transaction ledger record if missing
+          const existingTxn = await Transaction.findOne({ razorpayPaymentId: paymentId });
+          if (!existingTxn) {
+            await Transaction.create({
+              user: ride.client,
+              ride: ride._id,
+              amount: ride.fare,
+              type: 'payment',
+              paymentMethod: ride.paymentMethod || 'card',
+              razorpayPaymentId: paymentId || 'webhook_captured',
+              status: 'success'
+            });
+          }
+
+          // Email invoice
+          sendInvoiceEmail(ride).catch(err => logger.error('Failed to send webhook booking invoice email: %s', err.message));
+
+          // Broadcast Socket.io notification
+          const io = req.app.get('io');
+          if (io) {
+            io.emit('new-booking', {
+              _id: ride._id,
+              pickupLocation: ride.pickupLocation,
+              dropoffLocation: ride.dropoffLocation,
+              pickupDate: ride.pickupDate,
+              pickupTime: ride.pickupTime,
+              vehicleType: ride.vehicleType,
+              passengerDetails: ride.passengerDetails,
+              fare: ride.fare,
+              status: ride.status,
+              paymentMethod: ride.paymentMethod,
+              paymentStatus: ride.paymentStatus
+            });
+          }
+          logger.info(`[Razorpay Webhook] Webhook successfully processed ride payment for order: ${orderId}`);
+        } else {
+          logger.info(`[Razorpay Webhook] Ride payment already processed for order: ${orderId}`);
+        }
+      }
+
+      // B. Check if Wallet Transaction
+      const txn = await Transaction.findOne({ razorpayOrderId: orderId });
+      if (txn) {
+        if (txn.status === 'pending') {
+          txn.status = 'success';
+          if (paymentId) txn.razorpayPaymentId = paymentId;
+          await txn.save();
+
+          const user = await User.findById(txn.user);
+          if (user) {
+            user.walletBalance = (user.walletBalance || 0) + txn.amount;
+            await user.save();
+            logger.info(`[Razorpay Webhook] Webhook successfully credited wallet for user: ${user._id}, order: ${orderId}`);
+          } else {
+            logger.warn(`[Razorpay Webhook] User not found for transaction: ${txn._id}`);
+          }
+        } else {
+          logger.info(`[Razorpay Webhook] Wallet transaction already processed for order: ${orderId}`);
+        }
+      }
+    } else if (event === 'payment.failed') {
+      let orderId = null;
+      if (payload.payment && payload.payment.entity) {
+        orderId = payload.payment.entity.order_id;
+      }
+
+      if (orderId) {
+        const ride = await Ride.findOne({ razorpayOrderId: orderId });
+        if (ride && ride.paymentStatus !== 'paid') {
+          ride.paymentStatus = 'failed';
+          await ride.save();
+          logger.info(`[Razorpay Webhook] Webhook marked ride payment failed for order: ${orderId}`);
+        }
+
+        const txn = await Transaction.findOne({ razorpayOrderId: orderId, status: 'pending' });
+        if (txn) {
+          txn.status = 'failed';
+          await txn.save();
+          logger.info(`[Razorpay Webhook] Webhook marked wallet transaction failed for order: ${orderId}`);
+        }
+      }
+    }
+
+    if (webhookLog) {
+      webhookLog.processed = true;
+      webhookLog.status = 'success';
+      await webhookLog.save();
+    }
+    return res.status(200).json({ success: true });
+  } catch (error) {
+    logger.error('Razorpay webhook handler error: %s', error.message);
+    if (webhookLog) {
+      webhookLog.processed = true;
+      webhookLog.status = 'failed';
+      webhookLog.errorMessage = error.message;
+      await webhookLog.save();
+    }
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error processing webhook request'
+    });
+  }
+};
+

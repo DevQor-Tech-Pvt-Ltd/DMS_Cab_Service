@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin, Calendar, Clock, Car, User,
   ArrowRight, ArrowLeft, CreditCard, DollarSign,
-  Smartphone, Shield, CheckCircle2, ChevronRight, Wallet
+  Smartphone, Shield, CheckCircle2, ChevronRight, Wallet, AlertCircle
 } from '../utils/icons';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
@@ -51,6 +51,18 @@ const GetStartedPage = () => {
   const [loading, setLoading] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [createdRide, setCreatedRide] = useState(null);
+  
+  // Payment states and toast notifications (Ola/Uber standard)
+  const [paymentState, setPaymentState] = useState('idle'); // 'idle', 'initiating', 'checkout', 'verifying', 'success', 'failed'
+  const [toast, setToast] = useState(null);
+
+  const showToast = (message, type = 'error') => {
+    setToast({ message, type });
+    // Automatically clear errors/info after 5 seconds, success after 3
+    setTimeout(() => {
+      setToast(null);
+    }, type === 'success' ? 3000 : 5000);
+  };
 
   // Route Guard: Redirect drivers or admins trying to access the booking screen
   useEffect(() => {
@@ -196,12 +208,16 @@ const GetStartedPage = () => {
     if (formData.paymentMethod === 'wallet') {
       const balance = getWalletBalance();
       if (balance < estFare) {
-        alert(`Insufficient wallet balance. Your balance is ₹${balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}, but the fare is ₹${estFare.toLocaleString()}. Please choose another payment method or top up your wallet.`);
+        showToast(
+          `Insufficient wallet balance. Your balance is ₹${balance.toLocaleString(undefined, { minimumFractionDigits: 2 })}, but the fare is ₹${estFare.toLocaleString()}. Please choose another payment method or top up your wallet.`,
+          'error'
+        );
         return;
       }
     }
 
     setLoading(true);
+    setPaymentState('initiating');
     try {
       const response = await api.post(
         '/rides',
@@ -231,10 +247,13 @@ const GetStartedPage = () => {
         // If Razorpay order was generated on the server, launch Razorpay Checkout UI
         if (razorpayOrder) {
           if (!window.Razorpay) {
-            alert('Razorpay payment gateway is currently loading. Please try again in 3 seconds.');
+            showToast('Razorpay payment gateway is currently loading. Please try again in 3 seconds.', 'error');
             setLoading(false);
+            setPaymentState('idle');
             return;
           }
+
+          setPaymentState('checkout');
 
           const options = {
             key: razorpayOrder.key,
@@ -246,6 +265,7 @@ const GetStartedPage = () => {
             handler: async (paymentResponse) => {
               try {
                 setLoading(true);
+                setPaymentState('verifying');
                 const verifyResponse = await api.post(
                   '/payment/verify',
                   {
@@ -258,10 +278,13 @@ const GetStartedPage = () => {
                 if (verifyResponse.data.success) {
                   setCreatedRide(verifyResponse.data.ride);
                   setBookingSuccess(true);
+                  setPaymentState('success');
+                  showToast('Payment verified successfully and booking active', 'success');
                 }
               } catch (verifyError) {
                 console.error('Payment verification failed:', verifyError);
-                alert(verifyError.response?.data?.message || 'Payment verification failed.');
+                showToast(verifyError.response?.data?.message || 'Payment verification failed.', 'error');
+                setPaymentState('failed');
               } finally {
                 setLoading(false);
               }
@@ -277,7 +300,8 @@ const GetStartedPage = () => {
             modal: {
               ondismiss: () => {
                 setLoading(false);
-                alert('Payment was cancelled.');
+                setPaymentState('idle');
+                showToast('Payment was cancelled.', 'info');
               }
             }
           };
@@ -288,12 +312,14 @@ const GetStartedPage = () => {
           // Standard cash or wallet reservation
           setCreatedRide(ride);
           setBookingSuccess(true);
+          setPaymentState('success');
         }
       }
     } catch (error) {
       console.error('Booking failed:', error);
-      alert(error.response?.data?.message || 'Booking confirmation failed.');
+      showToast(error.response?.data?.message || 'Booking confirmation failed.', 'error');
       setLoading(false);
+      setPaymentState('failed');
     }
   };
 
@@ -837,6 +863,72 @@ const GetStartedPage = () => {
           </motion.div>
         )}
       </div>
+
+      {/* Full-screen Payment/Booking Loader Overlay */}
+      <AnimatePresence>
+        {loading && paymentState !== 'idle' && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[100] flex items-center justify-center p-4 font-sans"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="bg-white rounded-2xl p-8 max-w-md w-full text-center space-y-6 shadow-2xl border border-slate-100"
+            >
+              <div className="relative w-20 h-20 mx-auto flex items-center justify-center">
+                <div className="absolute inset-0 border-4 border-[#003893]/10 rounded-full"></div>
+                <div className="absolute inset-0 border-4 border-t-[#003893] rounded-full animate-spin"></div>
+                <Shield className="text-[#003893]" size={30} />
+              </div>
+              
+              <div className="space-y-2">
+                <h3 className="text-xl font-serif font-bold text-slate-900">
+                  {paymentState === 'initiating' && 'Securing Chauffeur Ride...'}
+                  {paymentState === 'checkout' && 'Awaiting Payment Completion...'}
+                  {paymentState === 'verifying' && 'Verifying Secured Transaction...'}
+                  {paymentState === 'success' && 'Transaction Approved!'}
+                  {paymentState === 'failed' && 'Transaction Failed'}
+                </h3>
+                <p className="text-slate-500 text-xs leading-relaxed max-w-xs mx-auto">
+                  {paymentState === 'initiating' && 'Creating booking order on secured servers. Please hold.'}
+                  {paymentState === 'checkout' && 'Please complete the payment in the opened Razorpay portal.'}
+                  {paymentState === 'verifying' && 'Validating signature ledger and updating booking status. Do not refresh.'}
+                  {paymentState === 'success' && 'Your premium transfer has been confirmed.'}
+                  {paymentState === 'failed' && 'An error occurred during verification. Please contact support.'}
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Floating Toast Notification */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            className={`fixed top-24 left-1/2 transform -translate-x-1/2 z-[100] flex items-center space-x-3 px-6 py-4 rounded-xl shadow-2xl border text-sm font-sans min-w-[320px] max-w-md ${
+              toast.type === 'success'
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                : toast.type === 'info'
+                ? 'bg-blue-50 border-blue-200 text-blue-800'
+                : 'bg-rose-50 border-rose-200 text-rose-800'
+            }`}
+          >
+            {toast.type === 'error' && <AlertCircle className="text-rose-500 flex-shrink-0" size={18} />}
+            {toast.type === 'success' && <CheckCircle2 className="text-emerald-500 flex-shrink-0" size={18} />}
+            {toast.type === 'info' && <AlertCircle className="text-blue-500 flex-shrink-0" size={18} />}
+            <div className="flex-grow">{toast.message}</div>
+            <button onClick={() => setToast(null)} className="text-slate-400 hover:text-slate-600 transition-colors font-bold text-lg">×</button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

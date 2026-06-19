@@ -33,6 +33,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import ErrorBoundary from './components/ErrorBoundary';
 
 // Premium DMS Cab Servicese Micro-Loader shown while dynamic page chunks are fetched
 const PageLoader = () => (
@@ -82,10 +83,12 @@ function App() {
   }, []);
 
   return (
-    <Router>
-      <ScrollToTop />
-      <AppContent />
-    </Router>
+    <ErrorBoundary>
+      <Router>
+        <ScrollToTop />
+        <AppContent />
+      </Router>
+    </ErrorBoundary>
   );
 }
 
