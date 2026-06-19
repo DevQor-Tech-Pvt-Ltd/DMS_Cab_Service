@@ -1,4 +1,5 @@
 import React from 'react';
+import ImageWithFallback from '../components/ImageWithFallback';
 import { Shield, Clock, Award, Star, ChevronRight } from '../utils/icons';
 import { Link } from 'react-router-dom';
 
@@ -8,7 +9,7 @@ const AboutPage = () => {
       {/* Hero Header */}
       <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden border-b border-slate-100">
         <div className="absolute inset-0 z-0 opacity-25">
-          <img 
+          <ImageWithFallback 
             src="https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&q=80" 
             alt="DMS About Us Background" 
             className="w-full h-full object-cover"
@@ -41,7 +42,7 @@ const AboutPage = () => {
             {/* Image Side */}
             <div className="w-full lg:w-1/2 relative animate-fade-in animation-delay-300">
               <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-2xl">
-                <img 
+                <ImageWithFallback 
                   src="https://images.unsplash.com/photo-1617531653332-bd46c24f2068?auto=format&fit=crop&q=80" 
                   alt="Professional Chauffeur" 
                   className="w-full h-auto object-cover"

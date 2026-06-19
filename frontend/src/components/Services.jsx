@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ImageWithFallback from './ImageWithFallback';
 import { createPortal } from 'react-dom';
 import {
   Plane,
@@ -181,7 +182,7 @@ const Services = () => {
         <div className="bg-slate-50 border border-slate-200 rounded-3xl overflow-hidden flex flex-col md:flex-row shadow-lg">
           {/* Image Side */}
           <div className="md:w-5/12 h-64 md:h-auto relative">
-            <img
+            <ImageWithFallback
               src="/car-homeContact.avif"
               alt="Luxury Car Interior"
               className="w-full h-full object-cover"

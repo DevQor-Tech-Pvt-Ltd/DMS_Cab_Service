@@ -1,4 +1,5 @@
 import React from 'react';
+import ImageWithFallback from '../ImageWithFallback';
 import { Car, Clock, Star } from '../../utils/icons';
 
 const ClientActivity = ({
@@ -65,7 +66,7 @@ const ClientActivity = ({
               <div key={ride._id || idx} className="bg-slate-50 border border-slate-200 rounded-2xl overflow-hidden flex flex-col md:flex-row hover:border-[#003893]/20 transition-all shadow-sm">
                 {/* Vehicle Image */}
                 <div className="w-full md:w-48 h-40 md:h-auto overflow-hidden relative bg-black/5 shrink-0">
-                  <img src={getVehicleImage(ride.vehicleType)} alt={ride.vehicleType} className="w-full h-full object-cover" loading="lazy" />
+                  <ImageWithFallback src={getVehicleImage(ride.vehicleType)} alt={ride.vehicleType} className="w-full h-full object-cover" loading="lazy" />
                   <div className="absolute top-2 left-2 bg-[#003893] px-2 py-0.5 rounded text-white border border-[#003893]/10">
                     <span className="text-[9px] font-semibold tracking-wider uppercase">{ride.vehicleType || 'Premium XL'}</span>
                   </div>

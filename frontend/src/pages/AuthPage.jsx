@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ImageWithFallback from '../components/ImageWithFallback';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Phone, ArrowRight, Briefcase, Eye, EyeOff, Car, CreditCard, Upload, FileText, Shield, Clock, Star, MapPin, Calendar, Map, Award } from '../utils/icons';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
@@ -329,7 +330,7 @@ const AuthPage = () => {
             {/* Top: Logo */}
             <div className="relative z-10 flex justify-center">
               <Link to="/" className="inline-block">
-                <img src="/logoo.png" alt="DMS Logo" className="h-[100px] w-auto object-contain rounded-xl" />
+                <ImageWithFallback src="/logoo.png" alt="DMS Logo" className="h-[100px] w-auto object-contain rounded-xl" />
               </Link>
             </div>
 
@@ -373,7 +374,7 @@ const AuthPage = () => {
               {/* Mobile Logo */}
               <div className="lg:hidden mb-6 text-center">
                 <Link to="/">
-                  <img src="/logo.png" alt="DMS Logo" className="h-10 w-auto object-contain mx-auto" />
+                  <ImageWithFallback src="/logo.png" alt="DMS Logo" className="h-10 w-auto object-contain mx-auto" />
                 </Link>
               </div>
 

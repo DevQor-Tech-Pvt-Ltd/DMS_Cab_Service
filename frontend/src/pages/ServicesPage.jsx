@@ -1,4 +1,5 @@
 import React from 'react';
+import ImageWithFallback from '../components/ImageWithFallback';
 import Services from '../components/Services';
 
 const ServicesPage = () => {
@@ -7,7 +8,7 @@ const ServicesPage = () => {
       {/* Services Page Header */}
       <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden border-b border-slate-100">
         <div className="absolute inset-0 z-0 opacity-20">
-          <img 
+          <ImageWithFallback 
             src="https://images.unsplash.com/photo-1549399542-7e3f8b79c341?auto=format&fit=crop&q=80&w=1200" 
             alt="DMS Services" 
             className="w-full h-full object-cover"

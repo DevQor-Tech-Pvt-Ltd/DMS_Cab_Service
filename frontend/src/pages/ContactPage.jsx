@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ImageWithFallback from '../components/ImageWithFallback';
 import { MapPin, Phone, Mail, Clock, Send, CheckCircle2, Loader2 } from '../utils/icons';
 import { submitContactInquiry } from '../services/authService';
 
@@ -53,7 +54,7 @@ const ContactPage = () => {
       {/* Hero Header */}
       <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden border-b border-slate-100">
         <div className="absolute inset-0 z-0 opacity-10">
-          <img
+          <ImageWithFallback
             src="/map-bg.png"
             alt="Contact DMS"
             className="w-full h-full object-cover filter invert"

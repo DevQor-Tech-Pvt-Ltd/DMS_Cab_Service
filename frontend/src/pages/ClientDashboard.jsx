@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ImageWithFallback from '../components/ImageWithFallback';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin, Clock, CalendarCheck, Star,
@@ -952,7 +953,7 @@ const ClientDashboard = () => {
             <button className="text-slate-500 hover:text-slate-800">
               <Menu size={20} />
             </button>
-            <img src="/logo.png" alt="DMS" className="h-8 object-contain" />
+            <ImageWithFallback src="/logo.png" alt="DMS" className="h-8 object-contain" />
             <button onClick={() => setIsProfileOpen(true)} className="w-8 h-8 rounded-full bg-[#003893]/10 flex items-center justify-center border border-[#003893]/20 text-[#003893] font-bold text-sm">
               {user.fullName?.charAt(0).toUpperCase() || 'A'}
             </button>

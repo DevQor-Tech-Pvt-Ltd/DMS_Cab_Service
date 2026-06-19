@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ImageWithFallback from './ImageWithFallback';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Mail, Lock, User, Phone, Eye, EyeOff, Car, CreditCard, Upload, FileText, X, MapPin, Calendar, Map, Award } from '../utils/icons';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -256,7 +257,7 @@ const EditProfileModal = ({ isOpen, onClose }) => {
                 <div className="relative group">
                   <div className="w-20 h-20 rounded-full overflow-hidden border border-slate-200 bg-slate-50 flex items-center justify-center relative">
                     {profilePicture ? (
-                      <img
+                      <ImageWithFallback
                         src={profilePicture}
                         alt="Profile Preview"
                         className="w-full h-full object-cover"

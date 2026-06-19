@@ -1,4 +1,5 @@
 import React from 'react';
+import ImageWithFallback from './ImageWithFallback';
 import { Users, Briefcase, Wifi, ChevronRight } from '../utils/icons';
 
 const fleetData = [
@@ -62,7 +63,7 @@ const Fleet = () => {
             >
               {/* Car Image container */}
               <div className="relative h-64 overflow-hidden bg-slate-100">
-                <img
+                <ImageWithFallback
                   src={car.image}
                   alt={car.name}
                   loading="lazy"

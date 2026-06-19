@@ -1,4 +1,5 @@
 import React, { useRef } from 'react';
+import ImageWithFallback from './ImageWithFallback';
 import { ChevronLeft, ChevronRight, User } from '../utils/icons';
 import { Link } from 'react-router-dom';
 
@@ -125,7 +126,7 @@ const HomeFleet = () => {
                   {/* Circular Image */}
                   <div className="w-56 h-56 md:w-48 md:h-48 lg:w-56 lg:h-56 rounded-full border-[1.5px] border-[#003893]/30 p-1 mb-8 relative overflow-hidden transition-all duration-500 group-hover:border-[#003893] group-hover:shadow-[0_0_20px_rgba(0,56,147,0.1)] bg-white">
                     <div className="w-full h-full rounded-full overflow-hidden bg-slate-50">
-                      <img
+                      <ImageWithFallback
                         src={car.image}
                         alt={car.name}
                         loading="lazy"

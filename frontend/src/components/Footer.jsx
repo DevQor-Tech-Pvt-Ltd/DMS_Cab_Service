@@ -1,4 +1,5 @@
 import React from 'react';
+import ImageWithFallback from './ImageWithFallback';
 import { Link, useLocation } from 'react-router-dom';
 import { Mail, Phone, MapPin } from '../utils/icons';
 
@@ -18,7 +19,7 @@ const Footer = () => {
           {/* Brand Column */}
           <div className="col-span-1 md:col-span-2 lg:col-span-1">
             <Link to="/" className="inline-block mb-6">
-              <img src="/logoo.png" alt="DMS Logo" className="h-[120px] w-auto object-contain rounded-xl" />
+              <ImageWithFallback src="/logoo.png" alt="DMS Logo" className="h-[120px] w-auto object-contain rounded-xl" />
             </Link>
             <p className="text-slate-200 text-sm leading-relaxed mb-6 pr-4">
               The pinnacle of premium chauffeur services. We provide world-class executive transportation for those who demand excellence in every journey.

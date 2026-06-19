@@ -1,4 +1,5 @@
 import React, { lazy, Suspense } from 'react';
+import ImageWithFallback from '../components/ImageWithFallback';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import LazyViewportSection from '../components/LazyViewportSection';
@@ -244,7 +245,7 @@ const Home = () => {
           initial={{ x: 500, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}>
-          <img
+          <ImageWithFallback
             src="/carbg.png"
             alt="Luxury Car"
             className="w-[820px] xl:w-[900px] max-w-none object-contain" />

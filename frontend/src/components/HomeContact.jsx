@@ -1,4 +1,5 @@
 import React from 'react';
+import ImageWithFallback from './ImageWithFallback';
 import { Phone, Mail, ArrowRight } from '../utils/icons';
 import { Link } from 'react-router-dom';
 
@@ -17,7 +18,7 @@ const HomeContact = () => {
             <div className="absolute -inset-1 bg-gradient-to-r from-[#003893]/10 to-transparent rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
 
             <div className="relative rounded-2xl overflow-hidden border border-slate-200">
-              <img
+              <ImageWithFallback
                 src="/Range Rover Autobiography.webp"
                 alt="Range Rover Autobiography"
                 className="w-full h-[300px] sm:h-[450px] lg:h-[600px] object-cover scale-100 group-hover:scale-103 transition-transform duration-[800ms] ease-out"

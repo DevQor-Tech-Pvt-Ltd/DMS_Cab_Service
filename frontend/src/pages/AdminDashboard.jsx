@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ImageWithFallback from '../components/ImageWithFallback';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield, FileText, Eye, X
@@ -233,7 +234,7 @@ const AdminDashboard = () => {
                     </a>
                   </div>
                 ) : (
-                  <img
+                  <ImageWithFallback
                     src={selectedDoc.docData}
                     alt={selectedDoc.docTitle}
                     className="max-w-full max-h-[50vh] object-contain rounded-lg border border-white/5"

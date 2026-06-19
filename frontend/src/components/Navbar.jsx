@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import ImageWithFallback from './ImageWithFallback';
 import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ChevronRight, User, LayoutDashboard, LogOut } from '../utils/icons';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -102,7 +103,7 @@ const Navbar = () => {
                       title="Edit Profile"
                     >
                       {user.profilePicture ? (
-                        <img
+                        <ImageWithFallback
                           src={user.profilePicture}
                           alt={user.fullName}
                           className="w-10 h-10 border-2 border-[#FFC107] rounded-full object-cover shrink-0"
@@ -199,7 +200,7 @@ const Navbar = () => {
                             className="flex items-center space-x-3 text-left w-full text-[#0B3D91] hover:text-[#093073] py-3 font-bold border-b border-slate-100"
                           >
                             {user.profilePicture ? (
-                              <img
+                              <ImageWithFallback
                                 src={user.profilePicture}
                                 alt={user.fullName}
                                 className="w-8 h-8 rounded-full object-cover border border-[#0B3D91]/30"

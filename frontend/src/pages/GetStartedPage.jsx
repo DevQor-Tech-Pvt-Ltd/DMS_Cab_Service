@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import ImageWithFallback from '../components/ImageWithFallback';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   MapPin, Calendar, Clock, Car, User,
@@ -14,7 +15,7 @@ const fleetOptions = [
   {
     name: 'Mercedes-Benz S-Class',
     category: 'Executive Sedan',
-    image: 'Mercedes-Benz S-Class.webp',
+    image: '/Mercedes-Benz S-Class.webp',
     passengers: 3,
     luggage: 2,
     baseFare: 1501,
@@ -24,7 +25,7 @@ const fleetOptions = [
   {
     name: 'Range Rover Autobiography',
     category: 'Luxury SUV',
-    image: 'Range Rover Autobiography.webp',
+    image: '/Range Rover Autobiography.webp',
     passengers: 4,
     luggage: 4,
     baseFare: 1,
@@ -34,7 +35,7 @@ const fleetOptions = [
   {
     name: 'Mercedes-Benz V-Class',
     category: 'Premium Van',
-    image: 'Mercedes-Benz V-Class.webp',
+    image: '/Mercedes-Benz V-Class.webp',
     passengers: 7,
     luggage: 6,
     baseFare: 1,
@@ -582,7 +583,7 @@ const GetStartedPage = () => {
                         className={`bg-white border rounded-xl overflow-hidden cursor-pointer transition-all duration-300 flex flex-col group ${isSelected ? 'border-[#003893] shadow-xl scale-[1.01]' : 'border-slate-200 hover:border-slate-300'}`}
                       >
                         <div className="relative h-40 overflow-hidden bg-black/5">
-                          <img
+                          <ImageWithFallback
                             src={car.image}
                             alt={car.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"

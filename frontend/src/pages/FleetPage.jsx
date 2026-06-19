@@ -1,4 +1,5 @@
 import React from 'react';
+import ImageWithFallback from '../components/ImageWithFallback';
 import Fleet from '../components/Fleet';
 
 const FleetPage = () => {
@@ -7,7 +8,7 @@ const FleetPage = () => {
       {/* Fleet Page Header */}
       <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden border-b border-slate-100">
         <div className="absolute inset-0 z-0 opacity-25">
-          <img 
+          <ImageWithFallback 
             src="https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&q=80" 
             alt="DMS Fleet" 
             className="w-full h-full object-cover"

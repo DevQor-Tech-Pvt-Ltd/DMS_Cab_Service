@@ -1,4 +1,5 @@
 import React from 'react';
+import ImageWithFallback from './ImageWithFallback';
 import { ChevronRight, Shield, Award } from '../utils/icons';
 import { Link } from 'react-router-dom';
 
@@ -11,7 +12,7 @@ const HomeAbout = () => {
           {/* Image Side */}
           <div className="w-full lg:w-1/2 relative group">
             <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-md">
-              <img
+              <ImageWithFallback
                 src="/about_car.avif"
                 alt="DMS Cab Servicese Chauffeur"
                 className="w-full h-[300px] sm:h-[400px] lg:h-[500px] object-cover scale-100 group-hover:scale-[1.02] transition-transform duration-700 ease-out"
