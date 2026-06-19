@@ -782,7 +782,7 @@ const GetStartedPage = () => {
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-slate-800">Credit / Debit Card</p>
-                          <p className="text-[10px] text-slate-400">Mock Premium Checkout</p>
+                          <p className="text-[10px] text-slate-400">Secured via Razorpay</p>
                         </div>
                       </div>
                       <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${formData.paymentMethod === 'card' ? 'border-[#003893]' : 'border-slate-300'}`}>
@@ -802,7 +802,7 @@ const GetStartedPage = () => {
                         </div>
                         <div>
                           <p className="text-sm font-semibold text-slate-800">UPI / Netbanking</p>
-                          <p className="text-[10px] text-slate-400">Instant Mobile Pay</p>
+                          <p className="text-[10px] text-slate-400">Secured via Razorpay</p>
                         </div>
                       </div>
                       <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${formData.paymentMethod === 'upi' ? 'border-[#003893]' : 'border-slate-300'}`}>
