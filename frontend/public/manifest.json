@@ -1,0 +1,20 @@
+{
+  "short_name": "DMS Luxe",
+  "name": "DMS Cab Services - Premium Chauffeur",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "logo.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "display": "standalone",
+  "theme_color": "#003893"
+}

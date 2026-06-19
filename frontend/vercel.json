@@ -1,4 +1,23 @@
 {
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Permissions-Policy",
+          "value": "accelerometer=(self \"https://api.razorpay.com\" \"https://checkout.razorpay.com\"), gyroscope=(self \"https://api.razorpay.com\" \"https://checkout.razorpay.com\"), payment=(self \"https://api.razorpay.com\" \"https://checkout.razorpay.com\")"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/(.*)",
