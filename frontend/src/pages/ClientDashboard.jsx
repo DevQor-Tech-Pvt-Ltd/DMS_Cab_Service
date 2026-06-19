@@ -644,23 +644,6 @@ const ClientDashboard = () => {
     }
   };
 
-  if (loading || !user) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-[#003893]/20 border-t-[#003893] rounded-full animate-spin mx-auto"></div>
-          <p className="text-[#003893] font-serif text-sm tracking-wider uppercase animate-pulse">Loading Dashboard...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Format dynamic stats
-  const totalRidesCount = ridesList.length;
-  const completedRides = ridesList.filter(r => r.status === 'completed');
-  const totalSpentAmount = completedRides.reduce((sum, r) => sum + (r.fare || 0), 0);
-  const loyaltyPoints = Math.floor(totalSpentAmount / 20);
-
   // Active ride to track
   const activeRide = ridesList.find(
     r => ['pending', 'driver_assigned', 'driver_arrived', 'ride_started'].includes(r.status)
@@ -680,6 +663,23 @@ const ClientDashboard = () => {
       prevActiveRideIdRef.current = null;
     }
   }, [activeRide, ridesList]);
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="w-12 h-12 border-4 border-[#003893]/20 border-t-[#003893] rounded-full animate-spin mx-auto"></div>
+          <p className="text-[#003893] font-serif text-sm tracking-wider uppercase animate-pulse">Loading Dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Format dynamic stats
+  const totalRidesCount = ridesList.length;
+  const completedRides = ridesList.filter(r => r.status === 'completed');
+  const totalSpentAmount = completedRides.reduce((sum, r) => sum + (r.fare || 0), 0);
+  const loyaltyPoints = Math.floor(totalSpentAmount / 20);
 
   const renderActiveRideCard = (ride) => {
     if (!ride) return null;

@@ -5,11 +5,18 @@
  * to ensure consistent origin allow-listing without code duplication.
  */
 
+// Cache the allowed origins list to prevent repeating splits and mapping on every request check
+let cachedAllowedOrigins = null;
+
 /**
- * Build the list of allowed origins from environment config.
+ * Build and cache the list of allowed origins from environment config.
  * @returns {string[]}
  */
 const getAllowedOrigins = () => {
+  if (cachedAllowedOrigins) {
+    return cachedAllowedOrigins;
+  }
+
   const list = process.env.CLIENT_URL
     ? process.env.CLIENT_URL.split(',').map((url) => url.trim())
     : ['http://localhost:5173', 'http://localhost:4173'];
@@ -19,6 +26,7 @@ const getAllowedOrigins = () => {
     list.push('https://dms-cab-service.vercel.app');
   }
 
+  cachedAllowedOrigins = list;
   return list;
 };
 

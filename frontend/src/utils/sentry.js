@@ -15,7 +15,7 @@ export const initSentry = () => {
       ],
       // Performance Monitoring
       tracesSampleRate: 1.0,
-      tracePropagationTargets: ["localhost", /^\//],
+      tracePropagationTargets: import.meta.env.PROD ? [/^\//] : ["localhost", /^\//],
       // Session Replay
       replaysSessionSampleRate: 0.1,
       replaysOnErrorSampleRate: 1.0,

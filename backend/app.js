@@ -106,7 +106,8 @@ app.use(compression());
 app.use(cookieParser());
 app.use(require('./middleware/csrfMiddleware'));
 
-app.use(timeout('15s'));
+const requestTimeoutVal = process.env.REQUEST_TIMEOUT || '15s';
+app.use(timeout(requestTimeoutVal));
 app.use(haltOnTimedout);
 
 if (process.env.NODE_ENV === 'production') {
@@ -157,12 +158,34 @@ app.get('/', (req, res) => {
     res.sendStatus(204);
 });
 
-// Health check endpoint for load balancer and monitoring probes
+// Health check endpoint for load balancer and monitoring probes (legacy and standard API)
 app.get('/health', (req, res) => {
     res.status(200).json({
         status: 'ok',
         uptime: Math.floor(process.uptime()),
         timestamp: new Date().toISOString(),
+    });
+});
+
+app.get('/api/health', (req, res) => {
+    const mongoose = require('mongoose');
+    const dbStateNum = mongoose.connection.readyState;
+    const dbStates = {
+        0: 'disconnected',
+        1: 'connected',
+        2: 'connecting',
+        3: 'disconnecting'
+    };
+    const dbState = dbStates[dbStateNum] || 'unknown';
+    const isHealthy = dbStateNum === 1;
+
+    res.status(isHealthy ? 200 : 503).json({
+        status: isHealthy ? 'ok' : 'degraded',
+        database: dbState,
+        uptime: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString(),
+        memoryUsage: process.memoryUsage(),
+        env: process.env.NODE_ENV || 'development'
     });
 });
 

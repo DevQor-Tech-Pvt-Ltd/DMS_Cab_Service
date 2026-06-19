@@ -20,36 +20,7 @@ const { isOriginAllowed } = require('./utils/corsOriginValidator');
 
 // Connect to Database and start server
 const startServer = async () => {
-  await connectDB();
-  await createAdmin();
-
-  // Database Migration: Combine pickupDate and pickupTime strings into pickupDateTime Date objects for legacy records
-  try {
-    const Ride = require('./models/Ride');
-    const legacyRides = await Ride.find({ pickupDateTime: { $exists: false } });
-    if (legacyRides.length > 0) {
-      logger.info(`[MIGRATION] Found ${legacyRides.length} legacy ride records requiring pickupDateTime migration`);
-      let migratedCount = 0;
-      for (const ride of legacyRides) {
-        if (ride.pickupDate && ride.pickupTime) {
-          try {
-            const combined = new Date(`${ride.pickupDate}T${ride.pickupTime}`);
-            if (!isNaN(combined.getTime())) {
-              ride.pickupDateTime = combined;
-              await ride.save();
-              migratedCount++;
-            }
-          } catch (err) {
-            logger.error(`[MIGRATION] Failed to migrate ride ${ride._id}: %s`, err.message);
-          }
-        }
-      }
-      logger.info(`[MIGRATION] Successfully migrated ${migratedCount}/${legacyRides.length} ride records`);
-    }
-  } catch (migrationError) {
-    logger.error(`[MIGRATION] Critical error during date migration: %s`, migrationError.message);
-  }
-
+  logger.info('[Startup] Starting DMS Cab Service backend process...');
   const server = http.createServer(app);
 
   // Setup Socket.IO
@@ -206,8 +177,50 @@ const startServer = async () => {
   const PORT = process.env.PORT || 5000;
 
   server.listen(PORT, () => {
-    logger.info(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+    logger.info(`[Startup] HTTP/WS Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
   });
+
+  // Background Database connection, seeding and migration
+  logger.info('[Startup] Initiating background MongoDB connection...');
+  connectDB()
+    .then(async () => {
+      logger.info('[Startup] Database connected successfully. Running admin seeding logic...');
+      await createAdmin();
+
+      logger.info('[Startup] Database seeding complete. Initiating legacy rides migration check...');
+      try {
+        const Ride = require('./models/Ride');
+        const legacyRides = await Ride.find({ pickupDateTime: { $exists: false } });
+        if (legacyRides.length > 0) {
+          logger.info(`[MIGRATION] Found ${legacyRides.length} legacy ride records requiring pickupDateTime migration`);
+          let migratedCount = 0;
+          for (const ride of legacyRides) {
+            if (ride.pickupDate && ride.pickupTime) {
+              try {
+                const combined = new Date(`${ride.pickupDate}T${ride.pickupTime}`);
+                if (!isNaN(combined.getTime())) {
+                  ride.pickupDateTime = combined;
+                  await ride.save();
+                  migratedCount++;
+                }
+              } catch (err) {
+                logger.error(`[MIGRATION] Failed to migrate ride ${ride._id}: %s`, err.message);
+              }
+            }
+          }
+          logger.info(`[MIGRATION] Successfully migrated ${migratedCount}/${legacyRides.length} ride records`);
+        } else {
+          logger.info('[MIGRATION] No legacy ride records found requiring migration');
+        }
+      } catch (migrationError) {
+        logger.error(`[MIGRATION] Critical error during date migration: %s`, migrationError.message);
+      }
+      logger.info('[Startup] DMS Cab Service fully initialized and active');
+    })
+    .catch((dbError) => {
+      logger.error('[Startup] Background database initialization failed: %s', dbError.message);
+      process.exit(1);
+    });
 
   // Periodically clean up expired OTPs from Ride documents (every 1 hour)
   const otpCleanupInterval = setInterval(async () => {
