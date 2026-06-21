@@ -5,9 +5,9 @@ import { Users, Briefcase, Wifi, ChevronRight } from '../utils/icons';
 const fleetData = [
   {
     id: 1,
-    name: 'Mercedes-Benz S-Class',
-    category: 'Executive Sedan',
-    image: '/Mercedes-Benz S-Class.webp',
+    name: 'Ertiga',
+    category: 'hatchback',
+    image: '/ertiga.jpg',
     passengers: 3,
     luggage: 2,
     features: ['Free WiFi', 'Water & Mints', 'Leather Seats'],
@@ -98,7 +98,7 @@ const Fleet = () => {
                 </div>
 
                 {/* Button */}
-                <a 
+                <a
                   href="/get-started"
                   className="w-full flex items-center justify-center space-x-2 bg-[#003893] text-white hover:bg-[#002d72] px-6 py-3.5 rounded-lg transition-all font-bold tracking-wider uppercase text-xs group/btn shadow-md shadow-[#003893]/10"
                 >

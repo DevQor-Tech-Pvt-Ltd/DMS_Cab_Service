@@ -13,9 +13,9 @@ import { isMobile } from '../utils/motion';
 
 const fleetOptions = [
   {
-    name: 'Mercedes-Benz S-Class',
-    category: 'Executive Sedan',
-    image: '/Mercedes-Benz S-Class.webp',
+    name: 'Ertiga',
+    category: 'hatchback',
+    image: '/ertiga.jpg',
     passengers: 3,
     luggage: 2,
     baseFare: 1501,
@@ -52,7 +52,7 @@ const GetStartedPage = () => {
   const [loading, setLoading] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [createdRide, setCreatedRide] = useState(null);
-  
+
   // Payment states and toast notifications (Ola/Uber standard)
   const [paymentState, setPaymentState] = useState('idle'); // 'idle', 'initiating', 'checkout', 'verifying', 'success', 'failed'
   const [toast, setToast] = useState(null);
@@ -73,10 +73,10 @@ const GetStartedPage = () => {
       hash += combinedStr.charCodeAt(i);
     }
     const distanceKm = 5 + (hash % 41); // deterministic mock distance between 5 and 45 km
-    
+
     let basePrice = 500;
     let perKmPrice = 40;
-    
+
     const vehicle = (vType || '').toLowerCase();
     if (vehicle.includes('mercedes')) {
       basePrice = 1500;
@@ -91,7 +91,7 @@ const GetStartedPage = () => {
       basePrice = 800;
       perKmPrice = 50;
     }
-    
+
     return basePrice + Math.round(distanceKm * perKmPrice);
   };
 
@@ -261,7 +261,7 @@ const GetStartedPage = () => {
         if (updatedUser) {
           updateUser(updatedUser);
           localStorage.setItem(`dms_luxe_wallet_balance_${updatedUser._id}`, updatedUser.walletBalance.toString());
-          
+
           const localTxns = localStorage.getItem(`dms_luxe_transactions_${updatedUser._id}`);
           const txnsList = localTxns ? JSON.parse(localTxns) : [];
           const newTxn = {
@@ -946,7 +946,7 @@ const GetStartedPage = () => {
                 <div className="absolute inset-0 border-4 border-t-[#003893] rounded-full animate-spin"></div>
                 <Shield className="text-[#003893]" size={30} />
               </div>
-              
+
               <div className="space-y-2">
                 <h3 className="text-xl font-serif font-bold text-slate-900">
                   {paymentState === 'initiating' && 'Securing Chauffeur Ride...'}
@@ -975,13 +975,12 @@ const GetStartedPage = () => {
             initial={{ opacity: 0, y: -50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            className={`fixed top-24 left-1/2 transform -translate-x-1/2 z-[100] flex items-center space-x-3 px-6 py-4 rounded-xl shadow-2xl border text-sm font-sans min-w-[320px] max-w-md ${
-              toast.type === 'success'
-                ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                : toast.type === 'info'
+            className={`fixed top-24 left-1/2 transform -translate-x-1/2 z-[100] flex items-center space-x-3 px-6 py-4 rounded-xl shadow-2xl border text-sm font-sans min-w-[320px] max-w-md ${toast.type === 'success'
+              ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+              : toast.type === 'info'
                 ? 'bg-blue-50 border-blue-200 text-blue-800'
                 : 'bg-rose-50 border-rose-200 text-rose-800'
-            }`}
+              }`}
           >
             {toast.type === 'error' && <AlertCircle className="text-rose-500 flex-shrink-0" size={18} />}
             {toast.type === 'success' && <CheckCircle2 className="text-emerald-500 flex-shrink-0" size={18} />}

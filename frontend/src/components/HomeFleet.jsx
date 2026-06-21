@@ -6,8 +6,8 @@ import { Link } from 'react-router-dom';
 const homeFleetData = [
   {
     id: 1,
-    name: 'MERCEDES-BENZ S-CLASS',
-    image: "/Mercedes-Benz S-Class.webp",
+    name: 'Ertiga',
+    image: "/ertiga.jpg",
     seats: 3
   },
   {
@@ -25,7 +25,7 @@ const homeFleetData = [
   {
     id: 4,
     name: 'BMW X7',
-    image: "/Mercedes-Benz S-Class.webp",
+    image: "/ertiga.jpg",
     seats: 6
   },
   {
@@ -49,7 +49,7 @@ const homeFleetData = [
   {
     id: 8,
     name: 'AUDI A8 L',
-    image: "/Mercedes-Benz S-Class.webp",
+    image: "/ertiga.jpg",
     seats: 3
   }
 ];

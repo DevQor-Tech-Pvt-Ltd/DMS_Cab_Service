@@ -16,7 +16,7 @@ const ClientActivity = ({
     const t = (type || '').toLowerCase();
     if (t.includes('v-class') || t.includes('v class') || t.includes('van')) return '/Mercedes-Benz V-Class.webp';
     if (t.includes('range rover') || t.includes('rover') || t.includes('suv')) return '/Range Rover Autobiography.webp';
-    return '/Mercedes-Benz S-Class.webp';
+    return '/ertiga.jpg';
   };
 
   return (
@@ -78,10 +78,10 @@ const ClientActivity = ({
                     <div>
                       <div className="flex items-center space-x-2">
                         <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${isCompleted
-                            ? 'bg-emerald-100 text-emerald-600 border border-emerald-200'
-                            : isCancelled
-                              ? 'bg-red-100 text-red-600 border border-red-200'
-                              : 'bg-amber-100 text-amber-600 border border-amber-200 animate-pulse'
+                          ? 'bg-emerald-100 text-emerald-600 border border-emerald-200'
+                          : isCancelled
+                            ? 'bg-red-100 text-red-600 border border-red-200'
+                            : 'bg-amber-100 text-amber-600 border border-amber-200 animate-pulse'
                           }`}>{ride.status}</span>
                         <span className="text-[10px] text-slate-400 font-mono">{ride.pickupDate} • {ride.pickupTime}</span>
                       </div>
