@@ -406,9 +406,12 @@ exports.verifyOtp = async (req, res) => {
     const ride = await Ride.findOne({
       _id: resolvedRideId,
       driver: req.user._id
-    });
+    }).select('+otpAuditLogs +rideOtpHash');
     if (!ride) {
       return res.status(404).json({ success: false, message: 'Booking not found.' });
+    }
+    if (!ride.otpAuditLogs) {
+      ride.otpAuditLogs = [];
     }
     if (ride.status !== 'driver_arrived') {
       return res.status(400).json({
