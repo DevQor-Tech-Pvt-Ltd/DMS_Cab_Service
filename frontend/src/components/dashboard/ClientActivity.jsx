@@ -16,7 +16,7 @@ const ClientActivity = ({
     const t = (type || '').toLowerCase();
     if (t.includes('v-class') || t.includes('v class') || t.includes('van')) return '/Mercedes-Benz V-Class.webp';
     if (t.includes('range rover') || t.includes('rover') || t.includes('suv')) return '/Range Rover Autobiography.webp';
-    return '/ertiga.jpg';
+    return '/ertiga.jpeg';
   };
 
   return (

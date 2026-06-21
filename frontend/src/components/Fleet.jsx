@@ -7,7 +7,7 @@ const fleetData = [
     id: 1,
     name: 'Ertiga',
     category: 'hatchback',
-    image: '/ertiga.jpg',
+    image: '/ertiga.jpeg',
     passengers: 3,
     luggage: 2,
     features: ['Free WiFi', 'Water & Mints', 'Leather Seats'],

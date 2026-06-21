@@ -168,7 +168,7 @@ const Home = () => {
       id: 'corporate',
       title: 'Corporate Travel',
       description: 'Reliable and punctual travel for your business needs.',
-      image: '/ertiga.jpg',
+      image: '/ertiga.jpeg',
       icon: Briefcase
     },
     {

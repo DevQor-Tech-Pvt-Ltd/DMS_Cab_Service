@@ -7,7 +7,7 @@ const homeFleetData = [
   {
     id: 1,
     name: 'Ertiga',
-    image: "/ertiga.jpg",
+    image: "/ertiga.jpeg",
     seats: 3
   },
   {
@@ -25,7 +25,7 @@ const homeFleetData = [
   {
     id: 4,
     name: 'BMW X7',
-    image: "/ertiga.jpg",
+    image: "/ertiga.jpeg",
     seats: 6
   },
   {
@@ -49,7 +49,7 @@ const homeFleetData = [
   {
     id: 8,
     name: 'AUDI A8 L',
-    image: "/ertiga.jpg",
+    image: "/ertiga.jpeg",
     seats: 3
   }
 ];

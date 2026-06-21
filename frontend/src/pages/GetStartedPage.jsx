@@ -15,7 +15,7 @@ const fleetOptions = [
   {
     name: 'Ertiga',
     category: 'hatchback',
-    image: '/ertiga.jpg',
+    image: '/ertiga.jpeg',
     passengers: 3,
     luggage: 2,
     baseFare: 1501,
