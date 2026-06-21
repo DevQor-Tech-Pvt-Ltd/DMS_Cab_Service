@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { sendInquiryEmail } = require('../utils/emailService');
+const { sendInquiryEmail, sendEmail } = require('../utils/emailService');
 const { uploadBase64Document } = require('../utils/cloudinary');
 const logger = require('../utils/logger');
 const { isDeployed, getCookieOptions } = require('../utils/env');
@@ -468,13 +468,117 @@ exports.sendPhoneOtp = async (req, res, next) => {
       { upsert: true, new: true }
     );
 
-    // Dispatch SMS asynchronously
-    const message = `Your DMS Luxe authentication code is ${otp}. Valid for 5 minutes. Do not share this code.`;
-    smsService.sendSMS(phone, message).catch(err => logger.error(`[SMS Dispatch Error] phone=${phone}: ${err.message}`));
+    // Send OTP via Email instead of SMS
+    const user = await User.findOne({ phone });
+    const recipientEmail = user ? user.email : (process.env.ADMIN_EMAIL || 'pritam.mondal@devqor.in');
+
+    const htmlContent = `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Login Verification Code - DMS Cab Services</title>
+        <style>
+          body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: #f8fafc;
+            color: #0f172a;
+            margin: 0;
+            padding: 20px 0;
+          }
+          .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border: 1px solid rgba(0, 56, 147, 0.15);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 56, 147, 0.05);
+          }
+          .header {
+            background-color: #003893;
+            padding: 30px;
+            text-align: center;
+            border-bottom: 4px solid #F8C301;
+          }
+          .header h1 {
+            color: #ffffff;
+            font-family: 'Georgia', serif;
+            letter-spacing: 4px;
+            margin: 0;
+            text-transform: uppercase;
+            font-size: 24px;
+          }
+          .content {
+            padding: 40px;
+            line-height: 1.6;
+          }
+          .otp-box {
+            background-color: #003893;
+            border: 1px solid #002c6c;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 30px 0;
+          }
+          .otp-code {
+            font-size: 38px;
+            font-weight: bold;
+            letter-spacing: 10px;
+            color: #F8C301;
+            margin: 0;
+            font-family: monospace;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          }
+          .footer {
+            background-color: #0f172a;
+            padding: 20px;
+            text-align: center;
+            font-size: 11px;
+            color: #94a3b8;
+            border-top: 1px solid rgba(0, 56, 147, 0.1);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>DMS Cab Services</h1>
+          </div>
+          <div class="content">
+            <h2 style="font-family: 'Georgia', serif; color: #003893; margin-top: 0; font-size: 20px;">Verification Code</h2>
+            <p style="color: #475569; font-size: 14px;">
+              Hello,<br><br>
+              Use the verification code below to complete your login or registration for phone number <strong>${phone}</strong>.
+            </p>
+            
+            <div class="otp-box">
+              <p style="color: #94a3b8; font-size: 12px; text-transform: uppercase; margin: 0 0 10px; letter-spacing: 2px;">Verification Code</p>
+              <h3 class="otp-code">${otp}</h3>
+              <p style="color: #94a3b8; font-size: 11px; margin: 10px 0 0;">Valid for 5 minutes</p>
+            </div>
+            
+            <p style="color: #64748b; font-size: 12px;">
+              If you did not request this code, please ignore this email.
+            </p>
+          </div>
+          <div class="footer">
+            <p>DMS Cab Services | Kolkata, West Bengal</p>
+          </div>
+        </div>
+      </body>
+    </html>
+    `;
+
+    sendEmail({
+      to: recipientEmail,
+      subject: 'Login Verification Code - DMS Cab Services',
+      html: htmlContent
+    }).catch(err => logger.error(`[OTP Email Dispatch Error] to=${recipientEmail}: ${err.message}`));
 
     return res.status(200).json({
       success: true,
-      message: 'OTP verification code sent successfully.'
+      message: 'OTP verification code sent successfully to email.'
     });
   } catch (error) {
     logger.error('Send phone OTP error: %s', error.message);
