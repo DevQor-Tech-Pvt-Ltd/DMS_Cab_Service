@@ -65,6 +65,36 @@ const GetStartedPage = () => {
     }, type === 'success' ? 3000 : 5000);
   };
 
+  const calculateEstimatedFare = (pickup, dropoff, vType) => {
+    if (!pickup || !dropoff || !vType) return 0;
+    const combinedStr = (pickup || '') + (dropoff || '');
+    let hash = 0;
+    for (let i = 0; i < combinedStr.length; i++) {
+      hash += combinedStr.charCodeAt(i);
+    }
+    const distanceKm = 5 + (hash % 41); // deterministic mock distance between 5 and 45 km
+    
+    let basePrice = 500;
+    let perKmPrice = 40;
+    
+    const vehicle = (vType || '').toLowerCase();
+    if (vehicle.includes('mercedes')) {
+      basePrice = 1500;
+      perKmPrice = 80;
+    } else if (vehicle.includes('bmw')) {
+      basePrice = 1200;
+      perKmPrice = 70;
+    } else if (vehicle.includes('audi')) {
+      basePrice = 1000;
+      perKmPrice = 65;
+    } else if (vehicle.includes('suv') || vehicle.includes('rover') || vehicle.includes('range rover')) {
+      basePrice = 800;
+      perKmPrice = 50;
+    }
+    
+    return basePrice + Math.round(distanceKm * perKmPrice);
+  };
+
   // Route Guard: Redirect drivers or admins trying to access the booking screen
   useEffect(() => {
     if (user && user.role !== 'client') {
@@ -205,7 +235,7 @@ const GetStartedPage = () => {
   };
 
   const handleConfirmBooking = async () => {
-    const estFare = getSelectedVehicle().baseFare;
+    const estFare = calculateEstimatedFare(formData.pickupLocation, formData.dropoffLocation, formData.vehicleType);
     if (formData.paymentMethod === 'wallet') {
       const balance = getWalletBalance();
       if (balance < estFare) {
@@ -247,6 +277,37 @@ const GetStartedPage = () => {
 
         // If Razorpay order was generated on the server, launch Razorpay Checkout UI
         if (razorpayOrder) {
+          if (razorpayOrder.key === 'rzp_test_mock') {
+            // Bypass Razorpay modal in mock mode and verify directly
+            setPaymentState('verifying');
+            try {
+              const mockPaymentId = `pay_mock_${Math.random().toString(36).substring(2, 10)}`;
+              const mockSignature = `sig_mock_${Math.random().toString(36).substring(2, 10)}`;
+              const verifyResponse = await api.post(
+                '/payment/verify',
+                {
+                  razorpay_payment_id: mockPaymentId,
+                  razorpay_order_id: razorpayOrder.id,
+                  razorpay_signature: mockSignature
+                }
+              );
+
+              if (verifyResponse.data.success) {
+                setCreatedRide(verifyResponse.data.ride);
+                setBookingSuccess(true);
+                setPaymentState('success');
+                showToast('Payment verified successfully and booking active', 'success');
+              }
+            } catch (verifyError) {
+              console.error('Payment verification failed:', verifyError);
+              showToast(verifyError.response?.data?.message || 'Payment verification failed.', 'error');
+              setPaymentState('failed');
+            } finally {
+              setLoading(false);
+            }
+            return;
+          }
+
           if (!window.Razorpay) {
             showToast('Razorpay payment gateway is currently loading. Please try again in 3 seconds.', 'error');
             setLoading(false);
@@ -599,7 +660,7 @@ const GetStartedPage = () => {
                           </div>
                           <div className="border-t border-slate-100 pt-2.5 flex items-center justify-between">
                             <span className="text-[10px] text-slate-400">{car.passengers} Pax / {car.luggage} Bags</span>
-                            <span className="text-xs font-bold text-[#003893]">₹{car.baseFare.toLocaleString()}</span>
+                            <span className="text-xs font-bold text-[#003893]">₹{calculateEstimatedFare(formData.pickupLocation, formData.dropoffLocation, car.name).toLocaleString()}</span>
                           </div>
                         </div>
                       </div>
@@ -742,7 +803,7 @@ const GetStartedPage = () => {
                       </div>
                       <div>
                         <p className="text-slate-400 text-[10px] uppercase font-mono">Total Estimated Fare</p>
-                        <p className="text-[#003893] font-bold text-lg mt-0.5">₹{getSelectedVehicle().baseFare.toLocaleString()}</p>
+                        <p className="text-[#003893] font-bold text-lg mt-0.5">₹{calculateEstimatedFare(formData.pickupLocation, formData.dropoffLocation, formData.vehicleType).toLocaleString()}</p>
                       </div>
                     </div>
                   </div>

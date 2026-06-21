@@ -14,7 +14,7 @@ import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import TrackingMap from '../components/TrackingMap';
 import EditProfileModal from '../components/EditProfileModal.jsx';
 import io from 'socket.io-client';
-import { api } from '../services/authService';
+import { api, getMe } from '../services/authService';
 import { getSocketUrl } from '../utils/urls';
 import { updateProfile, deleteAccount } from '../services/authService';
 import NotFoundPage from './NotFoundPage';
@@ -148,19 +148,47 @@ const ClientDashboard = () => {
     }
   }, [user]);
 
-  // Load wallet details from localStorage
+  const [txnsLoading, setTxnsLoading] = useState(false);
+  const fetchTransactions = async () => {
+    if (!user) return;
+    try {
+      setTxnsLoading(true);
+      const response = await api.get('/payment/transactions');
+      if (response.data.success) {
+        const formatted = response.data.transactions.map(t => {
+          let typeLabel = 'Payment';
+          if (t.type === 'deposit') typeLabel = 'Added to Wallet';
+          if (t.type === 'payment') typeLabel = 'Ride Payment';
+          if (t.type === 'refund') typeLabel = 'Refund';
+          
+          let descText = t.razorpayPaymentId || t.razorpayOrderId || 'Wallet Transaction';
+          if (t.ride) {
+            descText = `${t.ride.vehicleType || 'Cab'} • ${t.ride.pickupLocation?.split(',')[0]} to ${t.ride.dropoffLocation?.split(',')[0]}`;
+          }
+          
+          return {
+            type: typeLabel,
+            desc: descText,
+            amt: (t.type === 'deposit' || t.type === 'refund' ? '+ ' : '- ') + `₹${t.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+            date: new Date(t.createdAt).toLocaleString(),
+            minus: t.type === 'payment',
+            value: t.amount
+          };
+        });
+        setTransactions(formatted);
+      }
+    } catch (err) {
+      console.error('Failed to fetch transaction history:', err);
+    } finally {
+      setTxnsLoading(false);
+    }
+  };
+
+  // Sync wallet details from user model and fetch transactions
   useEffect(() => {
     if (!user) return;
 
-    // Balance
-    const savedBalance = localStorage.getItem(`dms_luxe_wallet_balance_${user._id}`);
-    if (savedBalance !== null) {
-      setWalletBalance(parseFloat(savedBalance));
-    } else {
-      const defaultBalance = 1500.00;
-      setWalletBalance(defaultBalance);
-      localStorage.setItem(`dms_luxe_wallet_balance_${user._id}`, defaultBalance.toString());
-    }
+    setWalletBalance(user.walletBalance ?? 1500.00);
 
     // UPI ID
     const savedUpi = localStorage.getItem(`dms_luxe_upi_${user._id}`);
@@ -172,46 +200,22 @@ const ClientDashboard = () => {
       setUpiInput('');
     }
 
-    // Transactions
-    const savedTxns = localStorage.getItem(`dms_luxe_transactions_${user._id}`);
-    if (savedTxns !== null) {
-      setTransactions(JSON.parse(savedTxns));
-    } else {
-      const defaultTxns = [
-        { type: 'Initial Welcome Bonus', desc: 'Welcome bonus credit', amt: '+ ₹500.00', date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toLocaleString(), minus: false, value: 500 },
-        { type: 'Added to Wallet', desc: 'Top-up via Visa card', amt: '+ ₹1,000.00', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toLocaleString(), minus: false, value: 1000 }
-      ];
-      setTransactions(defaultTxns);
-      localStorage.setItem(`dms_luxe_transactions_${user._id}`, JSON.stringify(defaultTxns));
-    }
+    fetchTransactions();
   }, [user]);
 
-  const handleAddMoney = () => {
-    const amountStr = prompt("Enter the amount you would like to top up (INR):");
-    if (!amountStr) return;
-    const amount = parseFloat(amountStr);
-    if (isNaN(amount) || amount <= 0) {
-      alert("Please enter a valid positive number.");
-      return;
+  // Fetch transactions on tab change to make sure it's fresh
+  useEffect(() => {
+    if (user && activeTab === 'wallet') {
+      fetchTransactions();
     }
+  }, [activeTab]);
 
-    const newBalance = walletBalance + amount;
-    setWalletBalance(newBalance);
-    localStorage.setItem(`dms_luxe_wallet_balance_${user._id}`, newBalance.toString());
-
-    // Add transaction
-    const newTxn = {
-      type: 'Added to Wallet',
-      desc: 'Top-up via Card/UPI',
-      amt: `+ ₹${amount.toLocaleString()}`,
-      date: new Date().toLocaleString(),
-      minus: false,
-      value: amount
-    };
-    const updatedTxns = [newTxn, ...transactions];
-    setTransactions(updatedTxns);
-    localStorage.setItem(`dms_luxe_transactions_${user._id}`, JSON.stringify(updatedTxns));
-    alert(`Successfully added ₹${amount.toLocaleString()} to your wallet!`);
+  const handleAddMoney = () => {
+    handleTabChange('wallet');
+    setTimeout(() => {
+      const btn = document.getElementById('wallet-add-money-btn');
+      if (btn) btn.click();
+    }, 350);
   };
 
   const handleLinkUpi = () => {
@@ -817,10 +821,20 @@ const ClientDashboard = () => {
             onClick={async () => {
               if (window.confirm('Are you sure you want to cancel this booking?')) {
                 try {
-                  const response = await api.delete(`/rides/${ride._id}`);
+                  const response = await api.put(`/rides/${ride._id}/cancel`);
                   if (response.data.success) {
                     alert('Booking cancelled successfully.');
                     fetchRides(true);
+                    
+                    // Fetch fresh profile data to update wallet balance if refunded
+                    try {
+                      const meResponse = await getMe();
+                      if (meResponse.success && meResponse.user) {
+                        updateUser(meResponse.user);
+                      }
+                    } catch (e) {
+                      console.error('Failed to refresh user profile:', e);
+                    }
                   }
                 } catch (err) {
                   alert(err.response?.data?.message || 'Failed to cancel booking.');

@@ -7,6 +7,9 @@ const logger = require('../utils/logger');
  * on state-changing requests (POST, PUT, PATCH, DELETE).
  */
 module.exports = (req, res, next) => {
+  if (req.originalUrl && req.originalUrl.includes('/webhook')) {
+    return next();
+  }
   if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) {
     const origin = req.headers.origin;
     const referer = req.headers.referer;

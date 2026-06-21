@@ -51,7 +51,7 @@ exports.createRide = async (req, res) => {
       } else if (vehicle.includes('audi')) {
         basePrice = 1000;
         perKmPrice = 65;
-      } else if (vehicle.includes('suv')) {
+      } else if (vehicle.includes('suv') || vehicle.includes('rover') || vehicle.includes('range rover')) {
         basePrice = 800;
         perKmPrice = 50;
       }
@@ -95,9 +95,20 @@ exports.createRide = async (req, res) => {
 
     // If it's an online payment, generate a Razorpay order
     let razorpayOrder = null;
+    const bypassEnabled = process.env.BYPASS_PAYMENT_VERIFICATION === 'true' || process.env.NODE_ENV === 'development';
     if (isOnlinePayment) {
       if (!razorpay) {
         logger.warn('Razorpay integration is not configured on the server. Falling back to mock checkout.');
+        if (bypassEnabled) {
+          const mockOrderId = `order_mock_${crypto.randomBytes(8).toString('hex')}`;
+          ride.razorpayOrderId = mockOrderId;
+          razorpayOrder = {
+            id: mockOrderId,
+            amount: calculatedFare * 100,
+            currency: 'INR',
+            key: 'rzp_test_mock'
+          };
+        }
       } else {
         try {
           const options = {
@@ -110,6 +121,16 @@ exports.createRide = async (req, res) => {
           ride.razorpayOrderId = razorpayOrder.id;
         } catch (razorpayError) {
           logger.error('Failed to create Razorpay order: %s. Falling back to mock checkout.', razorpayError.message);
+          if (bypassEnabled) {
+            const mockOrderId = `order_mock_${crypto.randomBytes(8).toString('hex')}`;
+            ride.razorpayOrderId = mockOrderId;
+            razorpayOrder = {
+              id: mockOrderId,
+              amount: calculatedFare * 100,
+              currency: 'INR',
+              key: 'rzp_test_mock'
+            };
+          }
         }
       }
     }
@@ -166,7 +187,7 @@ exports.createRide = async (req, res) => {
         id: razorpayOrder.id,
         amount: razorpayOrder.amount,
         currency: razorpayOrder.currency,
-        key: process.env.RAZORPAY_KEY_ID
+        key: razorpayOrder.key || process.env.RAZORPAY_KEY_ID
       } : null
     });
   } catch (error) {
@@ -714,42 +735,82 @@ exports.cancelRide = async (req, res) => {
       return res.status(403).json({ success: false, message: 'Unauthorized role.' });
     }
 
-    // Handle online payment refund (Phase 5)
+    // Handle payment refund (Phase 5 + Wallet refund)
     let refundSuccessful = false;
     let refundId = null;
 
-    if (ride.paymentStatus === 'paid' && ride.razorpayPaymentId) {
-      if (razorpay) {
+    if (ride.paymentStatus === 'paid') {
+      if (ride.paymentMethod === 'wallet') {
         try {
-          const refundResponse = await razorpay.payments.refund(ride.razorpayPaymentId, {
-            amount: ride.fare * 100, // Razorpay amount in paise
-            notes: {
-              rideId: ride._id.toString(),
-              reason: `Ride cancelled by ${req.user.role} (${req.user.fullName})`
-            }
-          });
-          refundSuccessful = true;
-          refundId = refundResponse.id;
-          
-          // Create a transaction ledger record for the refund
+          const user = await User.findById(ride.client);
+          if (!user) {
+            logger.error(`[REFUND ERROR] Client not found to refund wallet payment. client=${ride.client}, ride=${ride._id}`);
+          } else {
+            user.walletBalance = (user.walletBalance || 0) + ride.fare;
+            await user.save();
+
+            // Create a transaction ledger record for the refund
+            await Transaction.create({
+              user: ride.client,
+              ride: ride._id,
+              amount: ride.fare,
+              type: 'refund',
+              paymentMethod: 'wallet',
+              status: 'success'
+            });
+
+            ride.paymentStatus = 'refunded';
+            logger.info(`[REFUND SUCCESS] Wallet refund issued for ride ${ride._id}. Fare ₹${ride.fare} refunded to client ${user._id}`);
+            refundSuccessful = true;
+          }
+        } catch (refundError) {
+          logger.error(`[REFUND ERROR] Wallet refund failed for ride ${ride._id}: ${refundError.message}`);
+        }
+      } else if (ride.razorpayPaymentId) {
+        if (razorpay && !ride.razorpayPaymentId.startsWith('pay_mock_')) {
+          try {
+            const refundResponse = await razorpay.payments.refund(ride.razorpayPaymentId, {
+              amount: ride.fare * 100, // Razorpay amount in paise
+              notes: {
+                rideId: ride._id.toString(),
+                reason: `Ride cancelled by ${req.user.role} (${req.user.fullName})`
+              }
+            });
+            refundSuccessful = true;
+            refundId = refundResponse.id;
+            
+            // Create a transaction ledger record for the refund
+            await Transaction.create({
+              user: ride.client,
+              ride: ride._id,
+              amount: ride.fare,
+              type: 'refund',
+              paymentMethod: ride.paymentMethod || 'card',
+              razorpayPaymentId: ride.razorpayPaymentId,
+              status: 'success'
+            });
+            
+            ride.paymentStatus = 'refunded';
+            logger.info(`[REFUND SUCCESS] Razorpay refund issued for ride ${ride._id}. Refund ID: ${refundId}`);
+          } catch (refundError) {
+            logger.error(`[REFUND ERROR] Razorpay refund failed for ride ${ride._id}: %s`, refundError.message);
+            // Do not block the cancellation if refund fails, but log it
+          }
+        } else {
+          logger.warn(`[REFUND SKIPPED] Razorpay client not configured; creating mock refund for ride ${ride._id}`);
+          // Create a transaction ledger record for the refund anyway
           await Transaction.create({
             user: ride.client,
             ride: ride._id,
             amount: ride.fare,
             type: 'refund',
             paymentMethod: ride.paymentMethod || 'card',
-            razorpayPaymentId: ride.razorpayPaymentId,
+            razorpayPaymentId: ride.razorpayPaymentId || `mock_refund_${Date.now()}`,
             status: 'success'
           });
-          
           ride.paymentStatus = 'refunded';
-          logger.info(`[REFUND SUCCESS] Razorpay refund issued for ride ${ride._id}. Refund ID: ${refundId}`);
-        } catch (refundError) {
-          logger.error(`[REFUND ERROR] Razorpay refund failed for ride ${ride._id}: %s`, refundError.message);
-          // Do not block the cancellation if refund fails, but log it
+          refundSuccessful = true;
         }
-      } else {
-        logger.warn(`[REFUND SKIPPED] Razorpay client not configured; refund skipped for ride ${ride._id}`);
       }
     }
 

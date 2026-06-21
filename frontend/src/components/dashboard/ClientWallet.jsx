@@ -56,6 +56,39 @@ const ClientWallet = ({
 
       const { razorpayOrder } = response.data;
 
+      if (razorpayOrder.key === 'rzp_test_mock') {
+        // Bypass Razorpay modal in mock mode and verify directly
+        setPaymentState('verifying');
+        try {
+          const mockPaymentId = `pay_mock_${Math.random().toString(36).substring(2, 10)}`;
+          const mockSignature = `sig_mock_${Math.random().toString(36).substring(2, 10)}`;
+          const verifyResponse = await api.post('/payment/wallet/verify', {
+            razorpay_payment_id: mockPaymentId,
+            razorpay_order_id: razorpayOrder.id,
+            razorpay_signature: mockSignature
+          });
+
+          if (verifyResponse.data.success) {
+            showToast(`Successfully deposited ₹${amount.toLocaleString()} to your wallet!`, 'success');
+            setPaymentState('success');
+            if (verifyResponse.data.user) {
+              updateUser(verifyResponse.data.user);
+            }
+            if (onBalanceUpdate) {
+              onBalanceUpdate(verifyResponse.data.walletBalance);
+            }
+          }
+        } catch (verifyError) {
+          console.error('Wallet verification failed:', verifyError);
+          showToast(verifyError.response?.data?.message || 'Deposit verification failed.', 'error');
+          setPaymentState('failed');
+        } finally {
+          setDepositing(false);
+          setTimeout(() => setPaymentState('idle'), 2000);
+        }
+        return;
+      }
+
       // Check if Razorpay script is loaded
       if (!window.Razorpay) {
         showToast('Razorpay SDK is loading, please try again in a few seconds.', 'error');

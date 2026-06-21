@@ -92,7 +92,7 @@ const userSchema = new mongoose.Schema(
     },
     walletBalance: {
       type: Number,
-      default: 0.00
+      default: 1500.00
     },
     averageRating: {
       type: Number,
