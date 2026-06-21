@@ -98,7 +98,7 @@ exports.verifyPayment = async (req, res) => {
       });
     }
 
-    if (ride.paymentStatus === 'paid') {
+    if (ride.paymentStatus === 'authorized' || ride.paymentStatus === 'paid') {
       return res.status(400).json({
         success: false,
         message: 'Payment already verified.'
@@ -133,7 +133,7 @@ exports.verifyPayment = async (req, res) => {
     }
 
     // Update ride payment details and status
-    ride.paymentStatus = 'paid';
+    ride.paymentStatus = 'authorized';
     ride.razorpayPaymentId = razorpay_payment_id;
     ride.razorpaySignature = razorpay_signature;
     

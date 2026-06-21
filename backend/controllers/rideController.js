@@ -29,6 +29,15 @@ exports.createRide = async (req, res) => {
       paymentMethod,
     } = req.body;
 
+    // Block bookings if there is an outstanding unpaid ride (arrears)
+    const unpaidRide = await Ride.findOne({ client: req.user._id, paymentStatus: 'unpaid' });
+    if (unpaidRide) {
+      return res.status(400).json({
+        success: false,
+        message: 'Your account has an outstanding unpaid ride. Please clear your dues in the dashboard before booking a new journey.'
+      });
+    }
+
     // Calculate a premium dynamic fare based on pickup/dropoff distance & vehicle selection (S-1)
     const calculateFare = (pickup, dropoff, vType) => {
       const combinedStr = (pickup || '') + (dropoff || '');
@@ -575,23 +584,82 @@ exports.completeRide = async (req, res) => {
       });
     }
 
+    const isOnlinePayment = ride.paymentMethod === 'card' || ride.paymentMethod === 'upi';
+
     if (ride.paymentMethod === 'cash') {
       ride.paymentStatus = 'paid';
+    } else if (isOnlinePayment) {
+      if (ride.paymentStatus === 'authorized') {
+        if (razorpay && ride.razorpayPaymentId && !ride.razorpayPaymentId.startsWith('pay_mock_')) {
+          try {
+            await razorpay.payments.capture(ride.razorpayPaymentId, ride.fare * 100, 'INR');
+            ride.paymentStatus = 'paid';
+            logger.info(`[PAYMENT CAPTURE SUCCESS] Captured online payment for ride ${ride._id}. Amount: ₹${ride.fare}`);
+          } catch (captureError) {
+            logger.error(`[PAYMENT CAPTURE ERROR] Failed to capture payment for ride ${ride._id}: ${captureError.message}`);
+            ride.paymentStatus = 'unpaid'; // Marks account as in arrears
+          }
+        } else {
+          logger.warn(`[MOCK CAPTURE] Bypassing Razorpay capture and simulating payment success for ride ${ride._id}`);
+          ride.paymentStatus = 'paid';
+        }
+      } else {
+        ride.paymentStatus = 'unpaid';
+      }
     }
+
     ride.status = 'completed';
     ride.completedAt = new Date();
     await ride.save();
 
-    // Create a transaction ledger record if the payment was cash
-    if (ride.paymentMethod === 'cash') {
+    // Handle transaction logging and driver split payout
+    if (ride.paymentStatus === 'paid') {
+      const existingTxn = await Transaction.findOne({ ride: ride._id, type: 'payment' });
+      if (existingTxn) {
+        existingTxn.status = 'success';
+        await existingTxn.save();
+      } else {
+        await Transaction.create({
+          user: ride.client,
+          ride: ride._id,
+          amount: ride.fare,
+          type: 'payment',
+          paymentMethod: ride.paymentMethod,
+          razorpayPaymentId: ride.razorpayPaymentId,
+          status: 'success'
+        });
+      }
+
+      // 80/20 Driver split payment
+      if (ride.driver) {
+        const driver = await User.findById(ride.driver);
+        if (driver) {
+          const driverShare = Math.round(ride.fare * 0.8 * 100) / 100;
+          driver.walletBalance = (driver.walletBalance || 0) + driverShare;
+          await driver.save();
+          
+          await Transaction.create({
+            user: ride.driver,
+            ride: ride._id,
+            amount: driverShare,
+            type: 'deposit',
+            paymentMethod: 'wallet',
+            status: 'success'
+          });
+          logger.info(`[DRIVER PAYOUT SPLIT] Credited 80% share (₹${driverShare}) of fare ₹${ride.fare} to driver ${driver._id} wallet.`);
+        }
+      }
+    } else if (ride.paymentStatus === 'unpaid') {
       await Transaction.create({
         user: ride.client,
         ride: ride._id,
         amount: ride.fare,
         type: 'payment',
-        paymentMethod: 'cash',
-        status: 'success'
+        paymentMethod: ride.paymentMethod,
+        razorpayPaymentId: ride.razorpayPaymentId,
+        status: 'failed'
       });
+      logger.warn(`[ARREARS TRIGGERED] Ride ${ride._id} marked as unpaid due to capture failure or unauthorized booking. Client blocked from new bookings.`);
     }
 
     // Invalidate dashboard stats cache
@@ -739,7 +807,7 @@ exports.cancelRide = async (req, res) => {
     let refundSuccessful = false;
     let refundId = null;
 
-    if (ride.paymentStatus === 'paid') {
+    if (ride.paymentStatus === 'paid' || ride.paymentStatus === 'authorized') {
       if (ride.paymentMethod === 'wallet') {
         try {
           const user = await User.findById(ride.client);
@@ -867,7 +935,7 @@ exports.getRides = async (req, res) => {
             status: 'pending',
             $or: [
               { paymentMethod: 'cash' },
-              { paymentMethod: { $in: ['card', 'upi'] }, paymentStatus: 'paid' }
+              { paymentMethod: { $in: ['card', 'upi'] }, paymentStatus: 'authorized' }
             ]
           },
           { driver: req.user._id }
