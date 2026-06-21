@@ -190,8 +190,25 @@ const GetStartedPage = () => {
   // Validations
   const validateStep1 = () => {
     const errors = {};
-    if (!formData.pickupLocation.trim()) errors.pickupLocation = 'Pick-up address is required';
-    if (!formData.dropoffLocation.trim()) errors.dropoffLocation = 'Drop-off address is required';
+    const pickup = formData.pickupLocation.trim();
+    const dropoff = formData.dropoffLocation.trim();
+
+    if (!pickup) {
+      errors.pickupLocation = 'Pick-up address is required';
+    } else if (pickup.length < 5) {
+      errors.pickupLocation = 'Pick-up address must be at least 5 characters long';
+    } else if (!/[a-zA-Z]/.test(pickup)) {
+      errors.pickupLocation = 'Pick-up address must contain at least one letter';
+    }
+
+    if (!dropoff) {
+      errors.dropoffLocation = 'Drop-off address is required';
+    } else if (dropoff.length < 5) {
+      errors.dropoffLocation = 'Drop-off address must be at least 5 characters long';
+    } else if (!/[a-zA-Z]/.test(dropoff)) {
+      errors.dropoffLocation = 'Drop-off address must contain at least one letter';
+    }
+
     if (!formData.pickupDate) errors.pickupDate = 'Date is required';
     if (!formData.pickupTime) errors.pickupTime = 'Time is required';
 
@@ -379,7 +396,7 @@ const GetStartedPage = () => {
       }
     } catch (error) {
       console.error('Booking failed:', error);
-      showToast(error.response?.data?.message || 'Booking confirmation failed.', 'error');
+      showToast(error.response?.data?.message || error.message || 'Booking confirmation failed.', 'error');
       setLoading(false);
       setPaymentState('failed');
     }

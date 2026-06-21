@@ -89,6 +89,7 @@ apiClient.interceptors.response.use(
       success: false,
       errorCode: error.response?.data?.errorCode || 'API_COMMUNICATION_FAILED',
       errors: error.response?.data?.errors || [],
+      response: error.response,
       originalError: error,
     };
 

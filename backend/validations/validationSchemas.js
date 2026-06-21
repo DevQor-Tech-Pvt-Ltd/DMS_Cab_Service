@@ -70,8 +70,12 @@ const passengerDetailsSchema = z.object({
 
 // Schema for ride booking
 const rideBookingSchema = z.object({
-  pickupLocation: z.string().trim().min(1, 'Pickup location is required'),
-  dropoffLocation: z.string().trim().min(1, 'Dropoff location is required'),
+  pickupLocation: z.string().trim()
+    .min(5, 'Pickup location must be at least 5 characters long')
+    .refine(val => /[a-zA-Z]/.test(val), { message: 'Pickup location must contain at least one letter' }),
+  dropoffLocation: z.string().trim()
+    .min(5, 'Dropoff location must be at least 5 characters long')
+    .refine(val => /[a-zA-Z]/.test(val), { message: 'Dropoff location must contain at least one letter' }),
   pickupDate: z.string().trim().min(1, 'Pickup date is required'),
   pickupTime: z.string().trim().min(1, 'Pickup time is required'),
   vehicleType: z.string().trim().min(1, 'Vehicle type is required'),
