@@ -479,7 +479,7 @@ exports.sendOtpEmail = async (ride, otp, driverName) => {
  */
 exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, message }) => {
   try {
-    const to = `pritam.mondal@devqor.in, pritammondal18012003@gmail.com, ${smtpUser}`;
+    const to = process.env.CONTACT_INQUIRY_RECIPIENT || smtpUser;
     const fullName = `${firstName} ${lastName}`;
 
     const htmlContent = `
