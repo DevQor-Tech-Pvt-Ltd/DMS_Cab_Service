@@ -51,8 +51,23 @@ export const AuthProvider = ({ children }) => {
       try {
         const response = await getMe();
         if (response.success && response.user) {
-          setUser(response.user);
-          sessionStorage.setItem('dms_luxe_user', JSON.stringify(response.user));
+          let token = null;
+          let refreshToken = null;
+          try {
+            const userJson = sessionStorage.getItem('dms_luxe_user');
+            const userObj = userJson ? JSON.parse(userJson) : null;
+            token = userObj?.token;
+            refreshToken = userObj?.refreshToken;
+          } catch (e) {
+            console.error('Error reading tokens from sessionStorage:', e);
+          }
+          const mergedUser = {
+            ...response.user,
+            ...(token && { token }),
+            ...(refreshToken && { refreshToken })
+          };
+          setUser(mergedUser);
+          sessionStorage.setItem('dms_luxe_user', JSON.stringify(mergedUser));
         } else {
           throw new Error('Verification failed or user empty');
         }
@@ -102,8 +117,23 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = (updatedUserData) => {
-    setUser(updatedUserData);
-    sessionStorage.setItem('dms_luxe_user', JSON.stringify(updatedUserData));
+    let token = null;
+    let refreshToken = null;
+    try {
+      const userJson = sessionStorage.getItem('dms_luxe_user');
+      const userObj = userJson ? JSON.parse(userJson) : null;
+      token = userObj?.token;
+      refreshToken = userObj?.refreshToken;
+    } catch (e) {
+      console.error('Error reading tokens for update:', e);
+    }
+    const mergedUser = {
+      ...updatedUserData,
+      ...(token && { token }),
+      ...(refreshToken && { refreshToken })
+    };
+    setUser(mergedUser);
+    sessionStorage.setItem('dms_luxe_user', JSON.stringify(mergedUser));
   };
 
   return (

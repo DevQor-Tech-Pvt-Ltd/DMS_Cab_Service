@@ -74,7 +74,11 @@ exports.protect = async (req, res, next) => {
 // Helper function to handle automatic access token regeneration using refresh token
 async function handleRefresh(req, res, next, originalError = null) {
   try {
-    const refreshToken = req.cookies?.refreshToken;
+    let refreshToken = req.cookies?.refreshToken;
+    if (!refreshToken && req.headers['x-refresh-token']) {
+      refreshToken = req.headers['x-refresh-token'];
+    }
+
     if (!refreshToken) {
       const message = originalError ? 'Session expired, please login again' : 'Not authorized, missing token';
       return res.status(401).json({ success: false, message });
@@ -123,6 +127,9 @@ async function handleRefresh(req, res, next, originalError = null) {
       path: '/',
       maxAge: 15 * 60 * 1000,
     });
+
+    // Expose the new access token via header for cross-site cookie-blocked clients
+    res.setHeader('x-access-token', newAccessToken);
 
     req.user = user;
     return next();

@@ -143,7 +143,9 @@ const DriverDashboard = () => {
 
     const socket = io(getSocketUrl(), {
       transports: ['websocket', 'polling'],
-      withCredentials: true
+      withCredentials: true,
+      auth: { token: user?.token },
+      query: { token: user?.token }
     });
     socketRef.current = socket;
 

@@ -61,7 +61,9 @@ const sendToken = (res, user) => {
   res.status(200).json({ 
     success: true, 
     user: user.toJSON ? user.toJSON() : user, 
-    role: user.role 
+    role: user.role,
+    token,
+    refreshToken
   });
 };
 

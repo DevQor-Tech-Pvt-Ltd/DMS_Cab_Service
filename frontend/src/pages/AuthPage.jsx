@@ -129,7 +129,12 @@ const AuthPage = () => {
           const data = response.data;
           
           if (data?.success && data?.user) {
-            login(data.user);
+            const userData = {
+              ...data.user,
+              token: data.token,
+              refreshToken: data.refreshToken
+            };
+            login(userData);
             if (redirect && ['activity', 'wallet'].includes(redirect)) {
               navigate(`/client/dashboard?tab=${redirect}`);
             } else if (redirect === 'get-started') {
@@ -264,7 +269,12 @@ const AuthPage = () => {
         setError('Registration successful! Your account is pending admin approval.');
         setIsLogin(true);
       } else {
-        login(response.user);
+        const userData = {
+          ...response.user,
+          token: response.token,
+          refreshToken: response.refreshToken
+        };
+        login(userData);
         if (redirect && ['activity', 'wallet'].includes(redirect)) {
           navigate(`/client/dashboard?tab=${redirect}`);
         } else if (redirect === 'get-started') {

@@ -361,6 +361,15 @@ const TrackingMap = ({
     // ─── 2. Initialize Socket.IO (only when tracking a ride) ───
     let socket = null;
     if (rideId) {
+      let token = null;
+      try {
+        const userJson = sessionStorage.getItem('dms_luxe_user');
+        const userObj = userJson ? JSON.parse(userJson) : null;
+        token = userObj?.token;
+      } catch (e) {
+        console.error('Error reading token for TrackingMap socket:', e);
+      }
+
       socket = io(getSocketUrl(), {
         transports: ['websocket', 'polling'],
         reconnection: true,
@@ -368,6 +377,8 @@ const TrackingMap = ({
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         withCredentials: true,
+        auth: { token },
+        query: { token }
       });
       socketRef.current = socket;
 
