@@ -175,14 +175,14 @@ const Home = () => {
       id: 'hourly',
       title: 'Hourly Chauffeur',
       description: 'Hire by the hour for meetings, events, and more.',
-      image: '/Mercedes-Benz V-Class.webp',
+      image: '/dzire.jpeg',
       icon: Users
     },
     {
       id: 'special',
       title: 'Special Occasions',
       description: 'Make every occasion memorable with our luxury services.',
-      image: '/Range Rover Autobiography.webp',
+      image: '/innova.jpeg',
       icon: Tag
     }
   ];

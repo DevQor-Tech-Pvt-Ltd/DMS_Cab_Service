@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  Clock, Navigation, LogOut, User, LayoutDashboard
+  Clock, Navigation, LogOut, User, LayoutDashboard, CalendarCheck, TrendingUp, Star, Timer
 } from '../utils/icons';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate, useSearchParams } from 'react-router-dom';

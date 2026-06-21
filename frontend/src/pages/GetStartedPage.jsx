@@ -23,9 +23,9 @@ const fleetOptions = [
     description: 'The pinnacle of luxury sedans. Perfect for high-profile business transfers and absolute comfort.'
   },
   {
-    name: 'Range Rover Autobiography',
+    name: 'Innova',
     category: 'Luxury SUV',
-    image: '/Range Rover Autobiography.webp',
+    image: '/innova.jpeg',
     passengers: 4,
     luggage: 4,
     baseFare: 1,
@@ -33,11 +33,11 @@ const fleetOptions = [
     description: 'Commanding presence with exceptional space. Ideal for rough roads, events and styling arrival.'
   },
   {
-    name: 'Mercedes-Benz V-Class',
-    category: 'Premium Van',
-    image: '/Mercedes-Benz V-Class.webp',
-    passengers: 7,
-    luggage: 6,
+    name: 'Dzire',
+    category: 'hatchback',
+    image: '/dzire.jpeg',
+    passengers: 2,
+    luggage: 1,
     baseFare: 1,
     features: ['Conference Seating', 'Privacy Glass', 'Climate Control'],
     description: 'Spacious and versatile luxury for group travel, family outings without losing executive elegance.'

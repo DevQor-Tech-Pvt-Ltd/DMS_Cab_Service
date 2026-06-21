@@ -12,15 +12,15 @@ const homeFleetData = [
   },
   {
     id: 2,
-    name: 'RANGE ROVER AUTOBIOGRAPHY',
-    image: "/Range Rover Autobiography.webp",
+    name: 'Innova',
+    image: "/innova.jpeg",
     seats: 4
   },
   {
     id: 3,
-    name: 'MERCEDES-BENZ V-CLASS',
-    image: "/Mercedes-Benz V-Class.webp",
-    seats: 6
+    name: 'Dzire',
+    image: "/dzire.jpeg",
+    seats: 2
   },
   {
     id: 4,
@@ -31,24 +31,24 @@ const homeFleetData = [
   {
     id: 5,
     name: 'ROLLS ROYCE PHANTOM',
-    image: "/Mercedes-Benz V-Class.webp",
-    seats: 3
+    image: "/dzire.jpeg",
+    seats: 2
   },
   {
     id: 6,
     name: 'BENTLEY FLYING SPUR',
-    image: "/Range Rover Autobiography.webp",
+    image: "/innova.jpeg",
     seats: 3
   },
   {
     id: 7,
-    name: 'CADILLAC ESCALADE',
-    image: "/Mercedes-Benz V-Class.webp",
-    seats: 6
+    name: 'Dzire',
+    image: "/dzire.jpeg",
+    seats: 2
   },
   {
     id: 8,
-    name: 'AUDI A8 L',
+    name: 'Ertiga',
     image: "/ertiga.jpeg",
     seats: 3
   }

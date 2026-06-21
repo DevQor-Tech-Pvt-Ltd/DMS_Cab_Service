@@ -15,9 +15,9 @@ const fleetData = [
   },
   {
     id: 2,
-    name: 'Range Rover Autobiography',
+    name: 'Innova',
     category: 'Luxury SUV',
-    image: "/Range Rover Autobiography.webp",
+    image: "/innova.jpeg",
     passengers: 4,
     luggage: 4,
     features: ['Free WiFi', 'Panoramic Roof', 'Extra Legroom'],
@@ -25,13 +25,13 @@ const fleetData = [
   },
   {
     id: 3,
-    name: 'Mercedes-Benz V-Class',
-    category: 'Premium Van',
-    image: '/Mercedes-Benz V-Class.webp',
-    passengers: 7,
-    luggage: 6,
-    features: ['Conference Seating', 'Privacy Glass', 'Climate Control'],
-    description: 'Spacious and versatile luxury for group travel, roadshows, and family excursions without compromising on elegance.'
+    name: 'Dzire',
+    category: 'hatchback',
+    image: '/dzire.jpeg',
+    passengers: 2,
+    luggage: 1,
+    features: ['Free WiFi', 'Water & Mints', 'Leather Seats'],
+    description: 'The pinnacle of Hatchback. Perfect for corporate travel and airport transfers with unmatched comfort.'
   }
 ];
 
