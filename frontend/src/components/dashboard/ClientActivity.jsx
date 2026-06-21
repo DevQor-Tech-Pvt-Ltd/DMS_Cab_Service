@@ -15,7 +15,7 @@ const ClientActivity = ({
   const getVehicleImage = (type) => {
     const t = (type || '').toLowerCase();
     if (t.includes('v-class') || t.includes('v class') || t.includes('van')) return '/ertiga.jpeg';
-    if (t.includes('range rover') || t.includes('rover') || t.includes('suv')) return '/innova.jpeg';
+    if (t.includes('range rover') || t.includes('rover') || t.includes('suv')) return '/innova.png';
     return '/ertiga.jpeg';
   };
 

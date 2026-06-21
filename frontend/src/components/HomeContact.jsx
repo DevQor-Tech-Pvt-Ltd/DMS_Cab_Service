@@ -19,7 +19,7 @@ const HomeContact = () => {
 
             <div className="relative rounded-2xl overflow-hidden border border-slate-200">
               <ImageWithFallback
-                src="/innova.jpeg"
+                src="/innova.png"
                 alt="Innova"
                 className="w-full h-[300px] sm:h-[450px] lg:h-[600px] object-cover scale-100 group-hover:scale-103 transition-transform duration-[800ms] ease-out"
                 loading="lazy"

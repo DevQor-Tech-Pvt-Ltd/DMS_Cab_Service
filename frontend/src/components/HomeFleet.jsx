@@ -13,13 +13,13 @@ const homeFleetData = [
   {
     id: 2,
     name: 'Innova',
-    image: "/innova.jpeg",
+    image: "/innova.png",
     seats: 4
   },
   {
     id: 3,
     name: 'Dzire',
-    image: "/dzire.jpeg",
+    image: "/dizire.jpeg",
     seats: 2
   },
   {
@@ -31,7 +31,7 @@ const homeFleetData = [
   {
     id: 5,
     name: 'ROLLS ROYCE PHANTOM',
-    image: "/dzire.jpeg",
+    image: "/dizire.jpeg",
     seats: 2
   },
   {
@@ -43,7 +43,7 @@ const homeFleetData = [
   {
     id: 7,
     name: 'Dzire',
-    image: "/dzire.jpeg",
+    image: "/dizire.jpeg",
     seats: 2
   },
   {

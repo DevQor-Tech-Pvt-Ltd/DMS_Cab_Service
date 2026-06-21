@@ -25,7 +25,7 @@ const fleetOptions = [
   {
     name: 'Innova',
     category: 'Luxury SUV',
-    image: '/innova.jpeg',
+    image: '/innova.png',
     passengers: 4,
     luggage: 4,
     baseFare: 1,
@@ -35,7 +35,7 @@ const fleetOptions = [
   {
     name: 'Dzire',
     category: 'hatchback',
-    image: '/dzire.jpeg',
+    image: '/dizire.jpeg',
     passengers: 2,
     luggage: 1,
     baseFare: 1,
