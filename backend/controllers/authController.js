@@ -396,13 +396,18 @@ exports.contactInquiry = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
 
-    const emailSent = await sendInquiryEmail({ firstName, lastName, email, phone, subject, message });
+    // Dispatch email asynchronously in the background to ensure instant API response
+    sendInquiryEmail({ firstName, lastName, email, phone, subject, message })
+      .then(sent => {
+        if (!sent) {
+          logger.warn(`[Contact Inquiry] Email failed to send for: ${email}`);
+        }
+      })
+      .catch(err => {
+        logger.error(`[Contact Inquiry] Error sending email for ${email}: %s`, err.message);
+      });
     
-    if (emailSent) {
-      return res.status(200).json({ success: true, message: 'Inquiry sent successfully' });
-    } else {
-      return res.status(500).json({ success: false, message: 'Failed to send inquiry email' });
-    }
+    return res.status(200).json({ success: true, message: 'Inquiry sent successfully' });
   } catch (error) {
     logger.error('Contact inquiry controller error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Failed to submit inquiry. Please try again.' });
