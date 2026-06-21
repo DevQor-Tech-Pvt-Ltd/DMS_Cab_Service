@@ -168,6 +168,9 @@ exports.register = async (req, res, next) => {
 
     const user = await User.create(userData);
 
+    // Structured audit log (Audit 13.1)
+    logger.info('[USER_REGISTERED] userId=%s | email=%s | role=%s | IP=%s', user._id, user.email, user.role, req.ip);
+
     if (role === 'driver') {
       return res.status(201).json({ 
         success: true, 
@@ -194,6 +197,7 @@ exports.login = async (req, res, next) => {
 
     const user = await User.findOne({ email }).select('+password');
     if (!user || !(await user.matchPassword(password))) {
+      logger.warn('[LOGIN_FAILED] email=%s | reason=invalid_credentials | IP=%s', email, req.ip);
       return res.status(401).json({ success: false, message: 'Invalid email or password' });
     }
 
@@ -211,6 +215,7 @@ exports.login = async (req, res, next) => {
       });
     }
 
+    logger.info('[LOGIN_SUCCESS] userId=%s | email=%s | role=%s | IP=%s', user._id, user.email, user.role, req.ip);
     sendToken(res, user);
   } catch (error) {
     logger.error('Login error: %s', error.message);

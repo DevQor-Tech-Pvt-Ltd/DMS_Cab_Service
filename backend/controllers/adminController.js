@@ -147,6 +147,9 @@ exports.approveDriver = async (req, res) => {
     // Invalidate dashboard stats cache
     cache.clearDashboardCache();
 
+    // Structured audit log (Audit 13.1)
+    logger.info('[ADMIN_ACTION] admin=%s | action=APPROVE_DRIVER | driverId=%s | driverEmail=%s', req.user.email, driverId, driver.email);
+
     return res.status(200).json({ 
       success: true, 
       message: 'Driver approved successfully',
@@ -190,6 +193,9 @@ exports.rejectDriver = async (req, res) => {
 
     // Invalidate dashboard stats cache
     cache.clearDashboardCache();
+
+    // Structured audit log (Audit 13.1)
+    logger.info('[ADMIN_ACTION] admin=%s | action=REJECT_DRIVER | driverId=%s | driverEmail=%s | reason=%s', req.user.email, driverId, driver.email, reason || 'none');
 
     return res.status(200).json({ 
       success: true, 
@@ -543,6 +549,9 @@ exports.deleteUser = async (req, res) => {
 
     // Invalidate dashboard stats cache
     cache.clearDashboardCache();
+
+    // Structured audit log (Audit 13.1)
+    logger.info('[ADMIN_ACTION] admin=%s | action=DELETE_USER | targetId=%s | targetEmail=%s | targetRole=%s', req.user.email, id, originalEmail, user.role);
 
     return res.status(200).json({ 
       success: true, 

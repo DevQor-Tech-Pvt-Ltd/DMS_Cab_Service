@@ -151,6 +151,28 @@ app.post('/api/v1/drivers/location', protect, authorize('driver'), driverLocatio
   }
 });
 
+// GET Available Drivers - returns active approved drivers with location updated in last 5 minutes (Audit 9.1)
+app.get('/api/v1/drivers/available', protect, async (req, res, next) => {
+  try {
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const availableDrivers = await User.find({
+      role: 'driver',
+      status: 'approved',
+      isActive: true,
+      'currentLocation.lastUpdated': { $gte: fiveMinutesAgo }
+    }).select('fullName vehicleType vehicleNumber currentLocation averageRating');
+
+    res.status(200).json({
+      success: true,
+      count: availableDrivers.length,
+      drivers: availableDrivers
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+
 app.use('/api/v1/payment', paymentLimiter, haltOnTimedout, require('./routes/paymentRoutes'));
 
 // Basic route - Minimal response to avoid server info disclosure (L-3)

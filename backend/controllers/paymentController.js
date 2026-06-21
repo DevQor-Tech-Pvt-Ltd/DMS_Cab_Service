@@ -30,7 +30,8 @@ exports.verifyPayment = async (req, res) => {
 
     // Verify signature
     const secret = process.env.RAZORPAY_KEY_SECRET;
-    const bypassEnabled = process.env.BYPASS_PAYMENT_VERIFICATION === 'true' || process.env.NODE_ENV === 'development';
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+    const bypassEnabled = !isProduction && (process.env.BYPASS_PAYMENT_VERIFICATION === 'true' || process.env.NODE_ENV === 'development');
 
     let isVerified = false;
     if (secret) {
@@ -139,6 +140,9 @@ exports.verifyPayment = async (req, res) => {
     
     await ride.save();
 
+    // Structured audit log (Audit 13.1)
+    logger.info('[PAYMENT_AUTHORIZED] rideId=%s | orderId=%s | paymentId=%s | amount=₹%s', ride._id, razorpay_order_id, razorpay_payment_id, ride.fare);
+
     // Create a transaction ledger record for the payment
     await Transaction.create({
       user: ride.client,
@@ -210,7 +214,8 @@ exports.depositWallet = async (req, res) => {
       return res.status(400).json({ success: false, message: 'Please provide a valid deposit amount.' });
     }
 
-    const bypassEnabled = process.env.BYPASS_PAYMENT_VERIFICATION === 'true' || process.env.NODE_ENV === 'development';
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+    const bypassEnabled = !isProduction && (process.env.BYPASS_PAYMENT_VERIFICATION === 'true' || process.env.NODE_ENV === 'development');
     let razorpayOrder = null;
 
     if (!razorpay) {
@@ -297,7 +302,8 @@ exports.verifyWallet = async (req, res) => {
     }
 
     const secret = process.env.RAZORPAY_KEY_SECRET;
-    const bypassEnabled = process.env.BYPASS_PAYMENT_VERIFICATION === 'true' || process.env.NODE_ENV === 'development';
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+    const bypassEnabled = !isProduction && (process.env.BYPASS_PAYMENT_VERIFICATION === 'true' || process.env.NODE_ENV === 'development');
 
     let isVerified = false;
     if (secret) {
@@ -409,7 +415,8 @@ exports.razorpayWebhook = async (req, res) => {
   try {
     const signature = req.headers['x-razorpay-signature'];
     const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
-    const bypassEnabled = process.env.BYPASS_PAYMENT_VERIFICATION === 'true' || process.env.NODE_ENV === 'development';
+    const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+    const bypassEnabled = !isProduction && (process.env.BYPASS_PAYMENT_VERIFICATION === 'true' || process.env.NODE_ENV === 'development');
 
     let isVerified = false;
     if (secret && signature) {

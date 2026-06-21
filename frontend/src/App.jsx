@@ -34,6 +34,7 @@ const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
+import ProtectedRoute from './components/ProtectedRoute';
 
 // Premium DMS Cab Servicese Micro-Loader shown while dynamic page chunks are fetched
 const PageLoader = () => (
@@ -60,9 +61,9 @@ const AppContent = () => {
             <Route path="/get-started" element={<GetStartedPage />} />
             <Route path="/learn-more" element={<LearnMorePage />} />
             <Route path="/auth" element={<AuthPage />} />
-            <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route path="/client/dashboard" element={<ClientDashboard />} />
-            <Route path="/driver/dashboard" element={<DriverDashboard />} />
+            <Route path="/admin/dashboard" element={<ProtectedRoute allowedRoles={['admin']}><AdminDashboard /></ProtectedRoute>} />
+            <Route path="/client/dashboard" element={<ProtectedRoute allowedRoles={['client']}><ClientDashboard /></ProtectedRoute>} />
+            <Route path="/driver/dashboard" element={<ProtectedRoute allowedRoles={['driver']}><DriverDashboard /></ProtectedRoute>} />
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/cookies" element={<CookiePage />} />

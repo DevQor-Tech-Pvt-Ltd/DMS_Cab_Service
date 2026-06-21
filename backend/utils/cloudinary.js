@@ -34,6 +34,14 @@ const uploadBase64Document = async (fileData, folder = 'dms_luxe_documents') => 
     }
   }
 
+  // Validate file size — max 5MB (Audit 16.1)
+  const MAX_SIZE_MB = 5;
+  const base64Payload = fileData.replace(/^data:[^;]+;base64,/, '');
+  const sizeInBytes = Buffer.byteLength(base64Payload, 'base64');
+  if (sizeInBytes > MAX_SIZE_MB * 1024 * 1024) {
+    throw new Error(`File size (${(sizeInBytes / (1024 * 1024)).toFixed(1)}MB) exceeds the ${MAX_SIZE_MB}MB limit.`);
+  }
+
   try {
     const uploadResponse = await cloudinary.uploader.upload(fileData, {
       folder: folder,

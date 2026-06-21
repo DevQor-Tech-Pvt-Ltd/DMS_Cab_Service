@@ -238,10 +238,33 @@ const startServer = async () => {
     }
   }, 3600000); // 1 hour
 
+  // Periodically cancel abandoned payment orders (every 30 minutes) — Audit 2.3
+  const Ride = require('./models/Ride');
+  const paymentCleanupInterval = setInterval(async () => {
+    try {
+      const thirtyMinsAgo = new Date(Date.now() - 30 * 60 * 1000);
+      const result = await Ride.updateMany(
+        {
+          paymentStatus: 'pending',
+          paymentMethod: { $in: ['card', 'upi'] },
+          createdAt: { $lt: thirtyMinsAgo },
+          status: 'pending'
+        },
+        { $set: { paymentStatus: 'failed', status: 'cancelled' } }
+      );
+      if (result.modifiedCount > 0) {
+        logger.info(`[PAYMENT_CLEANUP] Auto-cancelled ${result.modifiedCount} abandoned payment orders older than 30 minutes`);
+      }
+    } catch (error) {
+      logger.error('[PAYMENT_CLEANUP] Failed to clean up abandoned payments: %s', error.message);
+    }
+  }, 30 * 60 * 1000); // 30 minutes
+
   // Graceful shutdown handler
   const gracefulShutdown = (signal) => {
     logger.info('%s received. Shutting down gracefully...', signal);
     clearInterval(otpCleanupInterval);
+    clearInterval(paymentCleanupInterval);
     server.close(() => {
       logger.info('HTTP server closed.');
       mongoose.connection.close(false).then(() => {

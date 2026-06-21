@@ -29,6 +29,18 @@ exports.createRide = async (req, res) => {
       paymentMethod,
     } = req.body;
 
+    // Block double-bookings: enforce one-active-ride constraint per client (Audit 3.1)
+    const activeRide = await Ride.findOne({
+      client: req.user._id,
+      status: { $in: ['pending', 'driver_assigned', 'driver_arrived', 'ride_started'] }
+    });
+    if (activeRide) {
+      return res.status(400).json({
+        success: false,
+        message: 'You already have an active booking. Please wait for it to complete or cancel it before booking a new ride.'
+      });
+    }
+
     // Block bookings if there is an outstanding unpaid ride (arrears)
     const unpaidRide = await Ride.findOne({ client: req.user._id, paymentStatus: 'unpaid' });
     if (unpaidRide) {
@@ -104,7 +116,8 @@ exports.createRide = async (req, res) => {
 
     // If it's an online payment, generate a Razorpay order
     let razorpayOrder = null;
-    const bypassEnabled = process.env.BYPASS_PAYMENT_VERIFICATION === 'true' || process.env.NODE_ENV === 'development';
+      const isProduction = process.env.NODE_ENV === 'production' || process.env.RENDER === 'true';
+      const bypassEnabled = !isProduction && (process.env.BYPASS_PAYMENT_VERIFICATION === 'true' || process.env.NODE_ENV === 'development');
     if (isOnlinePayment) {
       if (!razorpay) {
         logger.warn('Razorpay integration is not configured on the server. Falling back to mock checkout.');
@@ -184,6 +197,9 @@ exports.createRide = async (req, res) => {
       // Dispatch invoice email to client asynchronously for cash/wallet bookings
       sendInvoiceEmail(ride).catch(err => logger.error('Failed to send cash/wallet booking invoice email: %s', err.message));
     }
+
+    // Structured audit log (Audit 13.1)
+    logger.info('[RIDE_BOOKED] rideId=%s | client=%s | fare=₹%s | method=%s | vehicle=%s', ride._id, req.user._id, calculatedFare, paymentMethod || 'cash', vehicleType);
 
     return res.status(201).json({
       success: true,
@@ -612,6 +628,9 @@ exports.completeRide = async (req, res) => {
     ride.completedAt = new Date();
     await ride.save();
 
+    // Structured audit log (Audit 13.1)
+    logger.info('[RIDE_COMPLETED] rideId=%s | driver=%s | fare=₹%s | paymentStatus=%s', ride._id, req.user._id, ride.fare, ride.paymentStatus);
+
     // Handle transaction logging and driver split payout
     if (ride.paymentStatus === 'paid') {
       const existingTxn = await Transaction.findOne({ ride: ride._id, type: 'payment' });
@@ -884,6 +903,9 @@ exports.cancelRide = async (req, res) => {
 
     ride.status = 'cancelled';
     await ride.save();
+
+    // Structured audit log (Audit 13.1)
+    logger.info('[RIDE_CANCELLED] rideId=%s | cancelledBy=%s | role=%s | previousStatus=%s | refunded=%s', ride._id, req.user._id, req.user.role, ride.status, ride.paymentStatus === 'refunded');
 
     // Invalidate dashboard stats cache
     cache.clearDashboardCache();
