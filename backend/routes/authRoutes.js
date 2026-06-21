@@ -3,7 +3,7 @@ const { register, login, getMe, logout, updateProfile, contactInquiry, deleteAcc
 const { protect, isApproved } = require('../middleware/authMiddleware');
 const { loginLimiter, signupLimiter, contactInquiryLimiter } = require('../middleware/rateLimiters');
 const validate = require('../middleware/validationMiddleware');
-const { signupSchema, loginSchema, updateProfileSchema } = require('../validations/validationSchemas');
+const { signupSchema, loginSchema, updateProfileSchema, contactInquirySchema } = require('../validations/validationSchemas');
 
 const router = express.Router();
 
@@ -15,6 +15,6 @@ router.get('/me', protect, getMe);
 router.post('/logout', protect, logout);
 router.put('/update-profile', protect, validate(updateProfileSchema), updateProfile);
 router.delete('/delete-account', protect, deleteAccount);
-router.post('/contact-inquiry', contactInquiryLimiter, contactInquiry);
+router.post('/contact-inquiry', contactInquiryLimiter, validate(contactInquirySchema), contactInquiry);
 
 module.exports = router;

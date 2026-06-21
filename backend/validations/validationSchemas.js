@@ -115,10 +115,21 @@ const otpVerificationSchema = z.object({
   otp: z.string().trim().min(1, 'OTP code is required'),
 });
 
+// Schema for contact inquiry
+const contactInquirySchema = z.object({
+  firstName: z.string().trim().min(1, 'First name is required').max(50),
+  lastName: z.string().trim().min(1, 'Last name is required').max(50),
+  email: z.string().trim().email('Invalid email address').lowercase(),
+  phone: z.string().trim().optional(),
+  subject: z.string().trim().min(1, 'Subject is required'),
+  message: z.string().trim().min(1, 'Message is required').max(1000),
+});
+
 module.exports = {
   signupSchema,
   loginSchema,
   rideBookingSchema,
   updateProfileSchema,
   otpVerificationSchema,
+  contactInquirySchema,
 };

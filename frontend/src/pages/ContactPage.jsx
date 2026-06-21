@@ -29,6 +29,14 @@ const ContactPage = () => {
     setLoading(true);
     setError('');
     
+    // Client-side email validation check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email.trim())) {
+      setError('Please enter a valid email address (e.g., name@domain.com).');
+      setLoading(false);
+      return;
+    }
+    
     try {
       await submitContactInquiry(formData);
       setIsSubmitted(true);
