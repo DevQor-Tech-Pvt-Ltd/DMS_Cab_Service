@@ -7,8 +7,8 @@ const signupSchema = z.object({
   phone: z.string().trim().min(1, 'Phone number is required').regex(/^[+]?[\d\s\-().]{7,15}$/, 'Invalid phone number format'),
   role: z.enum(['client', 'driver']),
   password: z.string().min(8, 'Password must be at least 8 characters long')
-    .refine(v => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9])/.test(v), {
-      message: 'Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.'
+    .refine(v => /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])/.test(v), {
+      message: 'Password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 special character.'
     }),
   confirmPassword: z.string().min(8),
   vehicleNumber: z.string().trim().optional(),
@@ -90,8 +90,8 @@ const updateProfileSchema = z.object({
   phone: z.string().trim().optional(),
   currentPassword: z.string().optional(),
   newPassword: z.string().min(8, 'New password must be at least 8 characters long')
-    .refine(v => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9])/.test(v), {
-      message: 'New password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.'
+    .refine(v => /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])/.test(v), {
+      message: 'New password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 special character.'
     }).optional(),
   profilePicture: z.string().optional(),
   vehicleNumber: z.string().trim().optional(),

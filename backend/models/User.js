@@ -38,9 +38,9 @@ const userSchema = new mongoose.Schema(
           if (v && (v.startsWith('$2a$') || v.startsWith('$2b$'))) {
             return true;
           }
-          return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9])/.test(v);
+          return /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])/.test(v);
         },
-        message: 'Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.',
+        message: 'Password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 special character.',
       },
       select: false,
     },

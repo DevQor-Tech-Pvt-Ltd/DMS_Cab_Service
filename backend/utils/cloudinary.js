@@ -49,8 +49,8 @@ const uploadBase64Document = async (fileData, folder = 'dms_luxe_documents') => 
     });
     return uploadResponse.secure_url;
   } catch (error) {
-    logger.error('Cloudinary upload error: %s', error.message);
-    throw new Error('Failed to upload document to Cloudinary: ' + error.message);
+    logger.error('Cloudinary upload error: %s. Falling back to storing document as base64 string directly in database.', error.message);
+    return fileData; // Fallback to base64 string so registration/profile update does not fail
   }
 };
 

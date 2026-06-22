@@ -116,6 +116,12 @@ exports.register = async (req, res, next) => {
       return res.status(409).json({ success: false, message: 'Email already in use' });
     }
 
+    // Check if phone number already exists
+    const existingPhone = await User.findOne({ phone });
+    if (existingPhone) {
+      return res.status(409).json({ success: false, message: 'Phone number already in use' });
+    }
+
     // Prepare user data
     const userData = { 
       fullName, 
@@ -327,9 +333,17 @@ exports.updateProfile = async (req, res, next) => {
       user.email = email;
     }
 
+    // Validate phone if it's being updated
+    if (phone && phone !== user.phone) {
+      const phoneExists = await User.findOne({ phone });
+      if (phoneExists) {
+        return res.status(409).json({ success: false, message: 'Phone number is already in use' });
+      }
+      user.phone = phone;
+    }
+
     // Update standard fields
     if (fullName) user.fullName = fullName;
-    if (phone) user.phone = phone;
     if (profilePicture !== undefined) {
       user.profilePicture = profilePicture ? await uploadBase64Document(profilePicture, 'dms_luxe_profiles') : null;
     }

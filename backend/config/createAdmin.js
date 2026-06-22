@@ -16,7 +16,7 @@ const createAdmin = async () => {
     // Check if admin already exists
     const adminExists = await User.findOne({
       email: process.env.ADMIN_EMAIL,
-    });
+    }).select('+password');
 
     if (!adminExists) {
 
@@ -41,7 +41,14 @@ const createAdmin = async () => {
       console.log("✅ Admin User Created Successfully");
 
     } else {
-      console.log("✅ Admin already exists");
+      const isMatch = await adminExists.matchPassword(process.env.ADMIN_PASSWORD);
+      if (!isMatch) {
+        adminExists.password = process.env.ADMIN_PASSWORD;
+        await adminExists.save();
+        console.log("✅ Admin password updated to match current configuration");
+      } else {
+        console.log("✅ Admin already exists and credentials are up to date");
+      }
     }
 
   } catch (error) {
