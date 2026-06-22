@@ -28,7 +28,7 @@ const ContactPage = () => {
     e.preventDefault();
     setLoading(true);
     setError('');
-    
+
     // Client-side email validation check
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email.trim())) {
@@ -36,7 +36,7 @@ const ContactPage = () => {
       setLoading(false);
       return;
     }
-    
+
     try {
       await submitContactInquiry(formData);
       setIsSubmitted(true);
@@ -107,7 +107,7 @@ const ContactPage = () => {
                   </div>
                   <div>
                     <h4 className="text-slate-900 font-serif text-lg mb-1">Direct Line</h4>
-                    <p className="text-slate-600 mb-1">+91 7439885351</p>
+                    <p className="text-slate-600 mb-1">+91 9903941219</p>
                     <p className="text-[#003893] text-sm font-semibold">Available 24/7</p>
                   </div>
                 </div>
@@ -119,7 +119,7 @@ const ContactPage = () => {
                   </div>
                   <div>
                     <h4 className="text-slate-900 font-serif text-lg mb-1">Email Reservations</h4>
-                    <p className="text-slate-600 mb-1">pritam.mondal@devqor.in</p>
+                    <p className="text-slate-600 mb-1">contact@dmscabservices.com</p>
                     <p className="text-slate-500 text-sm">Typical response within 15 minutes</p>
                   </div>
                 </div>
@@ -160,7 +160,7 @@ const ContactPage = () => {
                     <p className="text-slate-600 text-center max-w-xs">Thank you for reaching out. Our concierge team will contact you shortly.</p>
                   </div>
                 )}
-                
+
                 <h3 className="text-2xl font-serif text-slate-900 mb-8">Send an Inquiry</h3>
 
                 {error && (

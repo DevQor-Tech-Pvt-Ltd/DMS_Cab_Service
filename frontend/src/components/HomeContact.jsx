@@ -59,7 +59,7 @@ const HomeContact = () => {
                 <div>
                   <div className="text-xs text-slate-500 uppercase tracking-[0.2em] mb-2 font-semibold">Direct Line</div>
                   <div className="text-2xl md:text-3xl font-serif text-slate-900 group-hover:text-[#003893] transition-colors">
-                    +91 7439885351
+                    +91 9903941219
                   </div>
                 </div>
               </div>
@@ -72,7 +72,7 @@ const HomeContact = () => {
                 <div>
                   <div className="text-xs text-slate-500 uppercase tracking-[0.2em] mb-2 font-semibold">Private Inquiries</div>
                   <div className="text-lg sm:text-xl md:text-2xl font-serif text-slate-900 group-hover:text-[#003893] transition-colors break-all sm:break-normal">
-                    pritam.mondal@devqor.in
+                    contact@dmscabservices.com
                   </div>
                 </div>
               </div>

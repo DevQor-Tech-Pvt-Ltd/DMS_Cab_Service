@@ -18,7 +18,7 @@ const fleetOptions = [
     image: '/ertiga.jpeg',
     passengers: 3,
     luggage: 2,
-    baseFare: 1501,
+    baseFare: 3999,
     features: ['Free WiFi', 'Water & Mints', 'Leather Seats'],
     description: 'The pinnacle of luxury sedans. Perfect for high-profile business transfers and absolute comfort.'
   },
@@ -28,7 +28,7 @@ const fleetOptions = [
     image: '/innova.png',
     passengers: 4,
     luggage: 4,
-    baseFare: 1,
+    baseFare: 4499,
     features: ['Free WiFi', 'Panoramic Roof', 'Extra Legroom'],
     description: 'Commanding presence with exceptional space. Ideal for rough roads, events and styling arrival.'
   },
@@ -38,7 +38,7 @@ const fleetOptions = [
     image: '/dizire.jpeg',
     passengers: 2,
     luggage: 1,
-    baseFare: 1,
+    baseFare: 3499,
     features: ['Conference Seating', 'Privacy Glass', 'Climate Control'],
     description: 'Spacious and versatile luxury for group travel, family outings without losing executive elegance.'
   }

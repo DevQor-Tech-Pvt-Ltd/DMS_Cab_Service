@@ -58,9 +58,9 @@ const sendToken = (res, user) => {
   res.cookie('token', token, { ...cookieOptions, maxAge: 15 * 60 * 1000 });
   res.cookie('refreshToken', refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 });
 
-  res.status(200).json({ 
-    success: true, 
-    user: user.toJSON ? user.toJSON() : user, 
+  res.status(200).json({
+    success: true,
+    user: user.toJSON ? user.toJSON() : user,
     role: user.role,
     token,
     refreshToken
@@ -69,16 +69,16 @@ const sendToken = (res, user) => {
 
 exports.register = async (req, res, next) => {
   try {
-    const { 
-      fullName, 
-      email, 
-      phone, 
-      role, 
-      password, 
-      confirmPassword, 
-      vehicleNumber, 
-      licenseNumber, 
-      rcDocument, 
+    const {
+      fullName,
+      email,
+      phone,
+      role,
+      password,
+      confirmPassword,
+      vehicleNumber,
+      licenseNumber,
+      rcDocument,
       licenseDocument,
       currentCity,
       vehicleModelYear,
@@ -123,12 +123,12 @@ exports.register = async (req, res, next) => {
     }
 
     // Prepare user data
-    const userData = { 
-      fullName, 
-      email, 
-      phone, 
-      role, 
-      password 
+    const userData = {
+      fullName,
+      email,
+      phone,
+      role,
+      password
     };
 
     // If role is driver, set status to pending and require vehicle details
@@ -145,14 +145,14 @@ exports.register = async (req, res, next) => {
         !licenseDocument ||
         (rcCopyAvailable === 'Yes' && !rcDocument)
       ) {
-        return res.status(400).json({ 
-          success: false, 
-          message: 'All driver details (Contact Number, Current City, Car Number, Vehicle Model & Year, Driving License Number, RC Copy Available, Insurance Valid Till, Preferred Service Area, License Document, and RC Document if available) are required.' 
+        return res.status(400).json({
+          success: false,
+          message: 'All driver details (Contact Number, Current City, Car Number, Vehicle Model & Year, Driving License Number, RC Copy Available, Insurance Valid Till, Preferred Service Area, License Document, and RC Document if available) are required.'
         });
       }
       userData.vehicleNumber = vehicleNumber;
       userData.licenseNumber = licenseNumber;
-      
+
       // Upload documents to Cloudinary to replace base64 strings with clean URLs
       userData.rcDocument = rcDocument ? await uploadBase64Document(rcDocument, 'dms_luxe_vehicle_rc') : null;
       userData.licenseDocument = licenseDocument ? await uploadBase64Document(licenseDocument, 'dms_luxe_driver_licenses') : null;
@@ -180,11 +180,11 @@ exports.register = async (req, res, next) => {
     logger.info('[USER_REGISTERED] userId=%s | email=%s | role=%s | IP=%s', user._id, user.email, user.role, req.ip);
 
     if (role === 'driver') {
-      return res.status(201).json({ 
-        success: true, 
+      return res.status(201).json({
+        success: true,
         message: 'Registration successful! Your account is pending admin approval.',
         user: user.toJSON(),
-        approvalRequired: true 
+        approvalRequired: true
       });
     }
 
@@ -216,10 +216,10 @@ exports.login = async (req, res, next) => {
 
     // Check if driver is approved
     if (user.role === 'driver' && user.status !== 'approved') {
-      return res.status(403).json({ 
-        success: false, 
+      return res.status(403).json({
+        success: false,
         message: 'Your account is pending admin approval. Please wait or contact support.',
-        status: user.status 
+        status: user.status
       });
     }
 
@@ -256,9 +256,9 @@ exports.logout = async (req, res, next) => {
   try {
     const token = req.cookies?.token || (req.headers.authorization && req.headers.authorization.startsWith('Bearer') ? req.headers.authorization.split(' ')[1] : null);
     const refreshToken = req.cookies?.refreshToken;
-    
+
     const BlacklistedToken = require('../models/BlacklistedToken');
-    
+
     const blacklistToken = async (t) => {
       if (!t) return;
       try {
@@ -296,16 +296,16 @@ exports.logout = async (req, res, next) => {
 
 exports.updateProfile = async (req, res, next) => {
   try {
-    const { 
-      fullName, 
-      email, 
-      phone, 
-      currentPassword, 
-      newPassword, 
-      vehicleNumber, 
-      licenseNumber, 
-      rcDocument, 
-      licenseDocument, 
+    const {
+      fullName,
+      email,
+      phone,
+      currentPassword,
+      newPassword,
+      vehicleNumber,
+      licenseNumber,
+      rcDocument,
+      licenseDocument,
       profilePicture,
       currentCity,
       vehicleModelYear,
@@ -317,7 +317,7 @@ exports.updateProfile = async (req, res, next) => {
       preferredServiceArea,
       previousExperience
     } = req.body;
-    
+
     // Find the user (with password selected if they want to change it)
     const user = await User.findById(req.user._id).select('+password');
     if (!user) {
@@ -407,7 +407,7 @@ exports.updateProfile = async (req, res, next) => {
 exports.contactInquiry = async (req, res, next) => {
   try {
     const { firstName, lastName, email, phone, subject, message } = req.body;
-    
+
     if (!firstName || !lastName || !email || !subject || !message) {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
@@ -422,7 +422,7 @@ exports.contactInquiry = async (req, res, next) => {
       .catch(err => {
         logger.error(`[Contact Inquiry] Error sending email for ${email}: %s`, err.message);
       });
-    
+
     return res.status(200).json({ success: true, message: 'Inquiry sent successfully' });
   } catch (error) {
     logger.error('Contact inquiry controller error: %s', error.message);
@@ -438,12 +438,12 @@ exports.deleteAccount = async (req, res, next) => {
     }
 
     user.isActive = false;
-    
+
     // Anonymize email and phone to release them for potential new registrations
     const timestamp = Date.now();
     user.email = `deactivated_${timestamp}_${user.email}`;
     user.phone = `deactivated_${timestamp}_${user.phone}`;
-    
+
     await user.save();
 
     // Clear authentication cookies
@@ -496,7 +496,7 @@ exports.sendPhoneOtp = async (req, res, next) => {
 
     // Send OTP via Email instead of SMS
     const user = await User.findOne({ phone });
-    const recipientEmail = user ? user.email : (process.env.ADMIN_EMAIL || 'pritam.mondal@devqor.in');
+    const recipientEmail = user ? user.email : (process.env.ADMIN_EMAIL || 'contact@dmscabservices.com');
 
     const htmlContent = `
     <!DOCTYPE html>
@@ -649,15 +649,15 @@ exports.verifyPhoneOtp = async (req, res, next) => {
 
     // Find user or register automatically (Uber/Ola style dynamic sign-up/sign-in)
     let user = await User.findOne({ phone });
-    
+
     if (!user) {
       // Create user with sparse email placeholder
       const cleanPhone = phone.replace(/[^0-9]/g, '');
       const uniqueSuffix = Math.random().toString(36).substring(2, 6);
       const emailPlaceholder = `user_${cleanPhone}_${uniqueSuffix}@dms-luxe.com`;
-      
+
       const selectRole = role && ['client', 'driver'].includes(role) ? role : 'client';
-      
+
       user = await User.create({
         fullName: `User_${cleanPhone.slice(-4) || 'Luxe'}`,
         phone,

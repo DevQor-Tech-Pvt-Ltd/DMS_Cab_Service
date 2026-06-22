@@ -216,7 +216,7 @@ const Services = () => {
                 </div>
                 <div>
                   <div className="text-xs text-slate-500 mb-1">Call Us Anytime</div>
-                  <div className="text-slate-900 font-semibold">+91 7439885351</div>
+                  <div className="text-slate-900 font-semibold">+91 9903941219</div>
                 </div>
               </div>
             </div>

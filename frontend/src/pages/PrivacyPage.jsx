@@ -118,8 +118,8 @@ const PrivacyPage = () => {
             </p>
             <div className="bg-slate-50 rounded-2xl p-5 text-xs text-slate-500 font-medium space-y-1">
               <p className="text-[#003893] font-bold text-sm">DMS Cab ServicesE Corporate HQ</p>
-              <p>Email: pritam.mondal@devqor.in</p>
-              <p>Phone: +91 7439885351</p>
+              <p>Email: contact@dmscabservices.com</p>
+              <p>Phone: +91 9903941219</p>
               <p>Address: Cabin 19, 8th Floor, Delta Tower (Awfis), Sector V, Bidhannagar, Kolkata, West Bengal – 700091</p>
             </div>
           </section>
