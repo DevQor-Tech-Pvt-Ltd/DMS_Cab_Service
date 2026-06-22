@@ -191,7 +191,7 @@ exports.register = async (req, res, next) => {
     sendToken(res, user);
   } catch (error) {
     logger.error('Register error: %s', error.message);
-    return res.status(500).json({ success: false, message: 'Registration failed. Please try again.' });
+    next(error);
   }
 };
 
