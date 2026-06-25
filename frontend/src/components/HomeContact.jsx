@@ -21,7 +21,7 @@ const HomeContact = () => {
               <ImageWithFallback
                 src="/innova.png"
                 alt="Innova"
-                className="w-full h-[300px] sm:h-[450px] lg:h-[600px] object-cover scale-100 group-hover:scale-103 transition-transform duration-[800ms] ease-out"
+                className="w-full h-[260px] sm:h-[380px] lg:h-[440px] object-cover scale-100 group-hover:scale-103 transition-transform duration-[800ms] ease-out"
                 loading="lazy"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>

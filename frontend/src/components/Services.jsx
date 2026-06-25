@@ -145,9 +145,9 @@ const Services = () => {
             <div
               key={index}
               className={`${index >= visibleCount ? 'hidden lg:flex' : 'flex'
-                } flex-col bg-white border border-slate-200 rounded-2xl p-7 text-center
-                  transition-all duration-300 group cursor-pointer
-                  hover:border-[#003893]/40 hover:shadow-[0_8px_30px_rgba(0,56,147,0.08)] hover:-translate-y-1`}
+                } flex-col bg-white border border-slate-210 rounded-2xl p-7 text-center
+                  transition-all duration-600 group cursor-pointer
+                  hover:border-[#003893]/80 hover:shadow-[0_8px_30px_rgba(0,56,147,0.08)] hover:-translate-y-1`}
               onClick={() => setSelectedService(service)}
             >
               {/* Icon */}
