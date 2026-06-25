@@ -25,7 +25,7 @@ const homeFleetData = [
   {
     id: 4,
     name: 'BMW X7',
-    image: "/ertiga.jpeg",
+    image: "/bmwx7.jpg",
     seats: 6
   },
   {

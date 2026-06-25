@@ -218,78 +218,76 @@ const Home = () => {
     <div className="bg-white text-[#0F172A] min-h-screen relative font-sans overflow-x-hidden">
       {/* Hero Section */}
       <section
-        className="relative h-[600px] flex items-center overflow-hidden pt-12"
+        className="relative min-h-[620px] flex items-center overflow-hidden pt-[76px]"
         style={{
           backgroundImage: "url('/homebg.png')",
           backgroundRepeat: "no-repeat",
           backgroundSize: "cover",
-          backgroundPosition: "right center",
+          backgroundPosition: "center center",
           backgroundColor: "#ffffff"
         }}
       >
-        {/* Mobile/Tablet solid light overlay to guarantee high text contrast */}
+        {/* Mobile/Tablet overlay */}
         <div className="absolute inset-0 z-0 bg-white/94 md:bg-white/88 lg:hidden pointer-events-none" />
 
-        {/* Desktop premium custom gradient overlay */}
+        {/* Desktop gradient: strong fade on left for text, transparent on right for car */}
         <div
           className="hidden lg:block absolute inset-0 z-0 pointer-events-none"
           style={{
             background:
-              "linear-gradient(90deg,rgba(255,255,255,0.98) 0%,rgba(255,255,255,0.96) 22%,rgba(255,255,255,0.80) 30%,rgba(255,255,255,0.25) 40%,rgba(255,255,255,0.05) 48%,rgba(255,255,255,0) 55%)"
+              "linear-gradient(90deg,rgba(255,255,255,1) 0%,rgba(255,255,255,0.97) 28%,rgba(255,255,255,0.7) 45%,rgba(255,255,255,0.15) 62%,rgba(255,255,255,0) 75%)"
           }}
         />
 
-        {/* Car Layer Animation */}
+        {/* Car — positioned right of center, slides in from the right */}
         <motion.div
-          className="hidden lg:block absolute right-[-30px] bottom-[40px] z-[5] pointer-events-none"
-          initial={{ x: 500, opacity: 0 }}
+          className="hidden lg:block absolute right-0 bottom-0 z-[5] pointer-events-none"
+          initial={{ x: 600, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}>
+          transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
+        >
           <ImageWithFallback
             src="/carbg.png"
             alt="Luxury Car"
-            className="w-[820px] xl:w-[900px] max-w-none object-contain" />
+            className="w-[760px] xl:w-[860px] 2xl:w-[960px] max-w-none object-contain"
+          />
         </motion.div>
 
-        <div className="relative z-10 max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 w-full flex items-center h-full">
-          <div className="grid grid-cols-1 lg:grid-cols-[34%_66%] w-full items-center">
-
-            {/* Left Column: Heading, Subheading & Actions (40% Width) */}
+        {/* Content */}
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+          <div className="max-w-[540px]">
             <motion.div
-              // className="w-full space-y-5 text-left relative z-10 max-w-[470px] -mt-4 pl-10"
-              className="w-full space-y-5 text-left relative z-10 max-w-[420px] -mt-6"
+              className="space-y-6"
               initial={{ opacity: 0, x: -50 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8, ease: 'easeOut' }}
             >
-              {/* Premium Capsule */}
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-[2px] bg-[#FFC107]" />
-                <span className="text-[#FFC107] font-bold text-[12px] tracking-[3px] uppercase">
+              {/* Eyebrow */}
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-[2px] bg-[#FFC107]" />
+                <span className="text-[#FFC107] font-bold text-[11px] tracking-[3px] uppercase">
                   Premium. Comfort. Trust.
                 </span>
               </div>
 
-              {/* World-Class Chauffeur Services */}
+              {/* Heading */}
               <h1
-                className="text-[52px] xl:text-[58px] font-extrabold leading-[0.95] tracking-[-2px] text-[#0B3D91]"
-                style={{ fontWeight: 800 }}
+                className="text-[48px] sm:text-[54px] xl:text-[62px] font-extrabold leading-[1] tracking-[-2px] text-[#0B3D91]"
               >
-                <span className="whitespace-nowrap">World-Class</span><br />
+                World-Class<br />
                 Chauffeur<br />
                 <span className="text-[#FFC107]">Services</span>
               </h1>
 
-              <p className="text-slate-600 text-[17px] font-normal leading-[1.8] max-w-[390px] mb-2">
-                From airport transfers to VIP protection, explore our comprehensive range of luxury transportation solutions designed for your utmost comfort and security.
+              <p className="text-slate-650 text-[16px] sm:text-[17px] font-normal leading-[1.8] max-w-[440px]">
+                From airport transfers to VIP protection — luxury transportation designed for your utmost comfort and security.
               </p>
 
-              {/* Action Buttons */}
-              {/* <div className="flex flex-wrap items-center gap-[20px] pt-4"> */}
-              <div className="flex flex-wrap items-center gap-[16px] pt-0">
+              {/* CTA Buttons */}
+              <div className="flex flex-wrap items-center gap-4 pt-2">
                 <button
                   onClick={() => navigate('/get-started')}
-                  className="h-[54px] bg-[#0B3D91] hover:bg-[#093073] text-white px-[24px] rounded-[12px] font-bold text-[16px] tracking-wide transition-colors flex items-center space-x-2 cursor-pointer"
+                  className="h-[52px] bg-[#0B3D91] hover:bg-[#093073] text-white px-7 rounded-[12px] font-bold text-[15px] tracking-wide transition-colors flex items-center space-x-2 cursor-pointer shadow-md"
                 >
                   <Calendar size={18} />
                   <span>Book a Ride</span>
@@ -297,26 +295,21 @@ const Home = () => {
 
                 <button
                   onClick={() => navigate('/contact')}
-                  className="h-[54px] bg-white border-2 border-[#0B3D91] text-[#0B3D91] hover:bg-[#0B3D91]/5 px-[24px] rounded-[12px] font-bold text-[16px] tracking-wide transition-colors flex items-center space-x-2 cursor-pointer"
+                  className="h-[52px] bg-white border-2 border-[#0B3D91] text-[#0B3D91] hover:bg-[#0B3D91]/5 px-7 rounded-[12px] font-bold text-[15px] tracking-wide transition-colors flex items-center space-x-2 cursor-pointer"
                 >
                   <Phone size={18} />
                   <span>Contact Us</span>
                 </button>
               </div>
             </motion.div>
-
-            {/* Right Column: Empty spacer (60% Width) to reveal background car and skyline */}
-            <div className="hidden lg:block min-h-[400px]" />
-
           </div>
         </div>
-
       </section>
 
-      {/* Floating Trust proposition bar container */}
-      <div className="relative z-20 -mt-[42px] max-w-[1240px] mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Trust Bar */}
+      <div className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10">
         <motion.div
-          className="bg-white rounded-[18px] border border-[#E2E8F0] py-7 px-8"
+          className="bg-white rounded-2xl border border-[#E2E8F0] py-7 px-6 md:px-10"
           style={{ boxShadow: "0 20px 60px rgba(0,0,0,0.08)" }}
           initial={{ opacity: 0, y: 30 }}
           animate={{ opacity: 1, y: 0 }}
@@ -328,14 +321,14 @@ const Home = () => {
               return (
                 <div
                   key={item.id}
-                  className={`flex items-center space-x-4 text-left ${idx > 0 ? 'sm:pt-4 md:pt-0 lg:pl-8' : ''}`}
+                  className={`flex items-center space-x-4 ${idx > 0 ? 'pt-5 sm:pt-0 lg:pl-8' : ''}`}
                 >
-                  <div className="w-[62px] h-[62px] rounded-full bg-[#0B3D91] text-white flex items-center justify-center shrink-0 shadow-md">
-                    <Icon size={24} className="text-white" />
+                  <div className="w-[56px] h-[56px] rounded-full bg-[#0B3D91] text-white flex items-center justify-center shrink-0 shadow-md">
+                    <Icon size={22} className="text-white" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-[#0F172A] text-[18px] leading-snug">{item.title}</h3>
-                    <p className="text-[#64748B] text-[14px] mt-1 leading-snug">{item.description}</p>
+                    <h3 className="font-bold text-[#0F172A] text-[16px] leading-snug">{item.title}</h3>
+                    <p className="text-[#64748B] text-[13px] mt-0.5 leading-snug">{item.description}</p>
                   </div>
                 </div>
               );

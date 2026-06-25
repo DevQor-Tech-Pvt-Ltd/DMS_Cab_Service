@@ -140,26 +140,47 @@ const Services = () => {
         </div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5 mb-12">
           {services.map((service, index) => (
             <div
               key={index}
-              className={`${index >= visibleCount ? 'hidden lg:block' : 'block'
-                } bg-slate-50 border border-slate-200/60 rounded-2xl p-8 text-center hover:border-[#003893]/40 hover:bg-slate-100/50 hover:shadow-md transition-all duration-300 group transform hover:-translate-y-1`}
+              className={`${index >= visibleCount ? 'hidden lg:flex' : 'flex'
+                } flex-col bg-white border border-slate-200 rounded-2xl p-7 text-center
+                  transition-all duration-300 group cursor-pointer
+                  hover:border-[#003893]/40 hover:shadow-[0_8px_30px_rgba(0,56,147,0.08)] hover:-translate-y-1`}
+              onClick={() => setSelectedService(service)}
             >
-              <div className="w-16 h-16 mx-auto rounded-full border border-[#003893]/30 flex items-center justify-center mb-6 group-hover:bg-[#003893]/10 transition-colors">
-                <service.icon className="text-[#003893]" size={28} strokeWidth={1.5} />
+              {/* Icon */}
+              <div className="w-14 h-14 mx-auto rounded-full border border-[#003893]/20 bg-[#003893]/5 flex items-center justify-center mb-5 transition-all duration-300 group-hover:bg-[#003893] group-hover:border-[#003893]">
+                <service.icon
+                  className="text-[#003893] transition-colors duration-300 group-hover:text-white"
+                  size={24}
+                  strokeWidth={1.5}
+                />
               </div>
-              <h3 className="text-xl font-serif text-slate-900 mb-4">{service.title}</h3>
-              <p className="text-slate-600 text-sm leading-relaxed mb-8 font-light">
+
+              {/* Title */}
+              <h3 className="text-[17px] font-serif text-slate-900 mb-3 leading-snug">
+                {service.title}
+              </h3>
+
+              {/* Divider */}
+              <div className="w-8 h-px bg-[#003893]/20 mx-auto mb-4 group-hover:w-12 group-hover:bg-[#003893]/40 transition-all duration-300" />
+
+              {/* Description — grows to fill space, pushing Learn More to bottom */}
+              <p className="text-slate-500 text-[13px] leading-relaxed font-light flex-1 mb-6">
                 {service.description}
               </p>
+
+              {/* Learn More — always at the bottom */}
               <button
-                onClick={() => setSelectedService(service)}
-                className="text-[#003893] hover:text-[#002d72] text-sm font-semibold flex items-center justify-center mx-auto space-x-2 group/btn cursor-pointer"
+                onClick={(e) => { e.stopPropagation(); setSelectedService(service); }}
+                className="inline-flex items-center justify-center gap-1.5 text-[#003893] text-[13px] font-semibold tracking-wide group/btn cursor-pointer mx-auto"
               >
-                <span>Learn More</span>
-                <ArrowRight size={16} className="group-hover/btn:translate-x-1 transition-transform" />
+                <span className="border-b border-[#003893]/30 group-hover/btn:border-[#003893] transition-colors pb-px">
+                  Learn More
+                </span>
+                <ArrowRight size={14} className="group-hover/btn:translate-x-1 transition-transform duration-200" />
               </button>
             </div>
           ))}
