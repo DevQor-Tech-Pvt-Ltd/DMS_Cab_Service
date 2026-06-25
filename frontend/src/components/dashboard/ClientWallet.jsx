@@ -56,7 +56,7 @@ const ClientWallet = ({
 
       const { razorpayOrder } = response.data;
 
-      if (razorpayOrder.key === 'rzp_test_mock') {
+      if (razorpayOrder.key === 'rzp_test_mock' && import.meta.env.MODE === 'development') {
         // Bypass Razorpay modal in mock mode and verify directly
         setPaymentState('verifying');
         try {

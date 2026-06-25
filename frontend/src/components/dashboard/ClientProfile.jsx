@@ -107,21 +107,7 @@ const ClientProfile = ({
 
       {/* Right Side Column: emergency, locations, notifications */}
       <div className="lg:col-span-4 space-y-6">
-        {/* Emergency Contact */}
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-4">
-          <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Emergency Contact</h4>
-          <div className="flex items-center justify-between bg-white border border-slate-200 p-4 rounded-xl shadow-sm">
-            <div className="flex items-center space-x-3">
-              <div className="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-500 border border-red-200 font-bold text-xs">SM</div>
-              <div>
-                <p className="text-xs font-bold text-slate-800">Sarah Miller</p>
-                <p className="text-[9px] text-slate-400">Partner • +1 555-9876</p>
-              </div>
-            </div>
-            <button className="text-xs text-[#003893] font-bold">✏️</button>
-          </div>
-          <button id="profile-emergency-add" onClick={() => alert('Manage emergency contacts settings.')} className="w-full bg-transparent border border-dashed border-slate-200 hover:border-slate-300 text-slate-405 text-slate-400 py-2.5 rounded-xl text-xs font-semibold"><span>+ Add New Contact</span></button>
-        </div>
+
 
         {/* Saved Locations */}
         <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 space-y-3">

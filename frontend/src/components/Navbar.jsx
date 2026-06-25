@@ -256,7 +256,7 @@ const Navbar = () => {
               {/* Copyright at the bottom of the mobile menu */}
               <div className="mt-auto pt-8 border-t border-slate-100 text-center">
                 <p className="text-slate-400 text-xs font-semibold">
-                  &copy; {new Date().getFullYear()} DMS Cab ServicesE Chauffeur Services. All rights reserved.
+                  &copy; {new Date().getFullYear()} DMS Cab Services Chauffeur Services. All rights reserved.
                 </p>
               </div>
             </motion.div>

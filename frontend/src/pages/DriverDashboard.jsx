@@ -5,6 +5,36 @@ import {
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import io from 'socket.io-client';
+import { useIsMobile } from '../utils/motion';
+
+const getHandledRides = (userId) => {
+  if (!userId) return [];
+  try {
+    const list = JSON.parse(localStorage.getItem(`dms_luxe_handled_rides_${userId}`) || '[]');
+    if (list.length > 100) {
+      const pruned = list.slice(-100);
+      localStorage.setItem(`dms_luxe_handled_rides_${userId}`, JSON.stringify(pruned));
+      return pruned;
+    }
+    return list;
+  } catch (e) {
+    return [];
+  }
+};
+
+const saveHandledRide = (userId, rideId) => {
+  if (!userId || !rideId) return;
+  try {
+    const list = getHandledRides(userId);
+    if (!list.includes(rideId)) {
+      list.push(rideId);
+      const pruned = list.slice(-100);
+      localStorage.setItem(`dms_luxe_handled_rides_${userId}`, JSON.stringify(pruned));
+    }
+  } catch (e) {
+    console.error('Error saving handled ride:', e);
+  }
+};
 import { api } from '../services/authService';
 import { getSocketUrl } from '../utils/urls';
 import NotFoundPage from './NotFoundPage';
@@ -18,11 +48,15 @@ const DriverDashboard = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState('dashboard');
-  const [isMobileViewport, setIsMobileViewport] = useState(window.innerWidth < 1024);
+  const isMobileViewport = useIsMobile(1024);
   const [searchQuery, setSearchQuery] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileError, setProfileError] = useState('');
   const [profileSuccess, setProfileSuccess] = useState('');
+
+  // Confirm and Alert Modals states (PROD-07)
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [customAlert, setCustomAlert] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
   const [profileForm, setProfileForm] = useState({
     fullName: '',
     email: '',
@@ -31,14 +65,16 @@ const DriverDashboard = () => {
 
   const [isOnline, setIsOnline] = useState(true);
 
-  // Track window resize
+  const isOnlineRef = useRef(isOnline);
   useEffect(() => {
-    const handleResize = () => {
-      setIsMobileViewport(window.innerWidth < 1024);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    isOnlineRef.current = isOnline;
+  }, [isOnline]);
+
+  useEffect(() => {
+    if (socketRef.current && socketRef.current.connected) {
+      socketRef.current.emit('driver-status', { isOnline });
+    }
+  }, [isOnline]);
 
   // Update URL search parameters when tab changes
   const handleTabChange = (tabName) => {
@@ -143,9 +179,7 @@ const DriverDashboard = () => {
 
     const socket = io(getSocketUrl(), {
       transports: ['websocket', 'polling'],
-      withCredentials: true,
-      auth: { token: user?.token },
-      query: { token: user?.token }
+      withCredentials: true
     });
     socketRef.current = socket;
 
@@ -165,9 +199,9 @@ const DriverDashboard = () => {
 
     socket.on('new-booking', (ride) => {
       // Only receive booking requests if driver is online
-      if (isOnline) {
+      if (isOnlineRef.current) {
         // Read handled list from localStorage
-        const handledList = JSON.parse(localStorage.getItem(`dms_luxe_handled_rides_${user?._id}`) || '[]');
+        const handledList = getHandledRides(user?._id);
         if (handledList.includes(ride._id)) return;
 
         setRideNotifications(prev => {
@@ -226,7 +260,7 @@ const DriverDashboard = () => {
         socketRef.current.disconnect();
       }
     };
-  }, [isOnline, user?._id, fetchCurrentRides]);
+  }, [user?._id, fetchCurrentRides]);
 
   // Real-time status sync for active ride
   useEffect(() => {
@@ -277,11 +311,7 @@ const DriverDashboard = () => {
 
       if (response.data.success) {
         // Save to handled list in localStorage
-        const handledList = JSON.parse(localStorage.getItem(`dms_luxe_handled_rides_${user?._id}`) || '[]');
-        if (!handledList.includes(rideId)) {
-          handledList.push(rideId);
-          localStorage.setItem(`dms_luxe_handled_rides_${user?._id}`, JSON.stringify(handledList));
-        }
+        saveHandledRide(user?._id, rideId);
 
         // Driver accepted successfully
         setActiveRide(response.data.ride);
@@ -310,11 +340,7 @@ const DriverDashboard = () => {
   };
 
   const handleDeclineRide = (rideId) => {
-    const handledList = JSON.parse(localStorage.getItem(`dms_luxe_handled_rides_${user?._id}`) || '[]');
-    if (!handledList.includes(rideId)) {
-      handledList.push(rideId);
-      localStorage.setItem(`dms_luxe_handled_rides_${user?._id}`, JSON.stringify(handledList));
-    }
+    saveHandledRide(user?._id, rideId);
     setRideNotifications(prev => prev.filter(r => r._id !== rideId));
   };
 
@@ -330,7 +356,7 @@ const DriverDashboard = () => {
       }
     } catch (err) {
       console.error('Failed to cancel pickup:', err);
-      alert('Failed to cancel pickup. Please try again.');
+      setCustomAlert({ isOpen: true, title: 'Error', message: 'Failed to cancel pickup. Please try again.' });
     }
   };
 
@@ -345,62 +371,67 @@ const DriverDashboard = () => {
       }
     } catch (err) {
       console.error('Failed to update driver arrival:', err);
-      alert(err.response?.data?.message || 'Failed to update arrival state.');
+      setCustomAlert({ isOpen: true, title: 'Error', message: err.response?.data?.message || 'Failed to update arrival state.' });
     } finally {
       setBtnLoading(false);
     }
   };
 
   const handleCompleteRide = async (rideId) => {
+    const executeCompleteRide = async () => {
+      setBtnLoading(true);
+      try {
+        const response = await api.patch(`/rides/${rideId}/complete`, {});
+        if (response.data.success) {
+          setActiveRide(null);
+          setDistanceToDestination(null);
+          setAllRides(current => current.map(r => r._id === rideId ? { ...r, status: 'completed', completedAt: new Date() } : r));
+          setCustomAlert({ isOpen: true, title: 'Success', message: 'Journey completed successfully. Invoice has been sent to client email.' });
+        }
+      } catch (err) {
+        console.error('Failed to complete ride:', err);
+        setCustomAlert({ isOpen: true, title: 'Error', message: err.response?.data?.message || 'Failed to complete journey.' });
+      } finally {
+        setBtnLoading(false);
+      }
+    };
+
     if (distanceToDestination !== null && distanceToDestination > 500) {
       const distanceInKm = (distanceToDestination / 1000).toFixed(2);
-      const confirmCompletion = window.confirm(
-        `You are still ${distanceInKm} km away from the destination. Are you sure you want to complete this luxury ride early?`
-      );
-      if (!confirmCompletion) {
-        return;
-      }
-    }
-
-    setBtnLoading(true);
-    try {
-      const response = await api.patch(`/rides/${rideId}/complete`, {});
-
-      if (response.data.success) {
-        setActiveRide(null);
-        setDistanceToDestination(null);
-        setAllRides(current => current.map(r => r._id === rideId ? { ...r, status: 'completed', completedAt: new Date() } : r));
-        alert('Journey completed successfully. Invoice has been sent to client email.');
-      }
-    } catch (err) {
-      console.error('Failed to complete ride:', err);
-      alert(err.response?.data?.message || 'Failed to complete journey.');
-    } finally {
-      setBtnLoading(false);
+      setConfirmModal({
+        isOpen: true,
+        title: 'Complete Ride Early',
+        message: `You are still ${distanceInKm} km away from the destination. Are you sure you want to complete this luxury ride early?`,
+        onConfirm: executeCompleteRide
+      });
+    } else {
+      executeCompleteRide();
     }
   };
 
   const handleDeleteAccount = async () => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete your driver account? This action will deactivate your profile and log you out, but your ride history and earnings log will be preserved for compliance."
-    );
-    if (!confirmDelete) return;
-
-    try {
-      const response = await deleteAccount();
-      alert(response.message || 'Driver account deleted successfully.');
-
-      // Clear session storage context
-      sessionStorage.removeItem('dms_luxe_user');
-      sessionStorage.removeItem('dms_luxe_tab_id');
-      window.name = '';
-
-      // Redirect to home
-      window.location.replace('/');
-    } catch (err) {
-      console.error('Failed to delete driver account:', err);
-      alert(err.response?.data?.message || 'Failed to delete account. Please try again.');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Account',
+      message: 'Are you sure you want to delete your driver account? This action will deactivate your profile and log you out, but your ride history and earnings log will be preserved for compliance.',
+      onConfirm: async () => {
+        try {
+          const response = await deleteAccount();
+          setCustomAlert({
+            isOpen: true,
+            title: 'Account Deleted',
+            message: response.message || 'Driver account deleted successfully.',
+            onConfirm: () => {
+              sessionStorage.removeItem('dms_luxe_user');
+              window.location.replace('/');
+            }
+          });
+        } catch (err) {
+          console.error('Failed to delete driver account:', err);
+          setCustomAlert({ isOpen: true, title: 'Error', message: err.response?.data?.message || 'Failed to delete account. Please try again.' });
+        }
+      }
+    });
   };
 
   const handleSaveProfile = async (e) => {
@@ -420,7 +451,7 @@ const DriverDashboard = () => {
       if (response.success) {
         updateUser(response.user);
         setProfileSuccess('Profile settings successfully saved!');
-        alert('Profile settings successfully saved!');
+        setCustomAlert({ isOpen: true, title: 'Success', message: 'Profile settings successfully saved!' });
       } else {
         throw new Error(response.message || 'Failed to update profile');
       }
@@ -428,7 +459,7 @@ const DriverDashboard = () => {
       console.error('Failed to save driver profile settings:', err);
       const msg = err.response?.data?.message || err.message || 'Failed to save profile settings.';
       setProfileError(msg);
-      alert(msg);
+      setCustomAlert({ isOpen: true, title: 'Error', message: msg });
     } finally {
       setProfileSaving(false);
     }
@@ -490,7 +521,7 @@ const DriverDashboard = () => {
     }
     return sum + 0.75;
   }, 0);
-  const hoursOnline = Math.max(8, Math.round(tripHours + (completedRides.length * 4)));
+  const hoursOnline = Math.round(tripHours + (completedRides.length * 4));
 
   const stats = [
     { icon: CalendarCheck, label: 'Completed Rides', value: completedCount.toString(), sub: 'Lifetime total', color: 'bg-[#003893]/10 text-[#003893]' },
@@ -582,6 +613,7 @@ const DriverDashboard = () => {
             ridesLoading={ridesLoading}
             stats={stats}
             activeRide={activeRide}
+            currentRide={currentRide}
             distanceToDestination={distanceToDestination}
             handleDistanceUpdate={handleDistanceUpdate}
             handleCancelPickup={handleCancelPickup}
@@ -713,6 +745,58 @@ const DriverDashboard = () => {
             {/* Main Content Pane */}
             <div className="flex-1 overflow-y-auto p-8">
               {renderActiveTab()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Modal (PROD-07) */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-6 text-left animate-in fade-in zoom-in-95 duration-200">
+            <div>
+              <h3 className="text-lg font-serif font-bold text-slate-900">{confirmModal.title}</h3>
+              <p className="text-slate-500 text-xs mt-2 leading-relaxed">{confirmModal.message}</p>
+            </div>
+            <div className="flex justify-end space-x-3 text-xs font-semibold pt-2">
+              <button
+                onClick={() => setConfirmModal({ isOpen: false })}
+                className="px-4 py-2.5 border border-slate-200 hover:border-slate-300 rounded-xl text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (confirmModal.onConfirm) confirmModal.onConfirm();
+                  setConfirmModal({ isOpen: false });
+                }}
+                className="px-5 py-2.5 bg-red-655 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors cursor-pointer"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Alert Modal (PROD-07) */}
+      {customAlert.isOpen && (
+        <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-6 text-left animate-in fade-in zoom-in-95 duration-200">
+            <div>
+              <h3 className="text-lg font-serif font-bold text-slate-900">{customAlert.title}</h3>
+              <p className="text-slate-500 text-xs mt-2 leading-relaxed">{customAlert.message}</p>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => {
+                  if (customAlert.onConfirm) customAlert.onConfirm();
+                  setCustomAlert({ isOpen: false });
+                }}
+                className="px-6 py-2.5 bg-[#003893] hover:bg-[#002d72] text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              >
+                OK
+              </button>
             </div>
           </div>
         </div>

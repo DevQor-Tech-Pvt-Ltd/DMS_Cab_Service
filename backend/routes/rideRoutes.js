@@ -9,7 +9,9 @@ const {
   resendOtp,
   completeRide,
   rateRide,
-  deleteRide
+  deleteRide,
+  calculateFares,
+  geocodeAddress
 } = require('../controllers/rideController');
 const { protect, authorize, ownershipMiddleware } = require('../middleware/authMiddleware');
 const { rideBookingLimiter } = require('../middleware/rateLimiters');
@@ -20,6 +22,10 @@ const router = express.Router();
 
 // Apply protect middleware to all routes
 router.use(protect);
+
+// Fare estimation & Geocoding proxy
+router.post('/calculate-fare', authorize('client'), calculateFares);
+router.get('/geocode', geocodeAddress);
 
 // Client-only: Create ride bookings
 router.post('/', authorize('client'), rideBookingLimiter, validate(rideBookingSchema), createRide);

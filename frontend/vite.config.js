@@ -19,6 +19,9 @@ export default defineConfig(({ mode }) => {
       // Inline the API URL fallback for build time
       'import.meta.env.VITE_API_URL': JSON.stringify(apiURL)
     },
+    esbuild: {
+      drop: mode === 'production' ? ['console', 'debugger'] : []
+    },
     build: {
       // Disable source maps in production to increase build speed and reduce file footprint
       sourcemap: false,

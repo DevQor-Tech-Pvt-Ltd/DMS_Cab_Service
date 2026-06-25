@@ -36,7 +36,7 @@ import Footer from './components/Footer';
 import ErrorBoundary from './components/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 
-// Premium DMS Cab Servicese Micro-Loader shown while dynamic page chunks are fetched
+// Premium DMS Cab Services Micro-Loader shown while dynamic page chunks are fetched
 const PageLoader = () => (
   <div className="min-h-screen bg-white flex items-center justify-center">
     <div className="text-center space-y-4">
@@ -79,8 +79,10 @@ const AppContent = () => {
 
 function App() {
   useEffect(() => {
-    // Wake up the Render backend container in the background as soon as user lands
-    api.get('/').catch((err) => console.log('Backend wake-up ping:', err.message));
+    if (import.meta.env.MODE === 'development') {
+      // Wake up the Render backend container in the background as soon as user lands
+      api.get('/').catch((err) => console.log('Backend wake-up ping:', err.message));
+    }
   }, []);
 
   return (

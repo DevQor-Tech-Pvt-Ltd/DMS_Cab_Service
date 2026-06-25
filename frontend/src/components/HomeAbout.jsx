@@ -14,7 +14,7 @@ const HomeAbout = () => {
             <div className="relative rounded-2xl overflow-hidden border border-slate-200 shadow-md">
               <ImageWithFallback
                 src="/about_car.avif"
-                alt="DMS Cab Servicese Chauffeur"
+                alt="DMS Cab Services Chauffeur"
                 className="w-full h-[300px] sm:h-[400px] lg:h-[500px] object-cover scale-100 group-hover:scale-[1.02] transition-transform duration-700 ease-out"
                 loading="lazy"
               />

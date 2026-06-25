@@ -16,6 +16,36 @@ if (process.env.RAZORPAY_KEY_ID && process.env.RAZORPAY_KEY_SECRET) {
   });
 }
 
+// Module-level fare calculation helper
+const calculateFareInternal = (pickup, dropoff, vType) => {
+  const combinedStr = (pickup || '') + (dropoff || '');
+  let hash = 0;
+  for (let i = 0; i < combinedStr.length; i++) {
+    hash += combinedStr.charCodeAt(i);
+  }
+  const distanceKm = 5 + (hash % 41); // deterministic mock distance between 5 and 45 km
+  
+  let basePrice = 500;
+  let perKmPrice = 40;
+  
+  const vehicle = (vType || '').toLowerCase();
+  if (vehicle.includes('mercedes')) {
+    basePrice = 1500;
+    perKmPrice = 80;
+  } else if (vehicle.includes('bmw')) {
+    basePrice = 1200;
+    perKmPrice = 70;
+  } else if (vehicle.includes('audi')) {
+    basePrice = 1000;
+    perKmPrice = 65;
+  } else if (vehicle.includes('suv') || vehicle.includes('rover') || vehicle.includes('range rover') || vehicle.includes('innova')) {
+    basePrice = 800;
+    perKmPrice = 50;
+  }
+  
+  return basePrice + Math.round(distanceKm * perKmPrice);
+};
+
 // Create a new luxury ride booking
 exports.createRide = async (req, res) => {
   try {
@@ -50,37 +80,7 @@ exports.createRide = async (req, res) => {
       });
     }
 
-    // Calculate a premium dynamic fare based on pickup/dropoff distance & vehicle selection (S-1)
-    const calculateFare = (pickup, dropoff, vType) => {
-      const combinedStr = (pickup || '') + (dropoff || '');
-      let hash = 0;
-      for (let i = 0; i < combinedStr.length; i++) {
-        hash += combinedStr.charCodeAt(i);
-      }
-      const distanceKm = 5 + (hash % 41); // deterministic mock distance between 5 and 45 km
-      
-      let basePrice = 500;
-      let perKmPrice = 40;
-      
-      const vehicle = (vType || '').toLowerCase();
-      if (vehicle.includes('mercedes')) {
-        basePrice = 1500;
-        perKmPrice = 80;
-      } else if (vehicle.includes('bmw')) {
-        basePrice = 1200;
-        perKmPrice = 70;
-      } else if (vehicle.includes('audi')) {
-        basePrice = 1000;
-        perKmPrice = 65;
-      } else if (vehicle.includes('suv') || vehicle.includes('rover') || vehicle.includes('range rover')) {
-        basePrice = 800;
-        perKmPrice = 50;
-      }
-      
-      return basePrice + Math.round(distanceKm * perKmPrice);
-    };
-
-    const calculatedFare = calculateFare(pickupLocation, dropoffLocation, vehicleType);
+    const calculatedFare = calculateFareInternal(pickupLocation, dropoffLocation, vehicleType);
     const isOnlinePayment = paymentMethod === 'card' || paymentMethod === 'upi';
 
     // Verify wallet balance first
@@ -1086,6 +1086,75 @@ exports.deleteRide = async (req, res) => {
         process.env.NODE_ENV === 'development'
           ? error.message
           : 'Internal Server Error'
+    });
+  }
+};
+
+// Calculate fares for Ertiga, Innova, and Dzire
+exports.calculateFares = async (req, res) => {
+  try {
+    const { pickupLocation, dropoffLocation } = req.body;
+    if (!pickupLocation || !dropoffLocation) {
+      return res.status(400).json({ success: false, message: 'Pickup and dropoff locations are required.' });
+    }
+
+    const fares = {
+      Ertiga: calculateFareInternal(pickupLocation, dropoffLocation, 'Ertiga'),
+      Innova: calculateFareInternal(pickupLocation, dropoffLocation, 'Innova'),
+      Dzire: calculateFareInternal(pickupLocation, dropoffLocation, 'Dzire')
+    };
+
+    return res.status(200).json({
+      success: true,
+      fares
+    });
+  } catch (error) {
+    logger.error('Error in calculateFares controller: %s', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to calculate fares',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+};
+
+// Proxy address geocoding queries safely using global fetch with custom User-Agent
+exports.geocodeAddress = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return res.status(400).json({ success: false, message: 'Query parameter q is required.' });
+    }
+
+    const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`;
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'DMS-Luxury-Cab-Service/1.0 (engineering@devqor.in)'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`Nominatim geocoding failed with status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    if (data && data.length > 0) {
+      return res.status(200).json({
+        success: true,
+        coords: {
+          lat: parseFloat(data[0].lat),
+          lon: parseFloat(data[0].lon)
+        }
+      });
+    }
+
+    return res.status(404).json({ success: false, message: 'Address not found' });
+  } catch (error) {
+    logger.error('Error in geocodeAddress proxy: %s', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to geocode address',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };

@@ -1,4 +1,4 @@
-// Centralized, production-optimized icons registry for DMS Cab Servicese.
+// Centralized, production-optimized icons registry for DMS Cab Services.
 // Direct ESM imports prevent parsing/loading the entire Lucide dictionary, ensuring 99%+ tree-shaking efficacy.
 
 import User from "lucide-react/dist/esm/icons/user";
