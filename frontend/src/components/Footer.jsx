@@ -17,8 +17,8 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
 
           {/* Column 1: Explore */}
-          <div>
-            <h3 className="text-white font-serif text-base mb-4 flex items-center">
+          <div className="text-center md:text-left">
+            <h3 className="text-white font-serif text-base mb-4 flex items-center justify-center md:justify-start">
               <span className="w-4 h-[1px] bg-[#FFC107] mr-3"></span>
               Explore
             </h3>
@@ -39,55 +39,55 @@ const Footer = () => {
           </div>
 
           {/* Column 2: Services */}
-          <div>
-            <h3 className="text-white font-serif text-base mb-4 flex items-center">
+          <div className="text-center md:text-left">
+            <h3 className="text-white font-serif text-base mb-4 flex items-center justify-center md:justify-start">
               <span className="w-4 h-[1px] bg-[#FFC107] mr-3"></span>
               Services
             </h3>
             <ul className="space-y-2.5 text-sm">
               <li>
-                <a href="#" className="text-slate-300 hover:text-[#FFC107] transition-colors inline-block">Airport Transfers</a>
+                <a href="/services" className="text-slate-300 hover:text-[#FFC107] transition-colors inline-block">Airport Transfers</a>
               </li>
               <li>
-                <a href="#" className="text-slate-300 hover:text-[#FFC107] transition-colors inline-block">Corporate Accounts</a>
+                <a href="/services" className="text-slate-300 hover:text-[#FFC107] transition-colors inline-block">Corporate Accounts</a>
               </li>
               <li>
-                <a href="#" className="text-slate-300 hover:text-[#FFC107] transition-colors inline-block">Event Transportation</a>
+                <a href="/services" className="text-slate-300 hover:text-[#FFC107] transition-colors inline-block">Event Transportation</a>
               </li>
               <li>
-                <a href="#" className="text-slate-300 hover:text-[#FFC107] transition-colors inline-block">Hourly Charters</a>
+                <a href="/services" className="text-slate-300 hover:text-[#FFC107] transition-colors inline-block">Hourly Charters</a>
               </li>
             </ul>
           </div>
 
           {/* Column 3: Inquiries */}
-          <div>
-            <h3 className="text-white font-serif text-base mb-4 flex items-center">
+          <div className="text-center md:text-left">
+            <h3 className="text-white font-serif text-base mb-4 flex items-center justify-center md:justify-start">
               <span className="w-4 h-[1px] bg-[#FFC107] mr-3"></span>
               Inquiries
             </h3>
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-start space-x-3">
-                <Phone size={15} className="text-[#FFC107] mt-1 shrink-0" />
+            <ul className="space-y-3 text-sm flex flex-col items-center md:items-start">
+              <li className="flex flex-col items-center text-center space-y-1 space-x-0 md:flex-row md:items-start md:text-left md:space-x-3 md:space-y-0">
+                <Phone size={15} className="text-[#FFC107] mt-0.5 shrink-0" />
                 <span className="text-slate-300">+91 9903941219<br />Available 24/7</span>
               </li>
-              <li className="flex items-start space-x-3">
-                <Mail size={15} className="text-[#FFC107] mt-1 shrink-0" />
+              <li className="flex flex-col items-center text-center space-y-1 space-x-0 md:flex-row md:items-start md:text-left md:space-x-3 md:space-y-0">
+                <Mail size={15} className="text-[#FFC107] mt-0.5 shrink-0" />
                 <span className="text-slate-300">contact@dmscabservices.com</span>
               </li>
-              <li className="flex items-start space-x-3">
-                <MapPin size={15} className="text-[#FFC107] mt-1 shrink-0" />
+              <li className="flex flex-col items-center text-center space-y-1 space-x-0 md:flex-row md:items-start md:text-left md:space-x-3 md:space-y-0">
+                <MapPin size={15} className="text-[#FFC107] mt-0.5 shrink-0" />
                 <span className="text-slate-300 leading-relaxed">Cabin 19, 8th Floor, Delta Tower (Awfis), Sector V, Salt Lake Bypass, Bidhannagar, Kolkata – 700091</span>
               </li>
             </ul>
           </div>
 
           {/* Column 4: Brand & Socials (Aligned Right on Desktop) */}
-          <div className="flex flex-col items-start lg:items-end justify-between">
-            <Link to="/" className="inline-block mb-4">
+          <div className="flex flex-col items-center md:items-start lg:items-end justify-between text-center md:text-left lg:text-right">
+            <Link to="/" className="inline-block mb-4 mx-auto md:mx-0 lg:mr-0">
               <ImageWithFallback src="/logoo.png" alt="DMS Logo" className="h-[90px] w-auto object-contain rounded-xl" />
             </Link>
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center justify-center lg:justify-end space-x-3 mx-auto md:mx-0 lg:mr-0">
               {/* Instagram SVG */}
               <a href="#" className="w-9 h-9 rounded-full border border-white/10 flex items-center justify-center text-slate-300 hover:text-[#FFC107] hover:border-[#FFC107]/50 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

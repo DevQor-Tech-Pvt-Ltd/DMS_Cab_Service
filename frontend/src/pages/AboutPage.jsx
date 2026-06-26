@@ -59,7 +59,7 @@ const AboutPage = () => {
             </div>
 
             {/* Text Side */}
-            <div className="w-full lg:w-1/2 animate-fade-in-up animation-delay-400">
+            <div className="w-full lg:w-1/2 animate-fade-in-up animation-delay-400 text-center lg:text-left">
               <h3 className="text-3xl md:text-4xl font-serif text-slate-900 mb-6">Our Commitment to Perfection</h3>
               <p className="text-slate-650 leading-relaxed mb-6">
                 Founded on the principles of absolute luxury and reliability, DMS has grown to become the premier choice for discerning travelers, executives, and high-profile individuals across the region.
@@ -68,7 +68,7 @@ const AboutPage = () => {
                 We believe that true luxury lies in the details. From the immaculate presentation of our vehicles to the extensive training of our chauffeurs, every aspect of our service is meticulously curated to provide an unparalleled travel experience. When you ride with us, you are not just reaching a destination; you are making a statement.
               </p>
               
-              <div className="grid grid-cols-2 gap-6">
+              <div className="grid grid-cols-2 gap-6 max-w-xs mx-auto lg:mx-0 text-left">
                 <div className="border-l-2 border-[#003893] pl-4">
                   <div className="text-2xl font-serif text-slate-900 mb-1 font-bold">Elite</div>
                   <div className="text-sm text-slate-500">Chauffeurs</div>
@@ -101,10 +101,10 @@ const AboutPage = () => {
             ].map((value, index) => (
               <div 
                 key={index}
-                className="bg-white p-8 rounded-2xl border border-slate-200 hover:border-[#003893]/30 transition-all hover:shadow-md group animate-fade-in-up"
+                className="bg-white p-8 rounded-2xl border border-slate-200 hover:border-[#003893]/30 transition-all hover:shadow-md group animate-fade-in-up flex flex-col items-center text-center md:items-start md:text-left"
                 style={{ animationDelay: `${(index + 1) * 150}ms` }}
               >
-                <div className="w-14 h-14 rounded-full bg-[#003893]/10 flex items-center justify-center mb-6 group-hover:bg-[#003893] transition-colors">
+                <div className="w-14 h-14 rounded-full bg-[#003893]/10 flex items-center justify-center mb-6 group-hover:bg-[#003893] transition-colors mx-auto md:mx-0">
                   <value.icon className="text-[#003893] group-hover:text-white transition-colors" size={24} />
                 </div>
                 <h4 className="text-xl font-serif text-slate-900 mb-3">{value.title}</h4>

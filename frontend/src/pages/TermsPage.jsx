@@ -17,28 +17,28 @@ const TermsPage = () => {
         </Link>
 
         {/* Page Header */}
-        <div className="bg-[#003893] rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden shadow-xl mb-10 text-left">
+        <div className="bg-[#003893] rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden shadow-xl mb-10 text-center md:text-left flex flex-col items-center md:items-start">
           <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2"></div>
-          <div className="relative z-10 space-y-4">
-            <div className="inline-flex items-center justify-center p-3 bg-white/10 rounded-2xl">
+          <div className="relative z-10 space-y-4 flex flex-col items-center md:items-start">
+            <div className="inline-flex items-center justify-center p-3 bg-white/10 rounded-2xl mx-auto md:mx-0">
               <FileText size={32} className="text-[#FFC107]" />
             </div>
-            <h1 className="text-3xl sm:text-4xl font-serif font-bold">Terms of Service</h1>
-            <p className="text-slate-200 text-sm max-w-xl">
+            <h1 className="text-3xl sm:text-4xl font-serif font-bold text-center md:text-left">Terms of Service</h1>
+            <p className="text-slate-200 text-sm max-w-xl text-center md:text-left">
               Last Updated: May 30, 2026. Please read these terms carefully before scheduling our premium transportation services.
             </p>
           </div>
         </div>
 
         {/* Content Card */}
-        <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-12 shadow-sm text-left space-y-8 leading-relaxed">
+        <div className="bg-white border border-slate-200 rounded-3xl p-8 sm:p-12 shadow-sm text-center md:text-left space-y-8 leading-relaxed">
           {/* Section 1 */}
           <section className="space-y-3">
-            <h2 className="text-xl font-serif font-bold text-slate-800 flex items-center space-x-3">
+            <h2 className="text-xl font-serif font-bold text-slate-800 flex items-center justify-center md:justify-start space-x-3">
               <span className="w-1.5 h-6 bg-[#FFC107] rounded-full inline-block"></span>
               <span>1. Acceptance of Terms</span>
             </h2>
-            <p className="text-slate-600 text-sm">
+            <p className="text-slate-655 text-sm text-center md:text-left">
               These Terms of Service constitute a legally binding agreement between you and DMS Cab Services regarding your access and use of our web booking application, dispatch platform, and premium chauffeur service networks. By registering an account, booking a ride, or operating as a chauffeur on our platform, you agree to be bound by these terms. If you do not agree, you are prohibited from utilizing our service.
             </p>
           </section>

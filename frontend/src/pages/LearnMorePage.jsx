@@ -39,8 +39,8 @@ const LearnMorePage = () => {
         {/* Process Steps */}
         <div className="space-y-12">
           {/* Step 1 */}
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 flex flex-col md:flex-row items-start md:items-center gap-8 hover:border-[#003893]/30 hover:shadow-md transition-all animate-fade-in-up animation-delay-300">
-            <div className="w-16 h-16 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 text-[#003893] border border-[#003893]/20">
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-8 hover:border-[#003893]/30 hover:shadow-md transition-all animate-fade-in-up animation-delay-300">
+            <div className="w-16 h-16 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 text-[#003893] border border-[#003893]/20 mx-auto md:mx-0">
               <Map size={28} />
             </div>
             <div>
@@ -52,8 +52,8 @@ const LearnMorePage = () => {
           </div>
 
           {/* Step 2 */}
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 flex flex-col md:flex-row items-start md:items-center gap-8 hover:border-[#003893]/30 hover:shadow-md transition-all animate-fade-in-up animation-delay-400">
-            <div className="w-16 h-16 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 text-[#003893] border border-[#003893]/20">
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-8 hover:border-[#003893]/30 hover:shadow-md transition-all animate-fade-in-up animation-delay-400">
+            <div className="w-16 h-16 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 text-[#003893] border border-[#003893]/20 mx-auto md:mx-0">
               <UserCheck size={28} />
             </div>
             <div>
@@ -65,13 +65,13 @@ const LearnMorePage = () => {
           </div>
 
           {/* Step 3 */}
-          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 flex flex-col md:flex-row items-start md:items-center gap-8 hover:border-[#003893]/30 hover:shadow-md transition-all animate-fade-in-up animation-delay-500">
-            <div className="w-16 h-16 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 text-[#003893] border border-[#003893]/20">
+          <div className="bg-slate-50 border border-slate-200 rounded-2xl p-8 flex flex-col md:flex-row items-center md:items-start text-center md:text-left gap-8 hover:border-[#003893]/30 hover:shadow-md transition-all animate-fade-in-up animation-delay-500">
+            <div className="w-16 h-16 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 text-[#003893] border border-[#003893]/20 mx-auto md:mx-0">
               <Star size={28} />
             </div>
             <div>
               <h3 className="text-2xl font-serif text-slate-900 mb-2">3. The Premium Ride</h3>
-              <p className="text-slate-600 leading-relaxed">
+              <p className="text-slate-650 leading-relaxed">
                 Your chauffeur arrives 15 minutes early. Enjoy complimentary Wi-Fi, premium refreshments, and complete privacy as you are driven to your destination safely and punctually.
               </p>
             </div>
@@ -86,11 +86,11 @@ const LearnMorePage = () => {
           </div>
           
           <div className="space-y-4">
-            <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm text-center md:text-left">
               <h4 className="text-slate-900 font-semibold mb-2">How far in advance should I book?</h4>
               <p className="text-slate-600 text-sm">We recommend booking at least 12 hours in advance to guarantee your preferred vehicle. For major events or holidays, earlier booking is advised.</p>
             </div>
-            <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm text-center md:text-left">
               <h4 className="text-slate-900 font-semibold mb-2">Are your chauffeurs vetted?</h4>
               <p className="text-slate-600 text-sm">Absolutely. Every DMS chauffeur undergoes rigorous background checks, advanced defensive driving courses, and continuous professional etiquette training.</p>
             </div>

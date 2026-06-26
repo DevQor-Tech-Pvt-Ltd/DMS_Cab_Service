@@ -15,7 +15,7 @@ const fleetOptions = [
   {
     name: 'Ertiga',
     category: 'hatchback',
-    image: '/ertiga.jpeg',
+    image: '/ertiga2.jpg',
     passengers: 3,
     luggage: 2,
     baseFare: 3999,
@@ -25,7 +25,7 @@ const fleetOptions = [
   {
     name: 'Innova',
     category: 'Luxury SUV',
-    image: '/innova.png',
+    image: '/innova2.jpg',
     passengers: 4,
     luggage: 4,
     baseFare: 4499,
@@ -35,7 +35,7 @@ const fleetOptions = [
   {
     name: 'Dzire',
     category: 'hatchback',
-    image: '/dizire.jpeg',
+    image: '/msdesire.jpg',
     passengers: 2,
     luggage: 1,
     baseFare: 3499,
@@ -135,9 +135,36 @@ const GetStartedPage = () => {
 
   const [formErrors, setFormErrors] = useState({});
 
-  // Autopopulate user passenger info if logged in
+  // Restore pending booking if it exists in sessionStorage
   useEffect(() => {
-    if (user) {
+    const pendingBooking = sessionStorage.getItem('dms_pending_booking');
+    if (pendingBooking && user) {
+      try {
+        const parsed = JSON.parse(pendingBooking);
+        setFormData(prev => ({
+          ...prev,
+          ...parsed.formData,
+          passengerDetails: {
+            ...prev.passengerDetails,
+            ...parsed.formData.passengerDetails,
+            fullName: user.fullName || parsed.formData.passengerDetails.fullName,
+            email: user.email || parsed.formData.passengerDetails.email,
+            phone: user.phone || parsed.formData.passengerDetails.phone
+          }
+        }));
+        setStep(parsed.step || 4);
+      } catch (err) {
+        console.error('Error parsing pending booking:', err);
+      } finally {
+        sessionStorage.removeItem('dms_pending_booking');
+      }
+    }
+  }, [user]);
+
+  // Autopopulate user passenger info if logged in and not restoring a pending booking
+  useEffect(() => {
+    const pendingBooking = sessionStorage.getItem('dms_pending_booking');
+    if (user && !pendingBooking) {
       setFormData(prev => ({
         ...prev,
         passengerDetails: {
@@ -273,7 +300,18 @@ const GetStartedPage = () => {
     } else if (step === 2) {
       if (validateStep2()) setStep(3);
     } else if (step === 3) {
-      if (validateStep3()) setStep(4);
+      if (validateStep3()) {
+        if (!user) {
+          sessionStorage.setItem('dms_pending_booking', JSON.stringify({
+            formData,
+            step: 4
+          }));
+          showToast('Please sign in to choose payment and confirm your booking.', 'info');
+          navigate('/auth?redirect=get-started');
+        } else {
+          setStep(4);
+        }
+      }
     }
   };
 
@@ -457,33 +495,7 @@ const GetStartedPage = () => {
     );
   }
 
-  if (!user) {
-    return (
-      <div className="bg-white min-h-screen pt-28 pb-20 text-slate-900 flex items-center justify-center">
-        <div className="max-w-md w-full mx-auto px-4 text-center space-y-6">
-          <div className="w-20 h-20 bg-blue-50 border border-[#003893]/15 text-[#003893] rounded-full flex items-center justify-center mx-auto shadow-md">
-            <User size={36} />
-          </div>
-          <div className="space-y-2">
-            <h2 className="text-2xl font-serif font-bold text-slate-900">Authentication Required</h2>
-            <p className="text-slate-500 text-xs leading-relaxed">
-              Unauthenticated booking is disabled. You must be signed in as a client to reserve premium DMS chauffeur services.
-            </p>
-          </div>
-          <button
-            onClick={() => navigate('/auth?redirect=get-started')}
-            className="w-full bg-[#003893] hover:bg-[#002d72] text-white font-bold py-3 rounded-xl transition-all shadow-md flex items-center justify-center space-x-2 text-xs uppercase tracking-wider cursor-pointer"
-          >
-            <span>Sign In to Book Ride</span>
-            <ArrowRight size={14} />
-          </button>
-          <p className="text-[11px] text-slate-400">
-            Don't have an account? <Link to="/auth?redirect=get-started" className="text-[#003893] font-bold hover:underline">Register now</Link>
-          </p>
-        </div>
-      </div>
-    );
-  }
+
 
   return (
     <div className="bg-white min-h-screen pt-28 pb-20 text-slate-900">

@@ -1,72 +1,30 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import ImageWithFallback from './ImageWithFallback';
-import { ChevronLeft, ChevronRight, User } from '../utils/icons';
+import { ChevronRight, User } from '../utils/icons';
 import { Link } from 'react-router-dom';
 
 const homeFleetData = [
   {
     id: 1,
     name: 'Ertiga',
-    image: "/ertiga.jpeg",
+    image: "/ertiga2.jpg",
     seats: 3
   },
   {
     id: 2,
     name: 'Innova',
-    image: "/innova.png",
+    image: "/innova2.jpg",
     seats: 4
   },
   {
     id: 3,
     name: 'Dzire',
-    image: "/dizire.jpeg",
+    image: "/msdesire.jpg",
     seats: 2
-  },
-  {
-    id: 4,
-    name: 'BMW X7',
-    image: "/bmwx7.jpg",
-    seats: 6
-  },
-  {
-    id: 5,
-    name: 'ROLLS ROYCE PHANTOM',
-    image: "/dizire.jpeg",
-    seats: 2
-  },
-  {
-    id: 6,
-    name: 'BENTLEY FLYING SPUR',
-    image: "/rrp8.webp",
-    seats: 3
-  },
-  {
-    id: 7,
-    name: 'Dzire',
-    image: "/dizire.jpeg",
-    seats: 2
-  },
-  {
-    id: 8,
-    name: 'Ertiga',
-    image: "/ertiga.jpeg",
-    seats: 3
   }
 ];
 
 const HomeFleet = () => {
-  const scrollRef = useRef(null);
-
-  const scroll = (direction) => {
-    if (scrollRef.current) {
-      const scrollAmount = 300; // adjust based on item width
-      scrollRef.current.scrollBy({
-        left: direction === 'left' ? -scrollAmount : scrollAmount,
-        behavior: 'smooth'
-      });
-    }
-  };
-
   return (
     <section className="bg-white py-24 relative z-20 overflow-hidden">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -94,34 +52,17 @@ const HomeFleet = () => {
         {/* Carousel Container */}
         <div className="relative mt-16 mb-12">
           {/* Main Border Box */}
-          <div className="border border-slate-200 rounded-3xl py-12 px-4 md:px-12 relative shadow-sm bg-slate-50/50">
+          <div className="border border-slate-200 rounded-3xl py-12 px-4 md:px-6 lg:px-12 relative shadow-sm bg-slate-50/50">
 
-            {/* Navigation Arrows */}
-            <button
-              onClick={() => scroll('left')}
-              className="hidden md:block absolute left-0 md:-left-5 top-1/2 -translate-y-1/2 text-[#003893] hover:text-[#002d72] transition-colors bg-white border border-slate-200 rounded-full p-2.5 z-10 shadow-md"
-              aria-label="Previous fleet item"
-            >
-              <ChevronLeft size={24} strokeWidth={2.5} />
-            </button>
-            <button
-              onClick={() => scroll('right')}
-              className="hidden md:block absolute right-0 md:-right-5 top-1/2 -translate-y-1/2 text-[#003893] hover:text-[#002d72] transition-colors bg-white border border-slate-200 rounded-full p-2.5 z-10 shadow-md"
-              aria-label="Next fleet item"
-            >
-              <ChevronRight size={24} strokeWidth={2.5} />
-            </button>
-
-            {/* Cars Horizontal Scroll (Carousel) */}
+            {/* Cars Vertical Scroll on Mobile, Centered Flex on Desktop */}
             <div
-              ref={scrollRef}
-              className="flex overflow-x-auto gap-8 md:gap-6 pb-6 pt-4 px-2 snap-x snap-mandatory scrollbar-hide"
+              className="flex flex-col md:flex-row md:justify-center md:items-stretch overflow-y-auto md:overflow-visible max-h-[460px] md:max-h-none gap-8 md:gap-6 lg:gap-12 xl:gap-16 pb-6 pt-4 px-2 snap-y md:snap-none snap-mandatory scrollbar-hide"
               style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
             >
               {homeFleetData.map((car) => (
                 <div
                   key={car.id}
-                  className="flex-shrink-0 w-64 md:w-60 lg:w-64 flex flex-col items-center text-center group snap-center"
+                  className="flex-shrink-0 w-full md:w-52 lg:w-64 flex flex-col items-center text-center group snap-center py-4"
                 >
                   {/* Rectangular Image to show complete view of the car */}
                   <div className="w-56 h-36 md:w-48 md:h-32 lg:w-56 lg:h-36 rounded-2xl border-[1.5px] border-[#003893]/30 p-1 mb-8 relative overflow-hidden transition-all duration-500 group-hover:border-[#003893] group-hover:shadow-[0_0_20px_rgba(0,56,147,0.1)] bg-white">

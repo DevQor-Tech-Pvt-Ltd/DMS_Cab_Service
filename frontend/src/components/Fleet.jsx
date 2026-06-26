@@ -6,32 +6,62 @@ const fleetData = [
   {
     id: 1,
     name: 'Ertiga',
-    category: 'hatchback',
-    image: '/ertiga.jpeg',
+    category: 'Premium Sedan',
+    image: '/ertiga2.jpg',
     passengers: 3,
     luggage: 2,
     features: ['Free WiFi', 'Water & Mints', 'Leather Seats'],
-    description: 'The pinnacle of luxury sedans. Perfect for corporate travel and airport transfers with unmatched comfort.'
+    description: 'Practical luxury and smooth transit. Ideal for airport pick-ups and corporate executive commutes.'
   },
   {
     id: 2,
     name: 'Innova',
     category: 'Luxury SUV',
-    image: "/innova.png",
+    image: "/innova2.jpg",
     passengers: 4,
     luggage: 4,
     features: ['Free WiFi', 'Panoramic Roof', 'Extra Legroom'],
-    description: 'Commanding presence with exceptional space. Ideal for outstation rides and arriving in absolute style.'
+    description: 'Commanding presence and generous cabin layout. Ideal for long-distance family travel and outstation tours.'
   },
   {
     id: 3,
     name: 'Dzire',
-    category: 'hatchback',
-    image: '/dizire.jpeg',
+    category: 'Standard Sedan',
+    image: '/msdesire.jpg',
     passengers: 2,
     luggage: 1,
-    features: ['Free WiFi', 'Water & Mints', 'Leather Seats'],
-    description: 'The pinnacle of Hatchback. Perfect for corporate travel and airport transfers with unmatched comfort.'
+    features: ['Free WiFi', 'Water & Mints', 'Air Conditioning'],
+    description: 'Compact efficiency and comfort. Excellent for quick city travel and everyday rides.'
+  },
+  {
+    id: 4,
+    name: 'BMW X7',
+    category: 'Executive SUV',
+    image: "/bmwx7.jpg",
+    passengers: 6,
+    luggage: 5,
+    features: ['Free WiFi', 'Heated Seats', 'Sunroof'],
+    description: 'State-of-the-art engineering and supreme comfort. The standard choice for executive groups and VIP delegations.'
+  },
+  {
+    id: 5,
+    name: 'Rolls Royce Phantom',
+    category: 'Ultra Luxury',
+    image: "/msdesire.jpg",
+    passengers: 2,
+    luggage: 2,
+    features: ['Champagne Cooler', 'Starry Sky Roof', 'Privacy Divider'],
+    description: 'The absolute pinnacle of luxury transportation. Crafted for royal-class transit, VIP events, and red carpet arrivals.'
+  },
+  {
+    id: 6,
+    name: 'Bentley Flying Spur',
+    category: 'Ultra Luxury',
+    image: "/rrp8.webp",
+    passengers: 3,
+    luggage: 3,
+    features: ['Massaging Seats', 'Premium Audio', 'Free WiFi'],
+    description: 'Handcrafted luxury combined with effortless performance. Exquisite materials and unmatched poise on every road.'
   }
 ];
 

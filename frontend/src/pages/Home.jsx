@@ -168,21 +168,21 @@ const Home = () => {
       id: 'corporate',
       title: 'Corporate Travel',
       description: 'Reliable and punctual travel for your business needs.',
-      image: '/ertiga.jpeg',
+      image: '/ertiga2.jpg',
       icon: Briefcase
     },
     {
       id: 'hourly',
       title: 'Hourly Chauffeur',
       description: 'Hire by the hour for meetings, events, and more.',
-      image: '/dizire.jpeg',
+      image: '/msdesire.jpg',
       icon: Users
     },
     {
       id: 'special',
       title: 'Special Occasions',
       description: 'Make every occasion memorable with our luxury services.',
-      image: '/innova.png',
+      image: '/innova2.jpg',
       icon: Tag
     }
   ];
@@ -255,7 +255,7 @@ const Home = () => {
 
         {/* Content */}
         <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-          <div className="max-w-[540px]">
+          <div className="max-w-[540px] mx-auto lg:mx-0">
             <motion.div
               className="space-y-6"
               initial={{ opacity: 0, x: -50 }}
@@ -263,7 +263,7 @@ const Home = () => {
               transition={{ duration: 0.8, ease: 'easeOut' }}
             >
               {/* Eyebrow */}
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center lg:justify-start gap-3">
                 <div className="w-8 h-[2px] bg-[#FFC107]" />
                 <span className="text-[#FFC107] font-bold text-[11px] tracking-[3px] uppercase">
                   Premium. Comfort. Trust.
@@ -272,35 +272,17 @@ const Home = () => {
 
               {/* Heading */}
               <h1
-                className="text-[48px] sm:text-[54px] xl:text-[62px] font-extrabold leading-[1] tracking-[-2px] text-[#0B3D91]"
+                className="text-[48px] sm:text-[54px] xl:text-[62px] font-extrabold leading-[1] tracking-[-2px] text-[#0B3D91] text-center lg:text-left"
               >
                 World-Class<br />
                 Chauffeur<br />
                 <span className="text-[#FFC107]">Services</span>
               </h1>
 
-              <p className="text-slate-650 text-[16px] sm:text-[17px] font-normal leading-[1.8] max-w-[440px]">
+              <p className="text-slate-650 text-[16px] sm:text-[17px] font-normal leading-[1.8] max-w-[440px] mx-auto lg:mx-0 text-center lg:text-left">
                 From airport transfers to VIP protection — luxury transportation designed for your utmost comfort and security.
               </p>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-wrap items-center gap-4 pt-2">
-                <button
-                  onClick={() => navigate('/get-started')}
-                  className="h-[52px] bg-[#0B3D91] hover:bg-[#093073] text-white px-7 rounded-[12px] font-bold text-[15px] tracking-wide transition-colors flex items-center space-x-2 cursor-pointer shadow-md"
-                >
-                  <Calendar size={18} />
-                  <span>Book a Ride</span>
-                </button>
-
-                <button
-                  onClick={() => navigate('/contact')}
-                  className="h-[52px] bg-white border-2 border-[#0B3D91] text-[#0B3D91] hover:bg-[#0B3D91]/5 px-7 rounded-[12px] font-bold text-[15px] tracking-wide transition-colors flex items-center space-x-2 cursor-pointer"
-                >
-                  <Phone size={18} />
-                  <span>Contact Us</span>
-                </button>
-              </div>
             </motion.div>
           </div>
         </div>
@@ -321,7 +303,7 @@ const Home = () => {
               return (
                 <div
                   key={item.id}
-                  className={`flex items-center space-x-4 ${idx > 0 ? 'pt-5 sm:pt-0 lg:pl-8' : ''}`}
+                  className={`flex flex-col sm:flex-row items-center text-center sm:text-left space-y-3 sm:space-y-0 sm:space-x-4 ${idx > 0 ? 'pt-5 sm:pt-0 lg:pl-8' : ''}`}
                 >
                   <div className="w-[56px] h-[56px] rounded-full bg-[#0B3D91] text-white flex items-center justify-center shrink-0 shadow-md">
                     <Icon size={22} className="text-white" />
@@ -337,19 +319,7 @@ const Home = () => {
         </motion.div>
       </div>
 
-      {/* Brief About Section */}
-      <LazyViewportSection fallback={<SectionSkeleton />}>
-        <Suspense fallback={<SectionSkeleton />}>
-          <HomeAbout />
-        </Suspense>
-      </LazyViewportSection>
 
-      {/* Services Section */}
-      <LazyViewportSection fallback={<SectionSkeleton />}>
-        <Suspense fallback={<SectionSkeleton />}>
-          <Services />
-        </Suspense>
-      </LazyViewportSection>
 
       {/* Brief Fleet Section */}
       <LazyViewportSection fallback={<SectionSkeleton />}>
@@ -364,6 +334,35 @@ const Home = () => {
           <HomeContact />
         </Suspense>
       </LazyViewportSection>
+
+      {/* Bottom CTA Section */}
+      <section className="bg-slate-50 border-t border-slate-200 py-20 text-center relative z-20">
+        <div className="max-w-4xl mx-auto px-4 space-y-6">
+          <h2 className="text-3xl md:text-4xl lg:text-5xl font-serif text-slate-900 font-bold">
+            Ready to Begin Your Premium Journey?
+          </h2>
+          <p className="text-slate-650 max-w-xl mx-auto text-sm md:text-base font-light leading-relaxed">
+            Whether you require an immediate airport transit, a daily executive charter, or have custom travel plans, we are ready to serve you.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-2">
+            <button
+              onClick={() => navigate('/get-started')}
+              className="h-[52px] bg-[#003893] hover:bg-[#002d72] text-white px-8 rounded-xl font-bold text-sm tracking-wide transition-colors flex items-center space-x-2 cursor-pointer shadow-md"
+            >
+              <Calendar size={18} />
+              <span>Book a Ride</span>
+            </button>
+
+            <button
+              onClick={() => navigate('/contact')}
+              className="h-[52px] bg-white border border-[#003893]/30 text-[#003893] hover:bg-[#003893]/5 px-8 rounded-xl font-bold text-sm tracking-wide transition-colors flex items-center space-x-2 cursor-pointer"
+            >
+              <Phone size={18} />
+              <span>Contact Us</span>
+            </button>
+          </div>
+        </div>
+      </section>
     </div>
   );
 };
