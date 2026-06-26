@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 const PrivacyPage = () => {
   useEffect(() => {
-    document.title = "Privacy Policy | DMS Cab ServicesE Chauffeur Services";
+    document.title = "Privacy Policy | DMS Cab Services Chauffeur Services";
   }, []);
 
   return (
@@ -25,7 +25,7 @@ const PrivacyPage = () => {
             </div>
             <h1 className="text-3xl sm:text-4xl font-serif font-bold">Privacy Policy</h1>
             <p className="text-slate-200 text-sm max-w-xl">
-              Last Updated: May 30, 2026. Your privacy and trust are paramount. Learn how DMS Cab ServicesE protects, processes, and respects your personal data.
+              Last Updated: May 30, 2026. Your privacy and trust are paramount. Learn how DMS Cab Services protects, processes, and respects your personal data.
             </p>
           </div>
         </div>
@@ -39,7 +39,7 @@ const PrivacyPage = () => {
               <span>1. Introduction</span>
             </h2>
             <p className="text-slate-600 text-sm">
-              Welcome to DMS Cab ServicesE ("we," "us," "our"). We provide elite executive chauffeur services. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you use our mobile-responsive web applications, websites, and associated transportation services. By accessing our platform, you consent to the data practices described in this policy.
+              Welcome to DMS Cab Services ("we," "us," "our"). We provide elite executive chauffeur services. This Privacy Policy explains how we collect, use, disclose, and safeguard your personal information when you use our mobile-responsive web applications, websites, and associated transportation services. By accessing our platform, you consent to the data practices described in this policy.
             </p>
           </section>
 
@@ -86,7 +86,7 @@ const PrivacyPage = () => {
             <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6 text-sm text-slate-600 space-y-3">
               <p className="font-semibold text-slate-800">Account Deletion Policy (Uber & Ola Standards):</p>
               <p>
-                When you initiate a **"Delete My Account"** request, DMS Cab ServicesE does not instantly scrub all audit logs from the database. To comply with legal tax reporting, transaction auditing, and dispute resolution guidelines:
+                When you initiate a **"Delete My Account"** request, DMS Cab Services does not instantly scrub all audit logs from the database. To comply with legal tax reporting, transaction auditing, and dispute resolution guidelines:
               </p>
               <ul className="list-decimal pl-5 space-y-1.5 mt-2">
                 <li>Your profile is instantly set to inactive, blocking all logins and API authorization requests.</li>
@@ -117,7 +117,7 @@ const PrivacyPage = () => {
               For any questions regarding this policy or our data safety procedures, reach out to our team at:
             </p>
             <div className="bg-slate-50 rounded-2xl p-5 text-xs text-slate-500 font-medium space-y-1">
-              <p className="text-[#003893] font-bold text-sm">DMS Cab ServicesE Corporate HQ</p>
+              <p className="text-[#003893] font-bold text-sm">DMS Cab Services Corporate HQ</p>
               <p>Email: contact@dmscabservices.com</p>
               <p>Phone: +91 9903941219</p>
               <p>Address: Cabin 19, 8th Floor, Delta Tower (Awfis), Sector V, Bidhannagar, Kolkata, West Bengal – 700091</p>

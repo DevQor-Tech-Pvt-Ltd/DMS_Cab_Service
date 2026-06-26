@@ -3,6 +3,35 @@ import {
   AlertTriangle, Clock, CheckCircle, Eye, XCircle
 } from '../../utils/icons';
 
+const MaskedAadhaar = ({ aadhaar, driverId }) => {
+  const [revealed, setRevealed] = React.useState(false);
+  if (!aadhaar) return <span>N/A</span>;
+  
+  const handleReveal = () => {
+    setRevealed(!revealed);
+    if (!revealed) {
+      console.log(`[AUDIT LOG] Admin revealed Aadhaar number for driver ID: ${driverId}`);
+    }
+  };
+
+  const cleanAadhaar = aadhaar.replace(/\s|-/g, '');
+  const last4 = cleanAadhaar.slice(-4);
+  const masked = `XXXX-XXXX-${last4}`;
+  
+  return (
+    <span className="inline-flex items-center space-x-1.5">
+      <span className="font-semibold font-mono text-slate-900">{revealed ? aadhaar : masked}</span>
+      <button 
+        type="button" 
+        onClick={handleReveal} 
+        className="text-[10px] text-[#003893] hover:underline focus:outline-none ml-1 cursor-pointer font-bold uppercase tracking-wider"
+      >
+        {revealed ? 'Hide' : 'Reveal'}
+      </button>
+    </span>
+  );
+};
+
 const AdminPendingDrivers = ({
   drivers,
   loading,
@@ -66,7 +95,7 @@ const AdminPendingDrivers = ({
                         <p><strong className="text-slate-500 font-medium">Model & Year:</strong> <span className="font-semibold text-slate-900">{driver.vehicleModelYear || 'N/A'}</span></p>
                         <p><strong className="text-slate-500 font-medium">License No:</strong> <span className="font-semibold font-mono text-slate-900">{driver.licenseNumber}</span></p>
                         <p><strong className="text-slate-500 font-medium">City:</strong> <span className="font-semibold text-slate-900">{driver.currentCity || 'N/A'}</span></p>
-                        <p><strong className="text-slate-500 font-medium">Aadhaar:</strong> <span className="font-semibold text-slate-900">{driver.aadhaarNumber || 'N/A'}</span></p>
+                        <p><strong className="text-slate-500 font-medium">Aadhaar:</strong> <MaskedAadhaar aadhaar={driver.aadhaarNumber} driverId={driver._id} /></p>
                         {driver.driverNameIfVendor && <p><strong className="text-slate-500 font-medium">Driver (Vendor):</strong> <span className="font-semibold text-slate-900">{driver.driverNameIfVendor}</span></p>}
                         {driver.driverContactNumber && <p><strong className="text-slate-500 font-medium">Driver Contact:</strong> <span className="font-semibold text-slate-900">{driver.driverContactNumber}</span></p>}
                         <p><strong className="text-slate-500 font-medium">RC Available:</strong> <span className="font-semibold text-slate-900">{driver.rcCopyAvailable || 'No'}</span></p>
@@ -156,7 +185,7 @@ const AdminPendingDrivers = ({
                       <p><strong className="text-slate-500 font-medium">Model:</strong> <span className="font-semibold">{driver.vehicleModelYear || 'N/A'}</span></p>
                       <p><strong className="text-slate-500 font-medium">License:</strong> <span className="font-semibold font-mono">{driver.licenseNumber}</span></p>
                       <p><strong className="text-slate-500 font-medium">City:</strong> <span className="font-semibold">{driver.currentCity || 'N/A'}</span></p>
-                      <p><strong className="text-slate-500 font-medium">Aadhaar:</strong> <span className="font-semibold">{driver.aadhaarNumber || 'N/A'}</span></p>
+                      <p><strong className="text-slate-500 font-medium">Aadhaar:</strong> <MaskedAadhaar aadhaar={driver.aadhaarNumber} driverId={driver._id} /></p>
                       {driver.driverNameIfVendor && <p><strong className="text-slate-500 font-medium">Driver (Vendor):</strong> <span className="font-semibold">{driver.driverNameIfVendor}</span></p>}
                       {driver.driverContactNumber && <p><strong className="text-slate-500 font-medium">Driver Phone:</strong> <span className="font-semibold">{driver.driverContactNumber}</span></p>}
                       <p><strong className="text-slate-500 font-medium">RC Available:</strong> <span className="font-semibold">{driver.rcCopyAvailable || 'No'}</span></p>

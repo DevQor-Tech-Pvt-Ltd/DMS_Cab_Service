@@ -4,6 +4,7 @@ import 'leaflet/dist/leaflet.css';
 import io from 'socket.io-client';
 import { MapPin, Navigation, Compass, AlertCircle, CheckCircle2 } from '../utils/icons';
 import { getSocketUrl } from '../utils/urls';
+import apiClient from '../services/apiClient';
 
 /**
  * TrackingMap - Production-grade real-time location tracking component.
@@ -199,20 +200,10 @@ const TrackingMap = ({
 
     const geocodeAddress = async (address) => {
       try {
-        const response = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`,
-          {
-            headers: {
-              'User-Agent': 'DMS-Luxury-Cab-Service/1.0 (engineering@devqor.in)'
-            }
-          }
-        );
-        const data = await response.json();
-        if (data && data.length > 0) {
-          return {
-            lat: parseFloat(data[0].lat),
-            lon: parseFloat(data[0].lon)
-          };
+        const response = await apiClient.get(`/rides/geocode?q=${encodeURIComponent(address)}`);
+        const data = response.data;
+        if (data && data.success && data.coords) {
+          return data.coords;
         }
       } catch (error) {
         console.error("Geocoding error:", error);
@@ -345,7 +336,7 @@ const TrackingMap = ({
 
       // Use a clean, modern tile layer
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© DMS Cab Service',
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
       }).addTo(map);
 

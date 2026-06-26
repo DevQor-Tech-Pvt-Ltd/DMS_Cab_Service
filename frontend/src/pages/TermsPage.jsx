@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 const TermsPage = () => {
   useEffect(() => {
-    document.title = "Terms of Service | DMS Cab ServicesE Chauffeur Services";
+    document.title = "Terms of Service | DMS Cab Services Chauffeur Services";
   }, []);
 
   return (
@@ -39,7 +39,7 @@ const TermsPage = () => {
               <span>1. Acceptance of Terms</span>
             </h2>
             <p className="text-slate-600 text-sm">
-              These Terms of Service constitute a legally binding agreement between you and DMS Cab ServicesE regarding your access and use of our web booking application, dispatch platform, and premium chauffeur service networks. By registering an account, booking a ride, or operating as a chauffeur on our platform, you agree to be bound by these terms. If you do not agree, you are prohibited from utilizing our service.
+              These Terms of Service constitute a legally binding agreement between you and DMS Cab Services regarding your access and use of our web booking application, dispatch platform, and premium chauffeur service networks. By registering an account, booking a ride, or operating as a chauffeur on our platform, you agree to be bound by these terms. If you do not agree, you are prohibited from utilizing our service.
             </p>
           </section>
 
@@ -98,7 +98,7 @@ const TermsPage = () => {
               <span>5. Passenger Code of Conduct</span>
             </h2>
             <p className="text-slate-600 text-sm">
-              DMS Cab ServicesE maintains a zero-tolerance policy for abuse, harassment, or damage:
+              DMS Cab Services maintains a zero-tolerance policy for abuse, harassment, or damage:
             </p>
             <ul className="list-disc pl-5 text-slate-600 text-sm space-y-2">
               <li>Passengers must treat chauffeurs and vehicles with complete respect.</li>

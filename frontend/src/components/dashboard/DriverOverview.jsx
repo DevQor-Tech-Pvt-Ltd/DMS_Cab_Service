@@ -8,25 +8,28 @@ import {
 } from '../../utils/icons';
 import TrackingMap from '../TrackingMap';
 import DriverOtpVerification from '../DriverOtpVerification';
-import { isMobile } from '../../utils/motion';
+import { useIsMobile } from '../../utils/motion';
 
-const StatCard = ({ icon: Icon, label, value, sub, color, delay }) => (
-  <motion.div
-    initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={isMobile ? { duration: 0 } : { duration: 0.5, delay }}
-    className="bg-white border border-slate-200 rounded-2xl p-6 hover:border-[#003893]/20 shadow-sm transition-all duration-300"
-  >
-    <div className="flex items-start justify-between mb-4">
-      <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
-        <Icon size={22} />
+const StatCard = ({ icon: Icon, label, value, sub, color, delay }) => {
+  const isMobile = useIsMobile();
+  return (
+    <motion.div
+      initial={isMobile ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={isMobile ? { duration: 0 } : { duration: 0.5, delay }}
+      className="bg-white border border-slate-200 rounded-2xl p-6 hover:border-[#003893]/20 shadow-sm transition-all duration-300"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${color}`}>
+          <Icon size={22} />
+        </div>
       </div>
-    </div>
-    <p className="text-3xl font-bold text-slate-800 mb-1">{value}</p>
-    <p className="text-sm text-slate-500">{label}</p>
-    {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
-  </motion.div>
-);
+      <p className="text-3xl font-bold text-slate-800 mb-1">{value}</p>
+      <p className="text-sm text-slate-500">{label}</p>
+      {sub && <p className="text-xs text-slate-400 mt-1">{sub}</p>}
+    </motion.div>
+  );
+};
 
 const StatCardSkeleton = () => (
   <div className="bg-white border border-slate-200 rounded-2xl p-6 relative overflow-hidden animate-pulse shadow-sm">
@@ -53,6 +56,7 @@ const DriverOverview = ({
   ridesLoading,
   stats,
   activeRide,
+  currentRide,
   distanceToDestination,
   handleDistanceUpdate,
   handleCancelPickup,
@@ -70,16 +74,7 @@ const DriverOverview = ({
   ratedRides,
   recentReviews
 }) => {
-  const currentRide = activeRide ? {
-    id: `#RD-${activeRide._id.substring(18, 24).toUpperCase()}`,
-    passenger: activeRide.passengerDetails?.fullName || 'Client',
-    phone: activeRide.passengerDetails?.phone || '',
-    pickup: activeRide.pickupLocation,
-    drop: activeRide.dropoffLocation,
-    vehicle: activeRide.vehicleType,
-    fare: `₹${activeRide.fare.toLocaleString()}`,
-    status: activeRide.status,
-  } : null;
+  const isMobile = useIsMobile();
 
   return (
     <div className="max-w-7xl mx-auto text-left">

@@ -14,15 +14,6 @@ const apiClient = axios.create({
 // Request interceptor for token injection or config setups
 apiClient.interceptors.request.use(
   (config) => {
-    try {
-      const userJson = sessionStorage.getItem('dms_luxe_user');
-      const user = userJson ? JSON.parse(userJson) : null;
-      if (user && user.token) {
-        config.headers['Authorization'] = `Bearer ${user.token}`;
-      }
-    } catch (e) {
-      console.error('Error reading token from sessionStorage:', e);
-    }
     return config;
   },
   (error) => {
@@ -45,19 +36,6 @@ const retryRequest = async (config) => {
 // Response interceptor for automatic retry, refresh token, and global error handling
 apiClient.interceptors.response.use(
   (response) => {
-    const newAccessToken = response.headers['x-access-token'];
-    if (newAccessToken) {
-      try {
-        const userJson = sessionStorage.getItem('dms_luxe_user');
-        const userObj = userJson ? JSON.parse(userJson) : null;
-        if (userObj) {
-          userObj.token = newAccessToken;
-          sessionStorage.setItem('dms_luxe_user', JSON.stringify(userObj));
-        }
-      } catch (e) {
-        console.error('Error updating token from headers:', e);
-      }
-    }
     return response;
   },
   async (error) => {
@@ -83,42 +61,13 @@ apiClient.interceptors.response.use(
     if (error.response && error.response.status === 401 && !originalRequest._retry && !isAuthPath) {
       originalRequest._retry = true;
       try {
-        let refreshToken = null;
-        try {
-          const userJson = sessionStorage.getItem('dms_luxe_user');
-          const userObj = userJson ? JSON.parse(userJson) : null;
-          refreshToken = userObj?.refreshToken;
-        } catch (e) {
-          console.error('Error reading refresh token:', e);
-        }
-
-        const headers = {};
-        if (refreshToken) {
-          headers['x-refresh-token'] = refreshToken;
-        }
-
         // Make a call to getMe endpoint. The backend protect middleware handles 
-        // silent refresh using the HttpOnly refreshToken cookie or our fallback header
+        // silent refresh automatically using the HttpOnly refreshToken cookie
         const res = await axios.get(`${getApiUrl()}/auth/me`, { 
-          withCredentials: true,
-          headers
+          withCredentials: true
         });
 
         if (res.data && res.data.success) {
-          // Check if response contains new access token in headers and save it
-          const newAccessToken = res.headers['x-access-token'];
-          if (newAccessToken) {
-            try {
-              const userJson = sessionStorage.getItem('dms_luxe_user');
-              const userObj = userJson ? JSON.parse(userJson) : null;
-              if (userObj) {
-                userObj.token = newAccessToken;
-                sessionStorage.setItem('dms_luxe_user', JSON.stringify(userObj));
-              }
-            } catch (e) {
-              console.error('Error updating token from refresh headers:', e);
-            }
-          }
           // Retry the original request
           return apiClient(originalRequest);
         }
@@ -126,8 +75,6 @@ apiClient.interceptors.response.use(
         console.error('API Client: Silent refresh failed. Redirecting to auth.', refreshError);
         // Clear local credentials on hard auth failure
         sessionStorage.removeItem('dms_luxe_user');
-        sessionStorage.removeItem('dms_luxe_tab_id');
-        window.name = '';
         
         // Prevent redirect loops if already on auth page
         if (!window.location.pathname.includes('/auth')) {

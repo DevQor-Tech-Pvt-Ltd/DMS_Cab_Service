@@ -76,6 +76,12 @@ const EditProfileModal = ({ isOpen, onClose }) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    const allowedDocTypes = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+    if (!allowedDocTypes.includes(file.type)) {
+      setError('Unsupported file format. Please upload JPEG, PNG, or PDF files.');
+      return;
+    }
+
     if (file.size > 5 * 1024 * 1024) {
       setError('File size must be less than 5MB');
       return;
@@ -96,6 +102,12 @@ const EditProfileModal = ({ isOpen, onClose }) => {
   const handleProfilePicChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
+    const allowedPicTypes = ['image/jpeg', 'image/jpg', 'image/png'];
+    if (!allowedPicTypes.includes(file.type)) {
+      setError('Unsupported file format. Profile picture must be a JPEG or PNG image.');
+      return;
+    }
 
     if (file.size > 2 * 1024 * 1024) {
       setError('Profile picture must be less than 2MB');

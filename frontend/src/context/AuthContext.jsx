@@ -12,22 +12,12 @@ const AuthContext = createContext({
 export const AuthProvider = ({ children }) => {
   // Sync and validate tab session before initializing state
   const getInitialAuthState = () => {
-    const tabId = window.name;
-    const sessionTabId = sessionStorage.getItem('dms_luxe_tab_id');
-    
     let storedUser = null;
     try {
       const userJson = sessionStorage.getItem('dms_luxe_user');
       storedUser = userJson ? JSON.parse(userJson) : null;
     } catch (e) {
       console.error('Error parsing stored user:', e);
-    }
-
-    if (storedUser && (!tabId || tabId !== sessionTabId)) {
-      // Non-matching tab/window context, clear copied session for security
-      sessionStorage.removeItem('dms_luxe_user');
-      sessionStorage.removeItem('dms_luxe_tab_id');
-      return { user: null, loading: true };
     }
 
     return {
@@ -51,23 +41,8 @@ export const AuthProvider = ({ children }) => {
       try {
         const response = await getMe();
         if (response.success && response.user) {
-          let token = null;
-          let refreshToken = null;
-          try {
-            const userJson = sessionStorage.getItem('dms_luxe_user');
-            const userObj = userJson ? JSON.parse(userJson) : null;
-            token = userObj?.token;
-            refreshToken = userObj?.refreshToken;
-          } catch (e) {
-            console.error('Error reading tokens from sessionStorage:', e);
-          }
-          const mergedUser = {
-            ...response.user,
-            ...(token && { token }),
-            ...(refreshToken && { refreshToken })
-          };
-          setUser(mergedUser);
-          sessionStorage.setItem('dms_luxe_user', JSON.stringify(mergedUser));
+          setUser(response.user);
+          sessionStorage.setItem('dms_luxe_user', JSON.stringify(response.user));
         } else {
           throw new Error('Verification failed or user empty');
         }
@@ -78,8 +53,6 @@ export const AuthProvider = ({ children }) => {
         if (status === 401 || status === 403) {
           setUser(null);
           sessionStorage.removeItem('dms_luxe_user');
-          sessionStorage.removeItem('dms_luxe_tab_id');
-          window.name = '';
         }
         // For network errors or 5xx, keep the stored user to allow the dashboard
         // to render — individual API calls will fail and show their own errors
@@ -92,48 +65,31 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = (userData) => {
-    // Generate unique tab ID and bind it to window.name and sessionStorage
-    const tabId = 'tab_' + Math.random().toString(36).substring(2, 9);
-    window.name = tabId;
-    sessionStorage.setItem('dms_luxe_tab_id', tabId);
-
-    sessionStorage.setItem('dms_luxe_user', JSON.stringify(userData));
-    setUser(userData);
+    const { token, refreshToken, ...userProfile } = userData;
+    sessionStorage.setItem('dms_luxe_user', JSON.stringify(userProfile));
+    setUser(userProfile);
     setLoading(false);
   };
 
   const logout = async () => {
+    const userId = user?._id;
     try {
       await logoutService();
     } catch (error) {
       console.warn('Logout failed:', error);
     }
+    if (userId) {
+      localStorage.removeItem(`dms_luxe_upi_${userId}`);
+    }
     sessionStorage.removeItem('dms_luxe_user');
-    sessionStorage.removeItem('dms_luxe_tab_id');
-    window.name = '';
     setUser(null);
     setLoading(false);
     window.location.replace('/');
   };
 
   const updateUser = (updatedUserData) => {
-    let token = null;
-    let refreshToken = null;
-    try {
-      const userJson = sessionStorage.getItem('dms_luxe_user');
-      const userObj = userJson ? JSON.parse(userJson) : null;
-      token = userObj?.token;
-      refreshToken = userObj?.refreshToken;
-    } catch (e) {
-      console.error('Error reading tokens for update:', e);
-    }
-    const mergedUser = {
-      ...updatedUserData,
-      ...(token && { token }),
-      ...(refreshToken && { refreshToken })
-    };
-    setUser(mergedUser);
-    sessionStorage.setItem('dms_luxe_user', JSON.stringify(mergedUser));
+    setUser(updatedUserData);
+    sessionStorage.setItem('dms_luxe_user', JSON.stringify(updatedUserData));
   };
 
   return (

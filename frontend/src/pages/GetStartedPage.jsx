@@ -52,6 +52,7 @@ const GetStartedPage = () => {
   const [loading, setLoading] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
   const [createdRide, setCreatedRide] = useState(null);
+  const [serverFares, setServerFares] = useState(null);
 
   // Payment states and toast notifications (Ola/Uber standard)
   const [paymentState, setPaymentState] = useState('idle'); // 'idle', 'initiating', 'checkout', 'verifying', 'success', 'failed'
@@ -209,8 +210,22 @@ const GetStartedPage = () => {
       errors.dropoffLocation = 'Drop-off address must contain at least one letter';
     }
 
-    if (!formData.pickupDate) errors.pickupDate = 'Date is required';
-    if (!formData.pickupTime) errors.pickupTime = 'Time is required';
+    if (!formData.pickupDate) {
+      errors.pickupDate = 'Date is required';
+    }
+    if (!formData.pickupTime) {
+      errors.pickupTime = 'Time is required';
+    }
+
+    if (formData.pickupDate && formData.pickupTime) {
+      const selectedDateTime = new Date(`${formData.pickupDate}T${formData.pickupTime}`);
+      const minFutureTime = new Date(Date.now() + 30 * 60 * 1000); // current time + 30 mins
+      if (isNaN(selectedDateTime.getTime())) {
+        errors.pickupTime = 'Invalid date or time format';
+      } else if (selectedDateTime < minFutureTime) {
+        errors.pickupTime = 'Pickup time must be at least 30 minutes in the future';
+      }
+    }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -233,10 +248,33 @@ const GetStartedPage = () => {
     return Object.keys(errors).length === 0;
   };
 
-  const handleNextStep = () => {
-    if (step === 1 && validateStep1()) setStep(2);
-    else if (step === 2 && validateStep2()) setStep(3);
-    else if (step === 3 && validateStep3()) setStep(4);
+  const handleNextStep = async () => {
+    if (step === 1) {
+      if (validateStep1()) {
+        setLoading(true);
+        try {
+          const response = await api.post('/rides/calculate-fare', {
+            pickupLocation: formData.pickupLocation,
+            dropoffLocation: formData.dropoffLocation
+          });
+          if (response.data.success) {
+            setServerFares(response.data.fares);
+            setStep(2);
+          } else {
+            showToast('Failed to calculate estimated fares from the server.', 'error');
+          }
+        } catch (err) {
+          console.error('Error fetching fares:', err);
+          showToast('Failed to calculate estimated fares from the server.', 'error');
+        } finally {
+          setLoading(false);
+        }
+      }
+    } else if (step === 2) {
+      if (validateStep2()) setStep(3);
+    } else if (step === 3) {
+      if (validateStep3()) setStep(4);
+    }
   };
 
   const handlePrevStep = () => {
@@ -252,7 +290,9 @@ const GetStartedPage = () => {
   };
 
   const handleConfirmBooking = async () => {
-    const estFare = calculateEstimatedFare(formData.pickupLocation, formData.dropoffLocation, formData.vehicleType);
+    const estFare = serverFares && serverFares[formData.vehicleType]
+      ? serverFares[formData.vehicleType]
+      : calculateEstimatedFare(formData.pickupLocation, formData.dropoffLocation, formData.vehicleType);
     if (formData.paymentMethod === 'wallet') {
       const balance = getWalletBalance();
       if (balance < estFare) {
@@ -294,7 +334,7 @@ const GetStartedPage = () => {
 
         // If Razorpay order was generated on the server, launch Razorpay Checkout UI
         if (razorpayOrder) {
-          if (razorpayOrder.key === 'rzp_test_mock') {
+          if (razorpayOrder.key === 'rzp_test_mock' && import.meta.env.MODE === 'development') {
             // Bypass Razorpay modal in mock mode and verify directly
             setPaymentState('verifying');
             try {
@@ -608,6 +648,7 @@ const GetStartedPage = () => {
                       <input
                         type="date"
                         name="pickupDate"
+                        min={new Date().toISOString().split('T')[0]}
                         value={formData.pickupDate}
                         onChange={handleInputChange}
                         className="w-full bg-white border border-slate-200 focus:border-[#003893] focus:outline-none rounded-xl py-3.5 pl-12 pr-4 text-slate-900 transition-colors text-sm"
@@ -677,7 +718,11 @@ const GetStartedPage = () => {
                           </div>
                           <div className="border-t border-slate-100 pt-2.5 flex items-center justify-between">
                             <span className="text-[10px] text-slate-400">{car.passengers} Pax / {car.luggage} Bags</span>
-                            <span className="text-xs font-bold text-[#003893]">₹{calculateEstimatedFare(formData.pickupLocation, formData.dropoffLocation, car.name).toLocaleString()}</span>
+                            <span className="text-xs font-bold text-[#003893]">
+                              ₹{serverFares && serverFares[car.name]
+                                ? serverFares[car.name].toLocaleString()
+                                : calculateEstimatedFare(formData.pickupLocation, formData.dropoffLocation, car.name).toLocaleString()}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -820,7 +865,11 @@ const GetStartedPage = () => {
                       </div>
                       <div>
                         <p className="text-slate-400 text-[10px] uppercase font-mono">Total Estimated Fare</p>
-                        <p className="text-[#003893] font-bold text-lg mt-0.5">₹{calculateEstimatedFare(formData.pickupLocation, formData.dropoffLocation, formData.vehicleType).toLocaleString()}</p>
+                        <p className="text-[#003893] font-bold text-lg mt-0.5">
+                          ₹{serverFares && serverFares[formData.vehicleType]
+                            ? serverFares[formData.vehicleType].toLocaleString()
+                            : calculateEstimatedFare(formData.pickupLocation, formData.dropoffLocation, formData.vehicleType).toLocaleString()}
+                        </p>
                       </div>
                     </div>
                   </div>

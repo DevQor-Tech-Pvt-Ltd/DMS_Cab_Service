@@ -37,6 +37,14 @@ const ContactPage = () => {
       return;
     }
 
+    // Client-side phone validation check
+    const phoneTrimmed = formData.phone.trim();
+    if (phoneTrimmed && !/^[6-9]\d{9}$/.test(phoneTrimmed)) {
+      setError('Please enter a valid 10-digit Indian phone number starting with 6-9.');
+      setLoading(false);
+      return;
+    }
+
     try {
       await submitContactInquiry(formData);
       setIsSubmitted(true);
