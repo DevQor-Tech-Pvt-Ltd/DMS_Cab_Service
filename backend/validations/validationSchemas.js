@@ -3,7 +3,7 @@ const { z } = require('zod');
 // Schema for user registration
 const signupSchema = z.object({
   fullName: z.string().trim().min(1, 'Full name is required').max(100),
-  email: z.string().trim().email('Invalid email address').lowercase(),
+  email: z.string().trim().email('Invalid email address').transform(val => val.toLowerCase()),
   phone: z.string().trim().min(1, 'Phone number is required').regex(/^[+]?[\d\s\-().]{7,15}$/, 'Invalid phone number format'),
   role: z.enum(['client', 'driver']),
   password: z.string().min(8, 'Password must be at least 8 characters long')
@@ -56,14 +56,14 @@ const signupSchema = z.object({
 
 // Schema for login
 const loginSchema = z.object({
-  email: z.string().trim().email('Invalid email address').lowercase(),
+  email: z.string().trim().email('Invalid email address').transform(val => val.toLowerCase()),
   password: z.string().min(1, 'Password is required'),
 });
 
 // Passenger details schema for bookings
 const passengerDetailsSchema = z.object({
   fullName: z.string().trim().min(1, 'Passenger name is required'),
-  email: z.string().trim().email('Invalid passenger email address').lowercase(),
+  email: z.string().trim().email('Invalid passenger email address').transform(val => val.toLowerCase()),
   phone: z.string().trim().min(1, 'Passenger phone is required').regex(/^[+]?[\d\s\-().]{7,15}$/, 'Invalid phone number format'),
   specialInstructions: z.string().trim().optional().default(''),
 });
@@ -86,7 +86,7 @@ const rideBookingSchema = z.object({
 // Schema for profile update
 const updateProfileSchema = z.object({
   fullName: z.string().trim().optional(),
-  email: z.string().trim().email('Invalid email address').lowercase().optional(),
+  email: z.string().trim().email('Invalid email address').transform(val => val.toLowerCase()).optional(),
   phone: z.string().trim().optional(),
   currentPassword: z.string().optional(),
   newPassword: z.string().min(8, 'New password must be at least 8 characters long')
@@ -119,7 +119,7 @@ const otpVerificationSchema = z.object({
 const contactInquirySchema = z.object({
   firstName: z.string().trim().min(1, 'First name is required').max(50),
   lastName: z.string().trim().min(1, 'Last name is required').max(50),
-  email: z.string().trim().email('Invalid email address').lowercase(),
+  email: z.string().trim().email('Invalid email address').transform(val => val.toLowerCase()),
   phone: z.string().trim().optional(),
   subject: z.string().trim().min(1, 'Subject is required'),
   message: z.string().trim().min(1, 'Message is required').max(1000),

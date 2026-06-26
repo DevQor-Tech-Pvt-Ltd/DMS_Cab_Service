@@ -1,6 +1,6 @@
 const validate = (schema) => (req, res, next) => {
   try {
-    schema.parse(req.body);
+    req.body = schema.parse(req.body);
     next();
   } catch (error) {
     if (error.errors) {
