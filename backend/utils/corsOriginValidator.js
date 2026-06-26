@@ -21,9 +21,12 @@ const getAllowedOrigins = () => {
     ? process.env.CLIENT_URL.split(',').map((url) => url.trim())
     : ['http://localhost:5173', 'http://localhost:4173'];
 
-  // Add the known production deployment origin
-  if (!list.includes('https://dms-cab-service.vercel.app')) {
-    list.push('https://dms-cab-service.vercel.app');
+  // Add the known production deployment origins
+  if (!list.includes('https://www.dmscabservices.com')) {
+    list.push('https://www.dmscabservices.com');
+  }
+  if (!list.includes('https://dmscabservices.com')) {
+    list.push('https://dmscabservices.com');
   }
 
   cachedAllowedOrigins = list;
