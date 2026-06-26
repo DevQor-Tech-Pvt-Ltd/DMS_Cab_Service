@@ -14,11 +14,12 @@ const ClientOverview = ({
   renderActiveRideCard,
   getAddressIcon
 }) => {
+  const homeAddressObj = (savedAddresses || []).find(addr => addr.label.toLowerCase() === 'home');
+  const workAddressObj = (savedAddresses || []).find(addr => addr.label.toLowerCase() === 'work' || addr.label.toLowerCase() === 'office');
   const currentDate = new Date();
   const formattedDate = currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   const formattedTime = currentDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-  // Responsive mobile vs desktop view inside the component
   return (
     <div className="space-y-6 text-left">
       {/* Weather / Time / Kolkata header row */}
@@ -77,7 +78,7 @@ const ClientOverview = ({
 
               {/* Preset location items */}
               <div className="space-y-1">
-                {savedAddresses.map((addr) => {
+                {(savedAddresses || []).map((addr) => {
                   const AddrIcon = getAddressIcon(addr.icon);
                   return (
                     <div
@@ -129,8 +130,13 @@ const ClientOverview = ({
           <div className="bg-slate-50 border border-slate-200 p-6 rounded-2xl space-y-3">
             <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2">Quick Shortcuts</h4>
             <button
-              onClick={() => navigate('/get-started', { state: { pickupLocation: '', dropoffLocation: '221B, Southern Avenue, Kalighat' } })}
-              className="w-full bg-white border border-slate-100 hover:border-[#003893]/30 p-3 rounded-xl flex items-center justify-between text-left group transition-all"
+              onClick={() => {
+                if (homeAddressObj?.address) {
+                  navigate('/get-started', { state: { pickupLocation: '', dropoffLocation: homeAddressObj.address } });
+                }
+              }}
+              disabled={!homeAddressObj?.address}
+              className={`w-full bg-white border border-slate-100 p-3 rounded-xl flex items-center justify-between text-left group transition-all ${homeAddressObj?.address ? 'hover:border-[#003893]/30 cursor-pointer' : 'opacity-65 cursor-not-allowed'}`}
             >
               <div className="flex items-center space-x-3 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-[#003893]/10 flex items-center justify-center text-[#003893] shrink-0">
@@ -138,15 +144,20 @@ const ClientOverview = ({
                 </div>
                 <div className="min-w-0">
                   <h4 className="text-xs font-bold text-slate-800">Go Home</h4>
-                  <p className="text-[9px] text-slate-400 truncate">221B, Southern Avenue, Kalighat</p>
+                  <p className="text-[9px] text-slate-400 truncate">{homeAddressObj?.address || 'Address not set'}</p>
                 </div>
               </div>
               <ArrowRight size={14} className="text-slate-400 group-hover:text-[#003893] shrink-0" />
             </button>
 
             <button
-              onClick={() => navigate('/get-started', { state: { pickupLocation: '', dropoffLocation: 'TCS Tower, Action Area II, New Town' } })}
-              className="w-full bg-white border border-slate-100 hover:border-[#003893]/30 p-3 rounded-xl flex items-center justify-between text-left group transition-all"
+              onClick={() => {
+                if (workAddressObj?.address) {
+                  navigate('/get-started', { state: { pickupLocation: '', dropoffLocation: workAddressObj.address } });
+                }
+              }}
+              disabled={!workAddressObj?.address}
+              className={`w-full bg-white border border-slate-100 p-3 rounded-xl flex items-center justify-between text-left group transition-all ${workAddressObj?.address ? 'hover:border-[#003893]/30 cursor-pointer' : 'opacity-65 cursor-not-allowed'}`}
             >
               <div className="flex items-center space-x-3 min-w-0">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500 shrink-0">
@@ -154,7 +165,7 @@ const ClientOverview = ({
                 </div>
                 <div className="min-w-0">
                   <h4 className="text-xs font-bold text-slate-800">Office</h4>
-                  <p className="text-[9px] text-slate-400 truncate">TCS Tower, Action Area II, New Town</p>
+                  <p className="text-[9px] text-slate-400 truncate">{workAddressObj?.address || 'Address not set'}</p>
                 </div>
               </div>
               <ArrowRight size={14} className="text-slate-400 group-hover:text-[#003893] shrink-0" />

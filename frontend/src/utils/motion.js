@@ -1,7 +1,25 @@
-// Mobile animation performance utility for DMS Cab Servicese.
+import { useState, useEffect } from 'react';
+
+// Mobile animation performance utility for DMS Cab Service.
 // Helps disable or downgrade expensive Framer Motion animations on mobile viewports (< 768px).
 
 export const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+
+export const useWindowWidth = () => {
+  const [width, setWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handleResize = () => setWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  return width;
+};
+
+export const useIsMobile = (breakpoint = 768) => {
+  const width = useWindowWidth();
+  return width < breakpoint;
+};
 
 // GPU-friendly fade-in-up transition (no offset on mobile to prevent compositor shifts)
 export const fadeInUp = {

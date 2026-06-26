@@ -59,7 +59,7 @@ const Navbar = () => {
 
   return (
     <nav className="fixed w-full left-0 top-0 z-[100] bg-white h-[76px] border-b border-[#F1F5F9]">
-      <div className="max-w-[1320px] mx-auto px-4 sm:px-6 lg:px-8 h-full">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
         <div className="flex justify-between items-center h-full">
           <Link to="/" className="flex items-center">
             <img src="/logoo.png" alt="DMS Logo" className="h-[75px] w-auto object-contain" />
@@ -256,7 +256,7 @@ const Navbar = () => {
               {/* Copyright at the bottom of the mobile menu */}
               <div className="mt-auto pt-8 border-t border-slate-100 text-center">
                 <p className="text-slate-400 text-xs font-semibold">
-                  &copy; {new Date().getFullYear()} DMS Cab ServicesE Chauffeur Services. All rights reserved.
+                  &copy; {new Date().getFullYear()} DMS Cab Services Chauffeur Services. All rights reserved.
                 </p>
               </div>
             </motion.div>

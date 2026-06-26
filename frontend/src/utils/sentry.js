@@ -14,7 +14,7 @@ export const initSentry = () => {
         Sentry.replayIntegration(),
       ],
       // Performance Monitoring
-      tracesSampleRate: 1.0,
+      tracesSampleRate: 0.1,
       tracePropagationTargets: import.meta.env.PROD ? [/^\//] : ["localhost", /^\//],
       // Session Replay
       replaysSessionSampleRate: 0.1,

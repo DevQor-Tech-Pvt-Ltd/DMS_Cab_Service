@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ImageWithFallback from '../ImageWithFallback';
 import { Car, Clock, Star } from '../../utils/icons';
 
@@ -12,12 +12,23 @@ const ClientActivity = ({
   handleOpenRatingModal,
   navigate
 }) => {
+  const [activeActivityTab, setActiveActivityTab] = useState('past');
+
   const getVehicleImage = (type) => {
     const t = (type || '').toLowerCase();
     if (t.includes('v-class') || t.includes('v class') || t.includes('van')) return '/ertiga.jpeg';
     if (t.includes('range rover') || t.includes('rover') || t.includes('suv')) return '/innova.png';
     return '/ertiga.jpeg';
   };
+
+  const filteredRides = getFilteredRides().filter(ride => {
+    const status = (ride.status || '').toLowerCase();
+    if (activeActivityTab === 'upcoming') {
+      return ['pending', 'driver_assigned', 'driver_arrived', 'ride_started'].includes(status);
+    } else {
+      return ['completed', 'cancelled'].includes(status);
+    }
+  });
 
   return (
     <div className="space-y-6 text-left">
@@ -28,12 +39,18 @@ const ClientActivity = ({
         </div>
       </div>
 
-      {/* Tab switcher: Past / Upcoming (Visual Mock) */}
+      {/* Tab switcher: Past / Upcoming */}
       <div className="flex bg-slate-50 border border-slate-200 p-1 rounded-full max-w-xs">
-        <button className="flex-1 py-1.5 text-xs font-bold bg-[#003893]/10 border border-[#003893]/20 text-[#003893] rounded-full">
+        <button
+          onClick={() => setActiveActivityTab('past')}
+          className={`flex-1 py-1.5 text-xs font-bold rounded-full transition-all cursor-pointer ${activeActivityTab === 'past' ? 'bg-[#003893]/10 border border-[#003893]/20 text-[#003893]' : 'text-slate-500 hover:text-[#003893] border border-transparent'}`}
+        >
           Past
         </button>
-        <button onClick={() => navigate('/get-started')} className="flex-1 py-1.5 text-xs font-bold text-slate-500 hover:text-[#003893] rounded-full">
+        <button
+          onClick={() => setActiveActivityTab('upcoming')}
+          className={`flex-1 py-1.5 text-xs font-bold rounded-full transition-all cursor-pointer ${activeActivityTab === 'upcoming' ? 'bg-[#003893]/10 border border-[#003893]/20 text-[#003893]' : 'text-slate-500 hover:text-[#003893] border border-transparent'}`}
+        >
           Upcoming
         </button>
       </div>
@@ -51,12 +68,25 @@ const ClientActivity = ({
             <p className="text-xs">No journeys logged yet.</p>
             <button onClick={() => navigate('/get-started')} className="text-xs text-[#003893] font-bold mt-2 hover:underline">Book your first ride now</button>
           </div>
-        ) : getFilteredRides().length === 0 ? (
+        ) : filteredRides.length === 0 ? (
           <div className="text-center py-12 bg-slate-50 border border-slate-200 rounded-2xl text-slate-400">
-            <p className="text-xs">No journeys match your search query: "{searchQuery}"</p>
+            <Car size={32} className="mx-auto mb-2 opacity-35" />
+            {searchQuery.trim() ? (
+              <p className="text-xs">No {activeActivityTab} journeys match your search query: "{searchQuery}"</p>
+            ) : activeActivityTab === 'upcoming' ? (
+              <>
+                <p className="text-xs">You have no active or upcoming bookings.</p>
+                <button onClick={() => navigate('/get-started')} className="text-xs text-[#003893] font-bold mt-2 hover:underline">Book a new ride now</button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs">No completed or cancelled journeys logged yet.</p>
+                <button onClick={() => navigate('/get-started')} className="text-xs text-[#003893] font-bold mt-2 hover:underline">Book a ride now</button>
+              </>
+            )}
           </div>
         ) : (
-          getFilteredRides().map((ride, idx) => {
+          filteredRides.map((ride, idx) => {
             const hasDriver = ride.driver && ride.driver.fullName;
             const isCompleted = ride.status === 'completed';
             const isCancelled = ride.status === 'cancelled';

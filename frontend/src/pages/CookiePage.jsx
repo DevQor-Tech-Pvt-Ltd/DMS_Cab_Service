@@ -4,7 +4,7 @@ import { Link } from 'react-router-dom';
 
 const CookiePage = () => {
   useEffect(() => {
-    document.title = "Cookie Policy | DMS Cab ServicesE Chauffeur Services";
+    document.title = "Cookie Policy | DMS Cab Services Chauffeur Services";
   }, []);
 
   return (
@@ -25,7 +25,7 @@ const CookiePage = () => {
             </div>
             <h1 className="text-3xl sm:text-4xl font-serif font-bold">Cookie Policy</h1>
             <p className="text-slate-200 text-sm max-w-xl">
-              Last Updated: May 30, 2026. This policy explains how DMS Cab ServicesE uses cookies and storage tokens to deliver a secure and smooth platform.
+              Last Updated: May 30, 2026. This policy explains how DMS Cab Services uses cookies and storage tokens to deliver a secure and smooth platform.
             </p>
           </div>
         </div>
@@ -39,7 +39,7 @@ const CookiePage = () => {
               <span>1. What Are Cookies and Storage Technologies?</span>
             </h2>
             <p className="text-slate-600 text-sm">
-              Cookies are small text files placed on your computer or mobile device when you browse websites. In addition to standard cookies, DMS Cab ServicesE uses browser storage mechanisms such as **sessionStorage** and **localStorage** to store session markers, user tokens, and security states directly in your web browser.
+              Cookies are small text files placed on your computer or mobile device when you browse websites. In addition to standard cookies, DMS Cab Services uses browser storage mechanisms such as **sessionStorage** and **localStorage** to store session markers, user tokens, and security states directly in your web browser.
             </p>
           </section>
 

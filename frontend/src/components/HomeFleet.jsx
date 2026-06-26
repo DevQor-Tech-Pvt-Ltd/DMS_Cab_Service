@@ -25,7 +25,7 @@ const homeFleetData = [
   {
     id: 4,
     name: 'BMW X7',
-    image: "/ertiga.jpeg",
+    image: "/bmwx7.jpg",
     seats: 6
   },
   {
@@ -37,7 +37,7 @@ const homeFleetData = [
   {
     id: 6,
     name: 'BENTLEY FLYING SPUR',
-    image: "/innova.jpeg",
+    image: "/rrp8.webp",
     seats: 3
   },
   {
@@ -123,14 +123,14 @@ const HomeFleet = () => {
                   key={car.id}
                   className="flex-shrink-0 w-64 md:w-60 lg:w-64 flex flex-col items-center text-center group snap-center"
                 >
-                  {/* Circular Image */}
-                  <div className="w-56 h-56 md:w-48 md:h-48 lg:w-56 lg:h-56 rounded-full border-[1.5px] border-[#003893]/30 p-1 mb-8 relative overflow-hidden transition-all duration-500 group-hover:border-[#003893] group-hover:shadow-[0_0_20px_rgba(0,56,147,0.1)] bg-white">
-                    <div className="w-full h-full rounded-full overflow-hidden bg-slate-50">
+                  {/* Rectangular Image to show complete view of the car */}
+                  <div className="w-56 h-36 md:w-48 md:h-32 lg:w-56 lg:h-36 rounded-2xl border-[1.5px] border-[#003893]/30 p-1 mb-8 relative overflow-hidden transition-all duration-500 group-hover:border-[#003893] group-hover:shadow-[0_0_20px_rgba(0,56,147,0.1)] bg-white">
+                    <div className="w-full h-full rounded-xl overflow-hidden bg-slate-50">
                       <ImageWithFallback
                         src={car.image}
                         alt={car.name}
                         loading="lazy"
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                       />
                     </div>
                   </div>

@@ -11,6 +11,21 @@ import {
 } from '../utils/icons';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useIsMobile } from '../utils/motion';
+
+const encryptData = (text) => {
+  if (!text) return '';
+  return btoa(unescape(encodeURIComponent(text)));
+};
+
+const decryptData = (ciphertext) => {
+  if (!ciphertext) return '';
+  try {
+    return decodeURIComponent(escape(atob(ciphertext)));
+  } catch (e) {
+    return '';
+  }
+};
 import TrackingMap from '../components/TrackingMap';
 import EditProfileModal from '../components/EditProfileModal.jsx';
 import io from 'socket.io-client';
@@ -24,7 +39,7 @@ import ClientWallet from '../components/dashboard/ClientWallet';
 import ClientProfile from '../components/dashboard/ClientProfile';
 
 const SettingsIcon = ({ size = 18, className = '' }) => (
-  <svg xmlns="http://www.w3.org/2050/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
     <circle cx="12" cy="12" r="3" />
   </svg>
@@ -43,7 +58,7 @@ const ClientDashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
 
   // Responsive check
-  const [isMobileViewport, setIsMobileViewport] = useState(window.innerWidth < 1024);
+  const isMobileViewport = useIsMobile(1024);
 
   // Tab State: 'dashboard', 'activity', 'wallet', 'profile'
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'dashboard');
@@ -57,10 +72,14 @@ const ClientDashboard = () => {
   const [savedAddresses, setSavedAddresses] = useState([]);
 
   // Wallet & Payment state
-  const [walletBalance, setWalletBalance] = useState(1500.00);
+  const [walletBalance, setWalletBalance] = useState(0.00);
   const [transactions, setTransactions] = useState([]);
   const [upiId, setUpiId] = useState('');
   const [upiInput, setUpiInput] = useState('');
+
+  // Confirm and Alert Modals states (PROD-07)
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [customAlert, setCustomAlert] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
 
   // Profile saving state
   const [profileSaving, setProfileSaving] = useState(false);
@@ -137,14 +156,8 @@ const ClientDashboard = () => {
     if (saved) {
       setSavedAddresses(JSON.parse(saved));
     } else {
-      // Mock some locations if none exist
-      const defaults = [
-        { label: 'Home', address: '221B, Southern Avenue, Kalighat', icon: 'home' },
-        { label: 'Work', address: 'TCS Tower, Action Area II, New Town', icon: 'office' },
-        { label: 'Gym', address: 'Cult Fit, Park Street', icon: 'heart' }
-      ];
-      setSavedAddresses(defaults);
-      localStorage.setItem(`dms_luxe_addresses_${user._id}`, JSON.stringify(defaults));
+      setSavedAddresses([]);
+      localStorage.setItem(`dms_luxe_addresses_${user._id}`, JSON.stringify([]));
     }
   }, [user]);
 
@@ -188,13 +201,14 @@ const ClientDashboard = () => {
   useEffect(() => {
     if (!user) return;
 
-    setWalletBalance(user.walletBalance ?? 1500.00);
+    setWalletBalance(user.walletBalance ?? 0.00);
 
     // UPI ID
     const savedUpi = localStorage.getItem(`dms_luxe_upi_${user._id}`);
     if (savedUpi !== null) {
-      setUpiId(savedUpi);
-      setUpiInput(savedUpi);
+      const decrypted = decryptData(savedUpi);
+      setUpiId(decrypted);
+      setUpiInput(decrypted);
     } else {
       setUpiId('');
       setUpiInput('');
@@ -220,37 +234,22 @@ const ClientDashboard = () => {
 
   const handleLinkUpi = () => {
     if (!upiInput.trim()) {
-      alert("Please enter a valid UPI ID");
+      setCustomAlert({ isOpen: true, title: 'Error', message: 'Please enter a valid UPI ID' });
+      return;
+    }
+    const upiRegex = /^[\w.-]+@[\w.-]+$/;
+    if (!upiRegex.test(upiInput.trim())) {
+      setCustomAlert({ isOpen: true, title: 'Invalid UPI ID', message: 'Please enter a valid UPI ID (e.g. username@bank)' });
       return;
     }
     setUpiId(upiInput);
-    localStorage.setItem(`dms_luxe_upi_${user._id}`, upiInput);
-    alert("UPI ID linked successfully!");
+    localStorage.setItem(`dms_luxe_upi_${user._id}`, encryptData(upiInput));
+    setCustomAlert({ isOpen: true, title: 'Success', message: 'UPI ID linked successfully!' });
   };
 
-  // Helper to get all transactions (merged localStorage + backend completed rides)
+  // Helper to get all transactions (rely on single source of truth - transactions API)
   const getMergedTransactions = () => {
-    const rideTxns = ridesList
-      .filter(ride => ride.status === 'completed')
-      .map(ride => {
-        const completedDate = ride.completedAt || ride.updatedAt || new Date().toISOString();
-        return {
-          type: 'Ride Payment',
-          desc: `${ride.vehicleType || 'Premium Cab'} • ${ride.pickupLocation.split(',')[0]} to ${ride.dropoffLocation.split(',')[0]}`,
-          amt: `- ₹${(ride.fare || 0).toLocaleString()}`,
-          date: new Date(completedDate).toLocaleString(),
-          minus: true,
-          timestamp: new Date(completedDate).getTime(),
-          value: ride.fare || 0
-        };
-      });
-
-    const localTxns = transactions.map(t => ({
-      ...t,
-      timestamp: new Date(t.date).getTime()
-    }));
-
-    return [...rideTxns, ...localTxns].sort((a, b) => b.timestamp - a.timestamp);
+    return transactions;
   };
 
   const getFilteredTransactions = () => {
@@ -294,7 +293,7 @@ const ClientDashboard = () => {
       if (response.success) {
         updateUser(response.user);
         setProfileSuccess('Profile settings successfully saved!');
-        alert('Profile settings successfully saved!');
+        setCustomAlert({ isOpen: true, title: 'Profile Updated', message: 'Profile settings successfully saved!' });
       } else {
         throw new Error(response.message || 'Failed to update profile');
       }
@@ -302,7 +301,7 @@ const ClientDashboard = () => {
       console.error('Failed to save profile settings:', err);
       const msg = err.response?.data?.message || err.message || 'Failed to save profile settings.';
       setProfileError(msg);
-      alert(msg);
+      setCustomAlert({ isOpen: true, title: 'Error', message: msg });
     } finally {
       setProfileSaving(false);
     }
@@ -456,7 +455,7 @@ const ClientDashboard = () => {
     // Welcome Notification (always present)
     list.push({
       id: 'welcome',
-      title: 'Welcome to DMS Cab Servicese',
+      title: 'Welcome to DMS Cab Services',
       desc: 'Your premium client portal is initialized. Configure your profile settings.',
       time: 'Setup complete',
       read: true,
@@ -567,9 +566,7 @@ const ClientDashboard = () => {
 
     const socket = io(getSocketUrl(), {
       transports: ['websocket', 'polling'],
-      withCredentials: true,
-      auth: { token: user?.token },
-      query: { token: user?.token }
+      withCredentials: true
     });
 
     ridesList.forEach(ride => {
@@ -612,11 +609,11 @@ const ClientDashboard = () => {
           prev.map(r => r._id === selectedRideId ? { ...r, rating: userRating, feedback: feedbackText } : r)
         );
         setShowRatingModal(false);
-        alert('Thank you for rating your ride!');
+        setCustomAlert({ isOpen: true, title: 'Rating Submitted', message: 'Thank you for rating your ride!' });
       }
     } catch (err) {
       console.error('Failed to submit rating:', err);
-      alert(err.response?.data?.message || 'Failed to submit rating.');
+      setCustomAlert({ isOpen: true, title: 'Error', message: err.response?.data?.message || 'Failed to submit rating.' });
     } finally {
       setRatingSubmitting(false);
     }
@@ -630,11 +627,11 @@ const ClientDashboard = () => {
         {}
       );
       if (response.data.success) {
-        alert('A verification OTP has been emailed to you.');
+        setCustomAlert({ isOpen: true, title: 'OTP Sent', message: 'A verification OTP has been emailed to you.' });
       }
     } catch (err) {
       console.error('Failed to resend OTP:', err);
-      alert(err.response?.data?.message || 'Failed to resend OTP.');
+      setCustomAlert({ isOpen: true, title: 'Error', message: err.response?.data?.message || 'Failed to resend OTP.' });
     } finally {
       setResendingOtpId(null);
     }
@@ -671,7 +668,7 @@ const ClientDashboard = () => {
     }
   }, [activeRide, ridesList]);
 
-  if (loading || !user) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center space-y-4">
@@ -680,6 +677,10 @@ const ClientDashboard = () => {
         </div>
       </div>
     );
+  }
+
+  if (!user) {
+    return <NotFoundPage />;
   }
 
   // Format dynamic stats
@@ -794,9 +795,16 @@ const ClientDashboard = () => {
             <span className="text-[9px] text-[#F8C301] font-bold uppercase tracking-wider">Start Verification Code</span>
             
             {ride.rideOtp ? (
-              <div className="text-2xl font-bold font-mono tracking-[4px] text-[#F8C301] bg-black/40 border border-[#003893]/30 px-6 py-1.5 rounded-lg shadow-inner">
-                {ride.rideOtp}
-              </div>
+              <button
+                onClick={() => setCustomAlert({
+                  isOpen: true,
+                  title: 'Chauffeur Verification OTP',
+                  message: `Your ride verification OTP is ${ride.rideOtp}. Please share this code verbally with your chauffeur to start the journey.`
+                })}
+                className="bg-[#003893] text-white hover:bg-[#002d72] font-semibold text-xs py-2 px-4 rounded-xl transition-all shadow-md cursor-pointer uppercase tracking-wider animate-pulse"
+              >
+                Reveal OTP
+              </button>
             ) : (
               <div className="text-xs text-gray-400 italic">
                 Generating verification code...
@@ -804,7 +812,7 @@ const ClientDashboard = () => {
             )}
             
             <p className="text-[10px] text-gray-400 max-w-[250px] leading-relaxed">
-              Tell this code to your chauffeur to authorize and start the journey.
+              Share this code verbally with your chauffeur. It should not be displayed in the page DOM.
             </p>
             
             <button
@@ -817,31 +825,43 @@ const ClientDashboard = () => {
           </div>
         )}
 
-        {/* Action button */}
         {isPending && (
           <button
-            onClick={async () => {
-              if (window.confirm('Are you sure you want to cancel this booking?')) {
-                try {
-                  const response = await api.put(`/rides/${ride._id}/cancel`);
-                  if (response.data.success) {
-                    alert('Booking cancelled successfully.');
-                    fetchRides(true);
-                    
-                    // Fetch fresh profile data to update wallet balance if refunded
-                    try {
-                      const meResponse = await getMe();
-                      if (meResponse.success && meResponse.user) {
-                        updateUser(meResponse.user);
+            onClick={() => {
+              setConfirmModal({
+                isOpen: true,
+                title: 'Cancel Booking',
+                message: 'Are you sure you want to cancel this booking?',
+                onConfirm: async () => {
+                  try {
+                    const response = await api.put(`/rides/${ride._id}/cancel`);
+                    if (response.data.success) {
+                      setCustomAlert({
+                        isOpen: true,
+                        title: 'Cancelled',
+                        message: 'Booking cancelled successfully.'
+                      });
+                      fetchRides(true);
+                      
+                      // Fetch fresh profile data to update wallet balance if refunded
+                      try {
+                        const meResponse = await api.get('/auth/me');
+                        if (meResponse.data && meResponse.data.success && meResponse.data.user) {
+                          updateUser(meResponse.data.user);
+                        }
+                      } catch (e) {
+                        console.error('Failed to refresh user profile:', e);
                       }
-                    } catch (e) {
-                      console.error('Failed to refresh user profile:', e);
                     }
+                  } catch (err) {
+                    setCustomAlert({
+                      isOpen: true,
+                      title: 'Error',
+                      message: err.response?.data?.message || 'Failed to cancel booking.'
+                    });
                   }
-                } catch (err) {
-                  alert(err.response?.data?.message || 'Failed to cancel booking.');
                 }
-              }
+              });
             }}
             className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-500 border border-red-500/20 font-bold py-3 rounded-xl text-xs uppercase tracking-wider transition-all cursor-pointer"
           >
@@ -920,60 +940,41 @@ const ClientDashboard = () => {
   const renderDesktopProfile = () => renderMobileProfile();
 
   const handleDeleteAccount = async () => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete your account? This action will deactivate your profile and log you out, but your ride history will be preserved for compliance."
-    );
-    if (!confirmDelete) return;
-
-    try {
-      const response = await deleteAccount();
-      alert(response.message || 'Account deleted successfully.');
-
-      // Clear session storage context
-      sessionStorage.removeItem('dms_luxe_user');
-      sessionStorage.removeItem('dms_luxe_tab_id');
-      window.name = '';
-
-      // Redirect to home
-      window.location.replace('/');
-    } catch (err) {
-      console.error('Failed to delete account:', err);
-      alert(err.response?.data?.message || 'Failed to delete account. Please try again.');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Delete Account',
+      message: 'Are you sure you want to delete your account? This action will deactivate your profile and log you out, but your ride history will be preserved for compliance.',
+      onConfirm: async () => {
+        try {
+          const response = await deleteAccount();
+          setCustomAlert({
+            isOpen: true,
+            title: 'Account Deleted',
+            message: response.message || 'Account deleted successfully.',
+            onConfirm: () => {
+              // Clear session storage context and logout
+              sessionStorage.removeItem('dms_luxe_user');
+              window.location.replace('/');
+            }
+          });
+        } catch (err) {
+          console.error('Failed to delete account:', err);
+          setCustomAlert({ isOpen: true, title: 'Error', message: err.response?.data?.message || 'Failed to delete account. Please try again.' });
+        }
+      }
+    });
   };
 
 
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white flex items-center justify-center pt-[76px]">
-        <div className="text-center space-y-4">
-          <div className="w-10 h-10 border-4 border-[#003893]/20 border-t-[#003893] rounded-full animate-spin mx-auto"></div>
-          <p className="text-[#003893] font-serif text-xs tracking-widest uppercase animate-pulse font-bold">Verifying Security Credentials...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return <NotFoundPage />;
-  }
+  // Consolidated loading check handled at top.
 
   return (
     <div className="min-h-[calc(100vh-76px)] bg-white text-slate-900 pt-[76px]">
       {isMobileViewport ? (
         // Mobile Layout (Page 1 & 2)
         <div className="flex flex-col min-h-screen pb-20">
-          {/* Mobile Top Header */}
-          <header className="flex justify-between items-center px-6 py-3 bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm hidden">
-            <button className="text-slate-500 hover:text-slate-800">
-              <Menu size={20} />
-            </button>
-            <ImageWithFallback src="/logo.png" alt="DMS" className="h-8 object-contain" />
-            <button onClick={() => setIsProfileOpen(true)} className="w-8 h-8 rounded-full bg-[#003893]/10 flex items-center justify-center border border-[#003893]/20 text-[#003893] font-bold text-sm">
-              {user.fullName?.charAt(0).toUpperCase() || 'A'}
-            </button>
-          </header>
+          {/* Mobile Top Header removed (hidden dead code) */}
 
           {/* Active Tab View */}
           <main className="flex-grow p-4">
@@ -1325,6 +1326,58 @@ const ClientDashboard = () => {
               </div>
             </form>
           </motion.div>
+        </div>
+      )}
+
+      {/* Custom Confirmation Modal (PROD-07) */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-6 text-left animate-in fade-in zoom-in-95 duration-200">
+            <div>
+              <h3 className="text-lg font-serif font-bold text-slate-900">{confirmModal.title}</h3>
+              <p className="text-slate-500 text-xs mt-2 leading-relaxed">{confirmModal.message}</p>
+            </div>
+            <div className="flex justify-end space-x-3 text-xs font-semibold pt-2">
+              <button
+                onClick={() => setConfirmModal({ isOpen: false })}
+                className="px-4 py-2.5 border border-slate-200 hover:border-slate-300 rounded-xl text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  if (confirmModal.onConfirm) confirmModal.onConfirm();
+                  setConfirmModal({ isOpen: false });
+                }}
+                className="px-5 py-2.5 bg-red-655 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors cursor-pointer"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Alert Modal (PROD-07) */}
+      {customAlert.isOpen && (
+        <div className="fixed inset-0 z-[999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-6 text-left animate-in fade-in zoom-in-95 duration-200">
+            <div>
+              <h3 className="text-lg font-serif font-bold text-slate-900">{customAlert.title}</h3>
+              <p className="text-slate-500 text-xs mt-2 leading-relaxed">{customAlert.message}</p>
+            </div>
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={() => {
+                  if (customAlert.onConfirm) customAlert.onConfirm();
+                  setCustomAlert({ isOpen: false });
+                }}
+                className="px-6 py-2.5 bg-[#003893] hover:bg-[#002d72] text-white rounded-xl text-xs font-semibold transition-colors cursor-pointer"
+              >
+                OK
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
