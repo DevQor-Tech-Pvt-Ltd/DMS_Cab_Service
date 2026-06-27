@@ -277,7 +277,7 @@ exports.depositWallet = async (req, res) => {
       razorpayOrder
     });
   } catch (error) {
-    logger.error('Error initiating wallet deposit: %s', error.message);
+    logger.error('Error initiating wallet deposit: %s \nStack: %s', error.message, error.stack);
     return res.status(500).json({
       success: false,
       message: 'Failed to initiate wallet deposit',

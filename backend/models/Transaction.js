@@ -52,4 +52,12 @@ transactionSchema.index({ user: 1, type: 1 });
 transactionSchema.index({ ride: 1 });
 transactionSchema.index({ createdAt: -1 });
 
+// Pre-save hook to generate a unique fallback for razorpayPaymentId if not provided to prevent unique index conflicts
+transactionSchema.pre('save', function (next) {
+  if (!this.razorpayPaymentId) {
+    this.razorpayPaymentId = `tx_gen_${this._id}`;
+  }
+  next();
+});
+
 module.exports = mongoose.model('Transaction', transactionSchema);
