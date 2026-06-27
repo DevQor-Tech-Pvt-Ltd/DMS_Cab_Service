@@ -69,7 +69,7 @@ const ContactPage = () => {
     <div className="bg-white min-h-screen flex flex-col">
       {/* Hero Header */}
       <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden border-b border-slate-100">
-        <div className="absolute inset-0 z-0 opacity-20">
+        <div className="absolute inset-0 z-0 opacity-90">
           <ImageWithFallback
             src="/map-bg.png"
             alt="Contact DMS"
@@ -80,16 +80,16 @@ const ContactPage = () => {
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center space-x-2 mb-4 animate-fade-in-up">
-            <div className="w-8 h-[1px] bg-[#003893]"></div>
-            <span className="text-[#003893] text-sm font-semibold tracking-[0.2em] uppercase">Get In Touch</span>
-            <div className="w-8 h-[1px] bg-[#003893]"></div>
+            <div className="w-8 h-[1px] bg-[#F8C301]"></div>
+            <span className="text-[#F8C301] text-sm font-semibold tracking-[0.2em] uppercase">Get In Touch</span>
+            <div className="w-8 h-[1px] bg-[#F8C301]"></div>
           </div>
 
-          <h1 className="text-5xl md:text-6xl font-serif text-slate-900 mb-6 animate-fade-in-up animation-delay-100">
-            Contact <span className="text-[#003893] italic">DMS</span>
+          <h1 className="text-5xl md:text-6xl font-serif text-white mb-6 animate-fade-in-up animation-delay-100">
+            Contact <span className="text-[#F8C301] italic">DMS</span>
           </h1>
 
-          <p className="text-slate-600 text-lg max-w-2xl mx-auto animate-fade-in-up animation-delay-200">
+          <p className="text-slate-200 text-lg max-w-2xl mx-auto animate-fade-in-up animation-delay-200 font-medium">
             Our dedicated concierge team is available 24/7 to assist with your reservations, special requests, and general inquiries.
           </p>
         </div>
