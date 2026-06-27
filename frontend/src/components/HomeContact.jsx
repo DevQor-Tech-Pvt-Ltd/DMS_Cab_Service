@@ -19,7 +19,7 @@ const HomeContact = () => {
 
             <div className="relative rounded-2xl overflow-hidden border border-slate-200">
               <ImageWithFallback
-                src="/innova.png"
+                src="/innova2.jpg"
                 alt="Innova"
                 className="w-full h-[260px] sm:h-[380px] lg:h-[440px] object-cover scale-100 group-hover:scale-103 transition-transform duration-[800ms] ease-out"
                 loading="lazy"
@@ -34,26 +34,26 @@ const HomeContact = () => {
               </div>
             </div>
           </div>
-
           {/* Right: High-End Content */}
           <div className="w-full lg:w-1/2">
-            <div className="flex items-center space-x-4 mb-6">
+            <div className="flex items-center justify-center lg:justify-start space-x-4 mb-6">
               <div className="w-12 h-[1px] bg-[#003893]"></div>
               <span className="text-[#003893] text-sm font-semibold tracking-[0.2em] uppercase">Private Concierge</span>
+              <div className="w-12 h-[1px] bg-[#003893] lg:hidden"></div>
             </div>
 
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-slate-900 mb-8 leading-[1.1]">
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-serif text-slate-900 mb-8 leading-[1.1] text-center lg:text-left">
               At Your <br /><span className="text-[#003893] italic">Service.</span>
             </h2>
 
-            <p className="text-slate-650 text-lg mb-14 font-light leading-relaxed max-w-lg">
+            <p className="text-slate-650 text-lg mb-14 font-light leading-relaxed max-w-lg text-center lg:text-left mx-auto lg:mx-0">
               Experience the pinnacle of personal transportation. Our dedicated concierge team is available 24 hours a day to orchestrate your perfect journey.
             </p>
 
             <div className="space-y-8">
               {/* Direct Line */}
-              <div className="flex items-start space-x-6 pb-8 border-b border-slate-200 group">
-                <div className="w-14 h-14 rounded-full border border-[#003893]/30 flex items-center justify-center flex-shrink-0 group-hover:bg-[#003893]/10 transition-colors">
+              <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left space-y-4 sm:space-y-0 sm:space-x-6 pb-8 border-b border-slate-200 group">
+                <div className="w-14 h-14 rounded-full border border-[#003893]/30 flex items-center justify-center flex-shrink-0 group-hover:bg-[#003893]/10 transition-colors mx-auto sm:mx-0">
                   <Phone size={22} className="text-[#003893]" />
                 </div>
                 <div>
@@ -65,8 +65,8 @@ const HomeContact = () => {
               </div>
 
               {/* Email */}
-              <div className="flex items-start space-x-6 pb-8 border-b border-slate-200 group">
-                <div className="w-14 h-14 rounded-full border border-[#003893]/30 flex items-center justify-center flex-shrink-0 group-hover:bg-[#003893]/10 transition-colors">
+              <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left space-y-4 sm:space-y-0 sm:space-x-6 pb-8 border-b border-slate-200 group">
+                <div className="w-14 h-14 rounded-full border border-[#003893]/30 flex items-center justify-center flex-shrink-0 group-hover:bg-[#003893]/10 transition-colors mx-auto sm:mx-0">
                   <Mail size={22} className="text-[#003893]" />
                 </div>
                 <div>
@@ -78,7 +78,7 @@ const HomeContact = () => {
               </div>
             </div>
 
-            <div className="mt-14">
+            <div className="mt-14 flex justify-center lg:justify-start">
               <Link
                 to="/contact"
                 className="inline-flex items-center space-x-4 border border-[#003893] px-8 py-4 text-[#003893] hover:bg-[#003893] hover:text-white transition-all duration-300 uppercase tracking-[0.15em] text-sm font-semibold group"
@@ -88,7 +88,6 @@ const HomeContact = () => {
               </Link>
             </div>
           </div>
-
         </div>
       </div>
     </section>

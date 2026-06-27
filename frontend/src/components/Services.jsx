@@ -214,15 +214,15 @@ const Services = () => {
           </div>
 
           {/* Content Side */}
-          <div className="md:w-7/12 p-8 md:p-12 flex flex-col justify-center">
+          <div className="md:w-7/12 p-8 md:p-12 flex flex-col justify-center items-center md:items-start text-center md:text-left">
             <h3 className="text-3xl font-serif text-[#003893] mb-4">
               Ready To Experience Luxury?
             </h3>
-            <p className="text-slate-650 mb-8 max-w-xl text-sm md:text-base font-light">
+            <p className="text-slate-650 mb-8 max-w-xl text-sm md:text-base font-light mx-auto md:mx-0">
               Book your premium chauffeur service today and travel in comfort, style and complete peace of mind.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
+            <div className="flex flex-col sm:flex-row items-center justify-center md:justify-start gap-6 w-full sm:w-auto">
               <a
                 href="/get-started"
                 className="bg-[#f2b705] text-[#003893] hover:bg-[#e5ad04] px-8 py-3.5 rounded-lg transition-colors font-extrabold flex items-center justify-center space-x-2 w-full sm:w-auto shadow-md"
@@ -231,11 +231,11 @@ const Services = () => {
                 <ArrowRight size={18} />
               </a>
 
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center justify-center sm:justify-start space-x-4">
                 <div className="w-12 h-12 rounded-full border border-[#003893]/30 flex items-center justify-center">
                   <Phone className="text-[#003893]" size={20} />
                 </div>
-                <div>
+                <div className="text-left">
                   <div className="text-xs text-slate-500 mb-1">Call Us Anytime</div>
                   <div className="text-slate-900 font-semibold">+91 9903941219</div>
                 </div>

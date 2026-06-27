@@ -38,9 +38,9 @@ const Navbar = () => {
 
     if (linkPath !== location.pathname) return false;
 
-    // For Home link (no query params), only active on exact path with no tab/redirect
+    // For Home link (no query params), only active on exact path with no tab/redirect and no hash
     if (link.name === 'Home') {
-      return location.pathname === '/' && !location.search;
+      return location.pathname === '/' && !location.search && !location.hash;
     }
 
     // For Activity/Wallet: match query params (tab= or redirect=)
@@ -165,7 +165,7 @@ const Navbar = () => {
                   <Link
                     key={link.name}
                     to={link.path}
-                    className={`block text-[18px] font-bold py-3 transition-colors border-b border-slate-100 ${isLinkActive(link)
+                    className={`block text-[18px] font-bold py-3 text-center transition-colors border-b border-slate-100 ${isLinkActive(link)
                       ? 'text-[#0B3D91]'
                       : 'text-[#0F172A] hover:text-[#0B3D91]'
                       }`}
@@ -183,7 +183,7 @@ const Navbar = () => {
                 <div className="pt-4 space-y-4">
                   {loading && !user ? (
                     <div className="space-y-4 animate-pulse">
-                      <div className="flex items-center space-x-2 py-1">
+                      <div className="flex items-center justify-center space-x-2 py-1">
                         <div className="w-6 h-6 rounded-full bg-slate-100"></div>
                         <div className="h-4 w-24 bg-slate-100 rounded"></div>
                       </div>
@@ -197,7 +197,7 @@ const Navbar = () => {
                               setIsOpen(false);
                               setIsProfileOpen(true);
                             }}
-                            className="flex items-center space-x-3 text-left w-full text-[#0B3D91] hover:text-[#093073] py-3 font-bold border-b border-slate-100"
+                            className="flex items-center justify-center space-x-3 text-center w-full text-[#0B3D91] hover:text-[#093073] py-3 font-bold border-b border-slate-100"
                           >
                             {user.profilePicture ? (
                               <ImageWithFallback
@@ -214,7 +214,7 @@ const Navbar = () => {
                           </button>
                           <Link
                             to={getDashboardPath()}
-                            className="block text-[#0B3D91] hover:text-[#093073] py-3 font-bold border-b border-slate-100 text-[16px]"
+                            className="block text-center text-[#0B3D91] hover:text-[#093073] py-3 font-bold border-b border-slate-100 text-[16px]"
                             onClick={() => setIsOpen(false)}
                           >
                             Dashboard
@@ -224,7 +224,7 @@ const Navbar = () => {
                               logout();
                               setIsOpen(false);
                             }}
-                            className="block text-left w-full text-slate-500 hover:text-slate-800 py-3 font-bold text-[16px]"
+                            className="block text-center w-full text-slate-500 hover:text-slate-800 py-3 font-bold text-[16px]"
                           >
                             Logout
                           </button>
@@ -232,7 +232,7 @@ const Navbar = () => {
                       ) : (
                         <Link
                           to="/auth"
-                          className="block text-[#0B3D91] hover:text-[#093073] py-3 font-bold border-b border-slate-100 text-[16px]"
+                          className="block text-center text-[#0B3D91] hover:text-[#093073] py-3 font-bold border-b border-slate-100 text-[16px]"
                           onClick={() => setIsOpen(false)}
                         >
                           Sign In / Sign Up

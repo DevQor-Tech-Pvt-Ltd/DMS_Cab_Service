@@ -16,9 +16,12 @@ const ClientActivity = ({
 
   const getVehicleImage = (type) => {
     const t = (type || '').toLowerCase();
-    if (t.includes('v-class') || t.includes('v class') || t.includes('van')) return '/ertiga.jpeg';
-    if (t.includes('range rover') || t.includes('rover') || t.includes('suv')) return '/innova.png';
-    return '/ertiga.jpeg';
+    if (t.includes('innova')) return '/innova2.jpg';
+    if (t.includes('ertiga')) return '/ertiga2.jpg';
+    if (t.includes('dzire') || t.includes('desire') || t.includes('msdesire')) return '/msdesire.jpg';
+    if (t.includes('v-class') || t.includes('v class') || t.includes('van')) return '/ertiga2.jpg';
+    if (t.includes('range rover') || t.includes('rover') || t.includes('suv')) return '/innova2.jpg';
+    return '/ertiga2.jpg';
   };
 
   const filteredRides = getFilteredRides().filter(ride => {

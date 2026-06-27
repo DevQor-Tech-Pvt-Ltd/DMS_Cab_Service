@@ -101,7 +101,7 @@ const ContactPage = () => {
           <div className="flex flex-col lg:flex-row gap-16">
 
             {/* Left Column: Contact Info */}
-            <div className="w-full lg:w-5/12 animate-fade-in-up animation-delay-100">
+            <div className="w-full lg:w-5/12 animate-fade-in-up animation-delay-100 text-center lg:text-left">
               <h2 className="text-3xl font-serif text-slate-900 mb-8">Reach Our Concierge</h2>
               <p className="text-slate-600 mb-12 leading-relaxed">
                 Whether you require an immediate airport transfer, a dedicated chauffeur for the day, or have questions about a corporate account, we are at your service.
@@ -109,8 +109,8 @@ const ContactPage = () => {
 
               <div className="space-y-8">
                 {/* Contact Item */}
-                <div className="flex items-start space-x-5">
-                  <div className="w-12 h-12 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 border border-[#003893]/20">
+                <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left space-y-3 sm:space-y-0 sm:space-x-5">
+                  <div className="w-12 h-12 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 border border-[#003893]/20 mx-auto sm:mx-0">
                     <Phone className="text-[#003893]" size={20} />
                   </div>
                   <div>
@@ -121,8 +121,8 @@ const ContactPage = () => {
                 </div>
 
                 {/* Contact Item */}
-                <div className="flex items-start space-x-5">
-                  <div className="w-12 h-12 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 border border-[#003893]/20">
+                <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left space-y-3 sm:space-y-0 sm:space-x-5">
+                  <div className="w-12 h-12 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 border border-[#003893]/20 mx-auto sm:mx-0">
                     <Mail className="text-[#003893]" size={20} />
                   </div>
                   <div>
@@ -133,19 +133,19 @@ const ContactPage = () => {
                 </div>
 
                 {/* Contact Item */}
-                <div className="flex items-start space-x-5">
-                  <div className="w-12 h-12 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 border border-[#003893]/20">
+                <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left space-y-3 sm:space-y-0 sm:space-x-5">
+                  <div className="w-12 h-12 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 border border-[#003893]/20 mx-auto sm:mx-0">
                     <MapPin className="text-[#003893]" size={20} />
                   </div>
                   <div>
                     <h4 className="text-slate-900 font-serif text-lg mb-1">Global Headquarters</h4>
-                    <p className="text-slate-600 mb-1">Cabin 19, 8th Floor, Delta Tower (Awfis) Cabin1Sector V, Salt Lake Bypass<br />Bidhannagar Kolkata, West Bengal – 700091</p>
+                    <p className="text-slate-600 mb-1">Cabin 19, 8th Floor, Delta Tower (Awfis) Sector V, Salt Lake Bypass<br />Bidhannagar Kolkata, West Bengal – 700091</p>
                   </div>
                 </div>
 
                 {/* Contact Item */}
-                <div className="flex items-start space-x-5">
-                  <div className="w-12 h-12 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 border border-[#003893]/20">
+                <div className="flex flex-col items-center text-center sm:flex-row sm:items-start sm:text-left space-y-3 sm:space-y-0 sm:space-x-5">
+                  <div className="w-12 h-12 rounded-full bg-[#003893]/10 flex items-center justify-center flex-shrink-0 border border-[#003893]/20 mx-auto sm:mx-0">
                     <Clock className="text-[#003893]" size={20} />
                   </div>
                   <div>
