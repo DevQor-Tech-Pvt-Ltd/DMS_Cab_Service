@@ -263,7 +263,7 @@ exports.acceptRide = async (req, res) => {
 
     // Populate newly assigned driver and client details
     await ride.populate('client', 'fullName email phone');
-    await ride.populate('driver', 'fullName phone vehicleNumber vehicleType');
+    await ride.populate('driver', 'fullName phone vehicleNumber vehicleType averageRating');
 
     // Invalidate dashboard stats cache
     cache.clearDashboardCache();
@@ -347,7 +347,7 @@ exports.driverArrived = async (req, res) => {
 
     // Populate client and driver details
     await ride.populate('client', 'fullName email phone');
-    await ride.populate('driver', 'fullName phone vehicleNumber vehicleType');
+    await ride.populate('driver', 'fullName phone vehicleNumber vehicleType averageRating');
 
     // Invalidate dashboard stats cache
     cache.clearDashboardCache();
@@ -472,7 +472,7 @@ exports.verifyOtp = async (req, res) => {
     await ride.save();
 
     await ride.populate('client', 'fullName email phone');
-    await ride.populate('driver', 'fullName phone vehicleNumber vehicleType');
+    await ride.populate('driver', 'fullName phone vehicleNumber vehicleType averageRating');
 
     // Invalidate dashboard stats cache
     cache.clearDashboardCache();
@@ -547,7 +547,7 @@ exports.resendOtp = async (req, res) => {
     await ride.save();
 
     await ride.populate('client', 'fullName email phone');
-    await ride.populate('driver', 'fullName phone vehicleNumber vehicleType');
+    await ride.populate('driver', 'fullName phone vehicleNumber vehicleType averageRating');
 
     // Notify dashboard countdowns in room in real-time (C-2)
     const io = req.app.get('io');
@@ -720,10 +720,14 @@ exports.completeRide = async (req, res) => {
 // Rate and review a completed ride booking
 exports.rateRide = async (req, res) => {
   try {
-    const { rating, feedback } = req.body;
+    const { rating, feedback, ratingTags } = req.body;
 
     if (!rating || rating < 1 || rating > 5) {
       return res.status(400).json({ success: false, message: 'Please provide a valid rating between 1 and 5.' });
+    }
+
+    if (ratingTags && (!Array.isArray(ratingTags) || !ratingTags.every(t => typeof t === 'string'))) {
+      return res.status(400).json({ success: false, message: 'Rating tags must be an array of strings.' });
     }
 
     const ride = await Ride.findOne({ _id: req.params.id || req.params.rideId, client: req.user._id });
@@ -742,6 +746,7 @@ exports.rateRide = async (req, res) => {
 
     ride.rating = rating;
     ride.feedback = feedback || '';
+    ride.ratingTags = ratingTags || [];
     await ride.save();
 
     // Update driver's overall rating (Phase 5)
@@ -765,7 +770,8 @@ exports.rateRide = async (req, res) => {
     if (io) {
       io.to(`ride_${ride._id}`).emit(`ride_status_${ride._id}`, {
         rating: ride.rating,
-        feedback: ride.feedback
+        feedback: ride.feedback,
+        ratingTags: ride.ratingTags
       });
     }
 
@@ -979,7 +985,7 @@ exports.getRides = async (req, res) => {
     }
     const rides = await rideQuery
       .populate('client', 'fullName email phone')
-      .populate('driver', 'fullName phone vehicleNumber vehicleType')
+      .populate('driver', 'fullName phone vehicleNumber vehicleType averageRating')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);
@@ -1014,7 +1020,7 @@ exports.getRideById = async (req, res) => {
     }
     const ride = await rideQuery
       .populate('client', 'fullName email phone')
-      .populate('driver', 'fullName phone vehicleNumber vehicleType');
+      .populate('driver', 'fullName phone vehicleNumber vehicleType averageRating');
 
     if (!ride) {
       return res.status(404).json({ success: false, message: 'Ride booking not found.' });

@@ -123,6 +123,10 @@ const rideSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    ratingTags: {
+      type: [String],
+      default: [],
+    },
     otpAuditLogs: {
       type: [
         {

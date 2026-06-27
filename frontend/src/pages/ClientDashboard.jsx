@@ -38,6 +38,9 @@ import ClientActivity from '../components/dashboard/ClientActivity';
 import ClientWallet from '../components/dashboard/ClientWallet';
 import ClientProfile from '../components/dashboard/ClientProfile';
 
+const POSITIVE_TAGS = ['Clean Vehicle', 'Safe Driving', 'Good Route', 'Polite Chauffeur', 'Punctual', 'Comfortable Ride'];
+const NEGATIVE_TAGS = ['Dirty Vehicle', 'Rash Driving', 'Unprofessional', 'Late Pickup', 'Poor Route', 'Noisy/Uncomfortable'];
+
 const SettingsIcon = ({ size = 18, className = '' }) => (
   <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
     <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.1a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
@@ -101,6 +104,7 @@ const ClientDashboard = () => {
   const [userRating, setUserRating] = useState(5);
   const [hoverRating, setHoverRating] = useState(0);
   const [feedbackText, setFeedbackText] = useState('');
+  const [selectedTags, setSelectedTags] = useState([]);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
 
   // Edit Profile form fields
@@ -587,6 +591,7 @@ const ClientDashboard = () => {
     setUserRating(5);
     setHoverRating(0);
     setFeedbackText('');
+    setSelectedTags([]);
     setShowRatingModal(true);
   };
 
@@ -600,13 +605,14 @@ const ClientDashboard = () => {
         `/rides/${selectedRideId}/rate`,
         {
           rating: userRating,
-          feedback: feedbackText
+          feedback: feedbackText,
+          ratingTags: selectedTags
         }
       );
 
       if (response.data.success) {
         setRidesList(prev =>
-          prev.map(r => r._id === selectedRideId ? { ...r, rating: userRating, feedback: feedbackText } : r)
+          prev.map(r => r._id === selectedRideId ? { ...r, rating: userRating, feedback: feedbackText, ratingTags: selectedTags } : r)
         );
         setShowRatingModal(false);
         setCustomAlert({ isOpen: true, title: 'Rating Submitted', message: 'Thank you for rating your ride!' });
@@ -774,7 +780,14 @@ const ClientDashboard = () => {
                 {ride.driver.fullName?.charAt(0).toUpperCase()}
               </div>
               <div>
-                <p className="text-xs font-bold text-white">{ride.driver.fullName}</p>
+                <div className="flex items-center space-x-2">
+                  <p className="text-xs font-bold text-white">{ride.driver.fullName}</p>
+                  {ride.driver.averageRating > 0 && (
+                    <span className="flex items-center text-[10px] text-amber-400 font-bold bg-amber-400/10 px-1.5 py-0.2 rounded border border-amber-400/20">
+                      ★ {ride.driver.averageRating.toFixed(1)}
+                    </span>
+                  )}
+                </div>
                 <p className="text-[10px] text-gray-400 font-medium">{ride.driver.vehicleType || 'Luxury Class'}</p>
                 <p className="text-[9px] font-bold tracking-widest text-[#F8C301] uppercase mt-0.5">{ride.driver.vehicleNumber}</p>
               </div>
@@ -1290,6 +1303,36 @@ const ClientDashboard = () => {
                   {userRating === 2 && 'Needs Improvement • 2/5'}
                   {userRating === 1 && 'Unsatisfactory • 1/5'}
                 </span>
+              </div>
+
+              {/* Dynamic Feedback Tags */}
+              <div className="space-y-2 text-left">
+                <p className="text-xs text-slate-500 uppercase tracking-wider block font-semibold">What went {userRating >= 4 ? 'well' : 'wrong'}?</p>
+                <div className="flex flex-wrap gap-2">
+                  {(userRating >= 4 ? POSITIVE_TAGS : NEGATIVE_TAGS).map((tag) => {
+                    const isSelected = selectedTags.includes(tag);
+                    return (
+                      <button
+                        type="button"
+                        key={tag}
+                        onClick={() => {
+                          setSelectedTags(prev => 
+                            prev.includes(tag) 
+                              ? prev.filter(t => t !== tag) 
+                              : [...prev, tag]
+                          );
+                        }}
+                        className={`text-xs px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-[#003893] border-[#003893] text-white font-semibold shadow-sm animate-none'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
 
               {/* Feedback Textarea */}

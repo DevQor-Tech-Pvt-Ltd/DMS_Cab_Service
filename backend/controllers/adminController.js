@@ -461,7 +461,7 @@ exports.getAllRides = async (req, res) => {
     const total = await Ride.countDocuments();
     const rides = await Ride.find()
       .populate('client', 'fullName email phone')
-      .populate('driver', 'fullName phone vehicleNumber vehicleType')
+      .populate('driver', 'fullName phone vehicleNumber vehicleType averageRating')
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit);

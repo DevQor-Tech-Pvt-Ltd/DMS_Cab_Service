@@ -591,6 +591,7 @@ const DriverDashboard = () => {
         passenger: r.passengerDetails?.fullName || 'Client',
         rating: r.rating,
         comment: r.feedback || 'Excellent journey.',
+        tags: r.ratingTags || [],
         date: timeStr
       };
     });

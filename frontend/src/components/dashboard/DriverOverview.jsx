@@ -592,7 +592,16 @@ const DriverOverview = ({
                       />
                     ))}
                   </div>
-                  <p className="text-sm text-slate-600 italic">"{review.comment}"</p>
+                  <p className="text-sm text-slate-600 italic mb-2">"{review.comment}"</p>
+                  {review.tags && review.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {review.tags.map((tag, tIdx) => (
+                        <span key={tIdx} className="bg-[#003893]/10 text-[#003893] text-[9px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border border-[#003893]/10">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))
             )}

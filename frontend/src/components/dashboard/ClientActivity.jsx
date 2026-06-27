@@ -155,9 +155,20 @@ const ClientActivity = ({
                         </button>
                       )}
                       {isCompleted && isRated && (
-                        <span className="text-amber-500 font-bold text-[9px] uppercase tracking-wider flex items-center">
-                          ⭐ {ride.rating}/5 Rated
-                        </span>
+                        <div className="flex flex-col items-end">
+                          <span className="text-amber-500 font-bold text-[9px] uppercase tracking-wider flex items-center">
+                            ⭐ {ride.rating}/5 Rated
+                          </span>
+                          {ride.ratingTags && ride.ratingTags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1.5 justify-end max-w-[200px]">
+                              {ride.ratingTags.map((tag, tIdx) => (
+                                <span key={tIdx} className="bg-slate-200/70 text-slate-600 text-[7.5px] px-1.5 py-0.5 rounded-full uppercase font-bold tracking-wider">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       )}
                       {['driver_assigned', 'driver_arrived'].includes(ride.status) && (
                         <button
