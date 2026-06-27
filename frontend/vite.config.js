@@ -4,8 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
-  // Load env file based on mode in the current working directory.
-  const env = loadEnv(mode, process.cwd(), '');
+  // Load env file based on mode in the configuration directory.
+  const env = loadEnv(mode, __dirname, '');
   let apiURL = env.VITE_API_URL || 'https://dms-cab-service-d2up.onrender.com/api/v1';
 
   // Ensure that the API URL ends with /api/v1 to prevent 404 router errors
