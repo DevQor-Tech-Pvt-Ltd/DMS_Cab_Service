@@ -69,11 +69,11 @@ const ContactPage = () => {
     <div className="bg-white min-h-screen flex flex-col">
       {/* Hero Header */}
       <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden border-b border-slate-100">
-        <div className="absolute inset-0 z-0 opacity-30">
+        <div className="absolute inset-0 z-0 opacity-20">
           <ImageWithFallback
             src="/map-bg.png"
             alt="Contact DMS"
-            className="w-full h-full object-cover filter invert"
+            className="w-full h-full object-cover"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent"></div>
         </div>
