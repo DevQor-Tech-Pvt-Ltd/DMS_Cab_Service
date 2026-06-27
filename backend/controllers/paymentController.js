@@ -277,11 +277,17 @@ exports.depositWallet = async (req, res) => {
       razorpayOrder
     });
   } catch (error) {
-    logger.error('Error initiating wallet deposit: %s \nStack: %s', error.message, error.stack);
+    logger.error({
+      message: error.message,
+      stack: error.stack,
+      route: req.originalUrl,
+      user: req.user?._id
+    });
     return res.status(500).json({
       success: false,
-      message: 'Failed to initiate wallet deposit',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+      errorCode: 'WALLET_DEPOSIT_FAILED',
+      message: 'Unable to initiate wallet deposit.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -339,25 +345,43 @@ exports.verifyWallet = async (req, res) => {
       }
     }
 
-    // Find the pending transaction
-    const txn = await Transaction.findOne({ razorpayOrderId: razorpay_order_id, status: 'pending' });
+    // Check if transaction was already processed successfully to prevent race conditions / duplicate credits
+    const alreadySuccess = await Transaction.findOne({ razorpayOrderId: razorpay_order_id, status: 'success' });
+    if (alreadySuccess) {
+      const user = await User.findById(req.user._id);
+      return res.status(200).json({
+        success: true,
+        message: 'Wallet balance already updated.',
+        walletBalance: user.walletBalance,
+        user: user.toJSON()
+      });
+    }
+
+    // Find and atomically transition the status of the pending transaction
+    const txn = await Transaction.findOneAndUpdate(
+      { razorpayOrderId: razorpay_order_id, status: 'pending' },
+      { 
+        status: 'success', 
+        razorpayPaymentId: razorpay_payment_id,
+        gatewayPaymentId: razorpay_payment_id,
+        gatewaySignature: razorpay_signature
+      },
+      { new: true }
+    );
+
     if (!txn) {
-      return res.status(404).json({ success: false, message: 'Pending transaction record not found or already verified.' });
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Pending transaction record not found or already verified.' 
+      });
     }
 
     // Double check ownership
     if (txn.user.toString() !== req.user._id.toString()) {
+      // Revert status to pending in case of model error to be safe
+      txn.status = 'pending';
+      await txn.save();
       return res.status(403).json({ success: false, message: 'Forbidden: You do not own this transaction.' });
-    }
-
-    // Check if signature/payment has already been used to prevent replay attacks
-    const signatureUsed = await Transaction.exists({ razorpayPaymentId: razorpay_payment_id });
-    if (signatureUsed) {
-      logger.warn(`[REPLAY ATTACK DETECTED] Wallet signature already used. payment_id=${razorpay_payment_id}`);
-      return res.status(400).json({
-        success: false,
-        message: 'Payment verification failed. Replay attack detected.'
-      });
     }
 
     // Verify order amount matches transaction amount via Razorpay API to prevent parameter manipulation
@@ -366,6 +390,8 @@ exports.verifyWallet = async (req, res) => {
         const razorpayOrderDetails = await razorpay.orders.fetch(razorpay_order_id);
         if (razorpayOrderDetails.amount !== Math.round(txn.amount * 100)) {
           logger.error(`[TAMPER DETECTED] Wallet Amount mismatch: Razorpay Order Amount (${razorpayOrderDetails.amount} paise) vs Txn Amount (${Math.round(txn.amount * 100)} paise).`);
+          txn.status = 'failed';
+          await txn.save();
           return res.status(400).json({
             success: false,
             message: 'Payment verification failed. Amount mismatch detected.'
@@ -373,21 +399,15 @@ exports.verifyWallet = async (req, res) => {
         }
       } catch (fetchError) {
         logger.warn(`[Razorpay Wallet Order Fetch Warning] Failed to fetch order details for validation from Razorpay, falling back to signature validation. order=${razorpay_order_id}: ${fetchError.message}`);
-        // Do not crash/return 500 here since signature verification already passed
       }
     }
-
-    // Mark transaction as successful
-    txn.status = 'success';
-    txn.razorpayPaymentId = razorpay_payment_id;
-    await txn.save();
 
     // Increment user balance
     const user = await User.findById(req.user._id);
     if (!user) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
-    user.walletBalance = (user.walletBalance || 0) + txn.amount;
+    user.walletBalance = Number(((user.walletBalance || 0) + txn.amount).toFixed(2));
     const updatedUser = await user.save();
 
     return res.status(200).json({
@@ -397,11 +417,17 @@ exports.verifyWallet = async (req, res) => {
       user: updatedUser.toJSON()
     });
   } catch (error) {
-    logger.error('Error verifying wallet payment: %s', error.message);
+    logger.error({
+      message: error.message,
+      stack: error.stack,
+      route: req.originalUrl,
+      user: req.user?._id
+    });
     return res.status(500).json({
       success: false,
-      message: 'Internal server error during payment verification',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+      errorCode: 'WALLET_VERIFICATION_FAILED',
+      message: 'Unable to verify wallet deposit.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 };
@@ -546,24 +572,26 @@ exports.razorpayWebhook = async (req, res) => {
       }
 
       // B. Check if Wallet Transaction
-      const txn = await Transaction.findOne({ razorpayOrderId: orderId });
+      const txn = await Transaction.findOneAndUpdate(
+        { razorpayOrderId: orderId, status: 'pending' },
+        { 
+          status: 'success', 
+          razorpayPaymentId: paymentId,
+          gatewayPaymentId: paymentId
+        },
+        { new: true }
+      );
       if (txn) {
-        if (txn.status === 'pending') {
-          txn.status = 'success';
-          if (paymentId) txn.razorpayPaymentId = paymentId;
-          await txn.save();
-
-          const user = await User.findById(txn.user);
-          if (user) {
-            user.walletBalance = (user.walletBalance || 0) + txn.amount;
-            await user.save();
-            logger.info(`[Razorpay Webhook] Webhook successfully credited wallet for user: ${user._id}, order: ${orderId}`);
-          } else {
-            logger.warn(`[Razorpay Webhook] User not found for transaction: ${txn._id}`);
-          }
+        const user = await User.findById(txn.user);
+        if (user) {
+          user.walletBalance = Number(((user.walletBalance || 0) + txn.amount).toFixed(2));
+          await user.save();
+          logger.info(`[Razorpay Webhook] Webhook successfully credited wallet for user: ${user._id}, order: ${orderId}`);
         } else {
-          logger.info(`[Razorpay Webhook] Wallet transaction already processed for order: ${orderId}`);
+          logger.warn(`[Razorpay Webhook] User not found for transaction: ${txn._id}`);
         }
+      } else {
+        logger.info(`[Razorpay Webhook] Wallet transaction already processed or not found for order: ${orderId}`);
       }
     } else if (event === 'payment.failed') {
       let orderId = null;

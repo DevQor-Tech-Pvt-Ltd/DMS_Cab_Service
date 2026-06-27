@@ -3,6 +3,9 @@ if (dns.setDefaultResultOrder) {
   dns.setDefaultResultOrder('ipv4first');
 }
 require('dotenv').config();
+const validateEnv = require('./config/envValidation');
+validateEnv();
+
 const Sentry = require("@sentry/node");
 
 if (process.env.SENTRY_DSN) {
