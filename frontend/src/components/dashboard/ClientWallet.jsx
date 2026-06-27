@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CreditCard, ShieldCheck, Smartphone, History, Car, ChevronRight, Wallet, X, Shield, CheckCircle2, AlertCircle } from '../../utils/icons';
 import { api } from '../../services/authService';
@@ -29,6 +29,20 @@ const ClientWallet = ({
   const [transferRecipient, setTransferRecipient] = useState('');
   const [transferError, setTransferError] = useState('');
   const [transferring, setTransferring] = useState(false);
+
+  // Load Razorpay SDK script dynamically when the component mounts
+  useEffect(() => {
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.async = true;
+    document.body.appendChild(script);
+    return () => {
+      const existingScript = document.querySelector('script[src="https://checkout.razorpay.com/v1/checkout.js"]');
+      if (existingScript) {
+        document.body.removeChild(existingScript);
+      }
+    };
+  }, []);
 
   const showToast = (message, type = 'error') => {
     setToast({ message, type });
