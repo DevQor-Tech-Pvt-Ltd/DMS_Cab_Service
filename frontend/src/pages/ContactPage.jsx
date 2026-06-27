@@ -69,27 +69,27 @@ const ContactPage = () => {
     <div className="bg-white min-h-screen flex flex-col">
       {/* Hero Header */}
       <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden border-b border-slate-100">
-        <div className="absolute inset-0 z-0 opacity-90">
+        <div className="absolute inset-0 z-0 opacity-30">
           <ImageWithFallback
             src="/map-bg.png"
             alt="Contact DMS"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover filter invert"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-white via-white/40 to-transparent"></div>
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="inline-flex items-center space-x-2 mb-4 animate-fade-in-up">
-            <div className="w-8 h-[1px] bg-slate-300/50"></div>
-            <span className="text-slate-300 text-sm font-semibold tracking-[0.2em] uppercase">Get In Touch</span>
-            <div className="w-8 h-[1px] bg-slate-300/50"></div>
+            <div className="w-8 h-[1px] bg-[#003893]"></div>
+            <span className="text-[#003893] text-sm font-semibold tracking-[0.2em] uppercase">Get In Touch</span>
+            <div className="w-8 h-[1px] bg-[#003893]"></div>
           </div>
 
-          <h1 className="text-5xl md:text-6xl font-serif text-white mb-6 animate-fade-in-up animation-delay-100">
-            Contact <span className="italic">DMS</span>
+          <h1 className="text-5xl md:text-6xl font-serif text-slate-900 mb-6 animate-fade-in-up animation-delay-100">
+            Contact <span className="text-[#003893] italic">DMS</span>
           </h1>
 
-          <p className="text-slate-300 text-lg max-w-2xl mx-auto animate-fade-in-up animation-delay-200 font-medium">
+          <p className="text-slate-600 text-lg max-w-2xl mx-auto animate-fade-in-up animation-delay-200">
             Our dedicated concierge team is available 24/7 to assist with your reservations, special requests, and general inquiries.
           </p>
         </div>
