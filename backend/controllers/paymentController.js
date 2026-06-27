@@ -633,3 +633,127 @@ exports.getTransactions = async (req, res) => {
   }
 };
 
+/**
+ * Transfer Wallet Balance (P2P to another user, or withdraw to UPI ID)
+ */
+exports.transferWallet = async (req, res) => {
+  try {
+    const { type, recipient, amount } = req.body;
+
+    if (!amount || isNaN(amount) || amount <= 0) {
+      return res.status(400).json({ success: false, message: 'Please enter a valid positive transfer amount.' });
+    }
+
+    const sender = await User.findById(req.user._id);
+    if (!sender) {
+      return res.status(404).json({ success: false, message: 'Sender user not found.' });
+    }
+
+    if (sender.walletBalance < amount) {
+      return res.status(400).json({ success: false, message: 'Insufficient wallet balance.' });
+    }
+
+    if (type === 'wallet') {
+      if (!recipient) {
+        return res.status(400).json({ success: false, message: 'Recipient email or phone is required.' });
+      }
+
+      // Find recipient user
+      const recipientUser = await User.findOne({
+        $or: [
+          { email: recipient.toLowerCase().trim() },
+          { phone: recipient.trim() }
+        ]
+      });
+
+      if (!recipientUser) {
+        return res.status(404).json({ success: false, message: 'Recipient user not found on DMS.' });
+      }
+
+      if (recipientUser._id.toString() === sender._id.toString()) {
+        return res.status(400).json({ success: false, message: 'Cannot transfer to yourself.' });
+      }
+
+      // Deduct from sender
+      sender.walletBalance = Number((sender.walletBalance - amount).toFixed(2));
+      const updatedSender = await sender.save();
+
+      // Add to recipient
+      recipientUser.walletBalance = Number((recipientUser.walletBalance + amount).toFixed(2));
+      await recipientUser.save();
+
+      const txnId = crypto.randomBytes(8).toString('hex');
+
+      // Create transaction for sender
+      await Transaction.create({
+        user: sender._id,
+        amount: amount,
+        type: 'payment',
+        paymentMethod: 'wallet',
+        razorpayPaymentId: `tx_send_${txnId}`,
+        status: 'success'
+      });
+
+      // Create transaction for recipient
+      await Transaction.create({
+        user: recipientUser._id,
+        amount: amount,
+        type: 'deposit',
+        paymentMethod: 'wallet',
+        razorpayPaymentId: `tx_recv_${txnId}`,
+        status: 'success'
+      });
+
+      logger.info(`[WALLET TRANSFER SUCCESS] Transferred ₹${amount} from sender ${sender._id} to recipient ${recipientUser._id}`);
+
+      return res.status(200).json({
+        success: true,
+        message: `Successfully transferred ₹${amount.toLocaleString()} to ${recipientUser.fullName}!`,
+        walletBalance: updatedSender.walletBalance,
+        user: updatedSender.toJSON()
+      });
+
+    } else if (type === 'upi') {
+      if (!recipient) {
+        return res.status(400).json({ success: false, message: 'Linked UPI ID is required for transfer.' });
+      }
+
+      // Deduct from sender
+      sender.walletBalance = Number((sender.walletBalance - amount).toFixed(2));
+      const updatedSender = await sender.save();
+
+      const txnId = crypto.randomBytes(8).toString('hex');
+
+      // Create transaction for sender
+      await Transaction.create({
+        user: sender._id,
+        amount: amount,
+        type: 'payment',
+        paymentMethod: 'upi',
+        razorpayPaymentId: `tx_upi_${txnId}`,
+        status: 'success'
+      });
+
+      logger.info(`[UPI WITHDRAWAL SUCCESS] Withdrew ₹${amount} from user ${sender._id} to UPI ${recipient}`);
+
+      return res.status(200).json({
+        success: true,
+        message: `Successfully transferred ₹${amount.toLocaleString()} to UPI ID ${recipient}!`,
+        walletBalance: updatedSender.walletBalance,
+        user: updatedSender.toJSON()
+      });
+
+    } else {
+      return res.status(400).json({ success: false, message: 'Invalid transfer type.' });
+    }
+
+  } catch (error) {
+    logger.error('Error transferring wallet balance: %s', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to complete wallet transfer',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal Server Error'
+    });
+  }
+};
+

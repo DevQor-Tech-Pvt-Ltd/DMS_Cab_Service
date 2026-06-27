@@ -23,6 +23,13 @@ const ClientWallet = ({
   const [toast, setToast] = useState(null);
   const [paymentState, setPaymentState] = useState('idle'); // 'idle', 'initiating', 'checkout', 'verifying', 'success', 'failed'
 
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [transferType, setTransferType] = useState('wallet'); // 'wallet' or 'upi'
+  const [transferAmount, setTransferAmount] = useState('');
+  const [transferRecipient, setTransferRecipient] = useState('');
+  const [transferError, setTransferError] = useState('');
+  const [transferring, setTransferring] = useState(false);
+
   const showToast = (message, type = 'error') => {
     setToast({ message, type });
     setTimeout(() => setToast(null), type === 'success' ? 3000 : 5000);
@@ -32,6 +39,63 @@ const ClientWallet = ({
     setDepositAmount('');
     setDepositError('');
     setShowAddMoneyModal(true);
+  };
+
+  const handleTransferClick = () => {
+    setTransferAmount('');
+    setTransferRecipient('');
+    setTransferError('');
+    setShowTransferModal(true);
+  };
+
+  const handleTransferSubmit = async (e) => {
+    if (e) e.preventDefault();
+    const amount = parseFloat(transferAmount);
+    if (isNaN(amount) || amount <= 0) {
+      setTransferError("Please enter a valid positive number.");
+      return;
+    }
+    if (amount > walletBalance) {
+      setTransferError("Insufficient wallet balance.");
+      return;
+    }
+    if (transferType === 'wallet' && !transferRecipient.trim()) {
+      setTransferError("Please enter recipient email or phone.");
+      return;
+    }
+    if (transferType === 'upi' && !upiId) {
+      setTransferError("Please link a UPI ID first on the dashboard.");
+      return;
+    }
+
+    setTransferError('');
+    setTransferring(true);
+
+    try {
+      const payload = {
+        type: transferType,
+        amount,
+        recipient: transferType === 'wallet' ? transferRecipient.trim() : upiId
+      };
+
+      const response = await api.post('/payment/wallet/transfer', payload);
+
+      if (response.data.success) {
+        showToast(response.data.message || 'Transfer completed successfully!', 'success');
+        setShowTransferModal(false);
+        if (response.data.user) {
+          updateUser(response.data.user);
+        }
+        if (onBalanceUpdate) {
+          onBalanceUpdate(response.data.walletBalance);
+        }
+      }
+    } catch (err) {
+      console.error('Transfer failed:', err);
+      setTransferError(err.response?.data?.message || 'Transfer failed. Please check details.');
+    } finally {
+      setTransferring(false);
+    }
   };
 
   const handleAddMoneySubmit = async (e) => {
@@ -191,7 +255,7 @@ const ClientWallet = ({
             >
               {depositing ? 'Processing...' : '+ Add Money'}
             </button>
-            <button onClick={() => showToast('Transfer functionality is coming soon!', 'info')} className="flex-1 sm:flex-initial bg-transparent border border-slate-200 hover:bg-slate-100 text-slate-800 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all">Transfer</button>
+            <button onClick={handleTransferClick} className="flex-1 sm:flex-initial bg-transparent border border-slate-200 hover:bg-slate-100 text-slate-800 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all cursor-pointer">Transfer</button>
           </div>
         </div>
 
@@ -352,6 +416,126 @@ const ClientWallet = ({
                   className="w-full bg-[#003893] hover:bg-[#002d72] text-white font-bold py-3.5 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center space-x-2"
                 >
                   <span>Proceed to Deposit</span>
+                  <ChevronRight size={14} />
+                </button>
+              </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Transfer Money Modal */}
+      <AnimatePresence>
+        {showTransferModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-[90] flex items-center justify-center p-4 font-sans"
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl border border-slate-100 relative text-left"
+            >
+              <button
+                onClick={() => setShowTransferModal(false)}
+                className="absolute right-4 top-4 text-slate-400 hover:text-slate-600 transition-colors p-1 cursor-pointer"
+              >
+                <X size={18} />
+              </button>
+
+              <div className="flex items-center space-x-3 mb-2">
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-[#003893] flex items-center justify-center border border-blue-100 shadow-sm">
+                  <Wallet size={20} />
+                </div>
+                <div>
+                  <h3 className="text-base font-serif font-bold text-slate-900">Transfer Wallet Funds</h3>
+                  <p className="text-[10px] text-slate-400">Withdraw to UPI or send to another DMS user</p>
+                </div>
+              </div>
+
+              {/* Transfer Type Tab Switcher */}
+              <div className="flex bg-slate-100 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => { setTransferType('wallet'); setTransferError(''); }}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    transferType === 'wallet' ? 'bg-white text-[#003893] shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700 font-semibold'
+                  }`}
+                >
+                  To DMS User
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setTransferType('upi'); setTransferError(''); }}
+                  className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                    transferType === 'upi' ? 'bg-white text-[#003893] shadow-sm font-bold' : 'text-slate-500 hover:text-slate-700 font-semibold'
+                  }`}
+                >
+                  To Linked UPI
+                </button>
+              </div>
+
+              <form onSubmit={handleTransferSubmit} className="space-y-4">
+                {transferType === 'wallet' ? (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">Recipient Email or Phone</label>
+                    <input
+                      type="text"
+                      value={transferRecipient}
+                      onChange={(e) => {
+                        setTransferRecipient(e.target.value);
+                        if (transferError) setTransferError('');
+                      }}
+                      className="w-full bg-white border border-slate-200 focus:border-[#003893] focus:outline-none rounded-xl py-2.5 px-4 text-slate-900 text-xs"
+                      placeholder="driver@dms.com or +919876543210"
+                      required
+                    />
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">Destination UPI ID</label>
+                    {upiId ? (
+                      <div className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-emerald-600 flex items-center justify-between">
+                        <span>{upiId}</span>
+                        <span className="text-[9px] uppercase bg-emerald-100 px-2 py-0.5 rounded-full">Linked</span>
+                      </div>
+                    ) : (
+                      <div className="bg-rose-50 border border-rose-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-rose-600">
+                        No UPI ID linked. Please link one on the dashboard first.
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1.5">Amount (INR)</label>
+                  <div className="relative">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">₹</span>
+                    <input
+                      type="number"
+                      value={transferAmount}
+                      onChange={(e) => {
+                        setTransferAmount(e.target.value);
+                        if (transferError) setTransferError('');
+                      }}
+                      className="w-full bg-white border border-slate-200 focus:border-[#003893] focus:outline-none rounded-xl py-2.5 pl-8 pr-4 text-slate-900 font-bold text-xs"
+                      placeholder="200"
+                      required
+                    />
+                  </div>
+                  <p className="text-[9px] text-slate-400 mt-1">Available balance: ₹{walletBalance.toLocaleString()}</p>
+                  {transferError && <p className="text-red-500 text-[10px] mt-1.5 flex items-center"><AlertCircle size={12} className="mr-1" /> {transferError}</p>}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={transferring || (transferType === 'upi' && !upiId)}
+                  className="w-full bg-[#003893] hover:bg-[#002d72] disabled:opacity-50 text-white font-bold py-3 rounded-xl transition-all shadow-md text-xs uppercase tracking-wider flex items-center justify-center space-x-2 cursor-pointer"
+                >
+                  <span>{transferring ? 'Processing...' : 'Confirm Transfer'}</span>
                   <ChevronRight size={14} />
                 </button>
               </form>
