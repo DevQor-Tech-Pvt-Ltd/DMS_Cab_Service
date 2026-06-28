@@ -2,31 +2,124 @@ const nodemailer = require('nodemailer');
 const escapeHtml = require('./escapeHtml');
 const logger = require('./logger');
 
+const https = require('https');
+
 const smtpUser = process.env.SMTP_USER;
 const smtpPass = process.env.SMTP_PASS;
+const resendApiKey = process.env.RESEND_API_KEY;
+const resendFrom = process.env.RESEND_FROM || 'onboarding@resend.dev';
 
-if (!smtpUser || !smtpPass) {
-  logger.warn('Warning: SMTP_USER or SMTP_PASS environment variables are not set.');
+let transporter = null;
+
+if (resendApiKey) {
+  logger.info('Email Service: Resend API configured. SMTP will be bypassed.');
+} else {
+  if (!smtpUser || !smtpPass) {
+    logger.warn('Warning: Neither RESEND_API_KEY nor SMTP credentials are set.');
+  }
+  const smtpPort = parseInt(process.env.SMTP_PORT || '587');
+  transporter = nodemailer.createTransport({
+    host: process.env.SMTP_HOST || 'smtp.gmail.com',
+    port: smtpPort,
+    secure: smtpPort === 465,
+    auth: {
+      user: smtpUser,
+      pass: smtpPass,
+    },
+  });
+
+  // Verify SMTP connection on startup if using SMTP
+  transporter.verify((error, success) => {
+    if (error) {
+      logger.error('[SMTP VERIFICATION ERROR] Connection failed: %s', error.message);
+    } else {
+      logger.info('SMTP connection established successfully.');
+    }
+  });
 }
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
-  port: parseInt(process.env.SMTP_PORT || '587'),
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: smtpUser,
-    pass: smtpPass,
-  },
-});
+/**
+ * Native HTTPS helper to post requests to Resend API
+ */
+const makeHttpsPost = (url, headers, body) => {
+  return new Promise((resolve, reject) => {
+    const urlObj = new URL(url);
+    const options = {
+      method: 'POST',
+      hostname: urlObj.hostname,
+      path: urlObj.pathname,
+      headers: headers
+    };
 
-// Verify SMTP connection on startup
-transporter.verify((error, success) => {
-  if (error) {
-    logger.error('[SMTP VERIFICATION ERROR] Connection failed: %s', error.message);
+    const req = https.request(options, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        let parsed;
+        try { parsed = JSON.parse(data); } catch (e) { parsed = data; }
+        if (res.statusCode >= 200 && res.statusCode < 300) {
+          resolve({ status: res.statusCode, data: parsed });
+        } else {
+          reject({ status: res.statusCode, data: parsed });
+        }
+      });
+    });
+    req.on('error', (e) => reject(e));
+    req.write(JSON.stringify(body));
+    req.end();
+  });
+};
+
+/**
+ * Unified sendMail function that either uses Resend API or SMTP
+ */
+const sendMail = async (options) => {
+  if (resendApiKey) {
+    let displayName = 'DMS Cab Services';
+    if (options.from) {
+      const match = options.from.match(/^"([^"]+)"/);
+      if (match) {
+        displayName = match[1];
+      }
+    }
+
+    const payload = {
+      from: `${displayName} <${resendFrom}>`,
+      to: options.to,
+      subject: options.subject,
+      html: options.html,
+      text: options.text,
+    };
+
+    if (options.replyTo) {
+      payload.reply_to = options.replyTo;
+    }
+
+    try {
+      const res = await makeHttpsPost(
+        'https://api.resend.com/emails',
+        {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        payload
+      );
+      return {
+        messageId: res.data?.id || 'resend-id',
+        response: '250 OK'
+      };
+    } catch (err) {
+      const errMsg = err.data?.message || err.message || 'Unknown Resend Error';
+      logger.error('[RESEND ERROR] Failed to dispatch email: %s', errMsg);
+      throw new Error(errMsg);
+    }
   } else {
-    logger.info('SMTP connection established successfully.');
+    if (!transporter) {
+      throw new Error('Email service not initialized (missing SMTP or Resend credentials)');
+    }
+    return await transporter.sendMail(options);
   }
-});
+};
 
 /**
  * Send booking confirmation and invoice email to client
@@ -317,7 +410,7 @@ exports.sendInvoiceEmail = async (ride) => {
       html: htmlContent,
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendMail(mailOptions);
     logger.info(`[EMAIL SUCCESS] Invoice sent for ride: ${ride._id}. MessageId: ${info.messageId}`);
     return true;
   } catch (error) {
@@ -337,7 +430,7 @@ exports.sendEmail = async ({ to, subject, html }) => {
       subject,
       html,
     };
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendMail(mailOptions);
     return info;
   } catch (error) {
     logger.error('[GENERIC EMAIL ERROR]: %s', error.message);
@@ -613,7 +706,7 @@ exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, 
       html: htmlContent,
     };
 
-    const info = await transporter.sendMail(mailOptions);
+    const info = await sendMail(mailOptions);
     logger.info(`[EMAIL SUCCESS] Inquiry email sent to ${to}. MessageId: ${info.messageId}`);
     return true;
   } catch (error) {
@@ -626,13 +719,38 @@ exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, 
  * Verify SMTP connection state and return the result/error message
  */
 exports.testSmtpConnection = async () => {
-  return new Promise((resolve) => {
-    transporter.verify((error, success) => {
-      if (error) {
-        resolve({ success: false, error: error.message });
-      } else {
-        resolve({ success: true });
+  if (resendApiKey) {
+    try {
+      await makeHttpsPost(
+        'https://api.resend.com/emails',
+        {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json'
+        },
+        {}
+      );
+      return { success: true };
+    } catch (err) {
+      if (err.status === 401) {
+        return { success: false, error: 'Unauthorized: Invalid Resend API Key' };
       }
+      if (err.status === 422 || err.status === 400) {
+        return { success: true };
+      }
+      return { success: false, error: err.data?.message || err.message || 'Resend connection failed' };
+    }
+  } else {
+    return new Promise((resolve) => {
+      if (!transporter) {
+        return resolve({ success: false, error: 'SMTP Transporter not configured' });
+      }
+      transporter.verify((error, success) => {
+        if (error) {
+          resolve({ success: false, error: error.message });
+        } else {
+          resolve({ success: true });
+        }
+      });
     });
-  });
+  }
 };
