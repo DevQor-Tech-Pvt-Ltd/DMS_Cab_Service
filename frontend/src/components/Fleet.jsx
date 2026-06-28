@@ -8,8 +8,8 @@ const fleetData = [
     name: 'Ertiga',
     category: 'Premium Sedan',
     image: '/ertiga2.jpg',
-    passengers: 3,
-    luggage: 2,
+    passengers: 6,
+    luggage: 4,
     features: ['Free WiFi', 'Water & Mints', 'Leather Seats'],
     description: 'Practical luxury and smooth transit. Ideal for airport pick-ups and corporate executive commutes.'
   },
@@ -18,7 +18,7 @@ const fleetData = [
     name: 'Innova',
     category: 'Luxury SUV',
     image: "/innova2.jpg",
-    passengers: 4,
+    passengers: 6,
     luggage: 4,
     features: ['Free WiFi', 'Panoramic Roof', 'Extra Legroom'],
     description: 'Commanding presence and generous cabin layout. Ideal for long-distance family travel and outstation tours.'
@@ -28,8 +28,8 @@ const fleetData = [
     name: 'Dzire',
     category: 'Standard Sedan',
     image: '/msdesire.jpg',
-    passengers: 2,
-    luggage: 1,
+    passengers: 4,
+    luggage: 2,
     features: ['Free WiFi', 'Water & Mints', 'Air Conditioning'],
     description: 'Compact efficiency and comfort. Excellent for quick city travel and everyday rides.'
   },

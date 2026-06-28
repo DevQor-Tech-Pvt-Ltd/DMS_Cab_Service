@@ -139,7 +139,7 @@ const ContactPage = () => {
                   </div>
                   <div>
                     <h4 className="text-slate-900 font-serif text-lg mb-1">Global Headquarters</h4>
-                    <p className="text-slate-600 mb-1">Cabin 19, 8th Floor, Delta Tower (Awfis) Sector V, Salt Lake Bypass<br />Bidhannagar Kolkata, West Bengal – 700091</p>
+                    <p className="text-slate-600 mb-1">8th Floor, Delta Tower (Awfis) Sector V, Salt Lake Bypass<br />Bidhannagar Kolkata, West Bengal – 700091</p>
                   </div>
                 </div>
 
@@ -150,7 +150,7 @@ const ContactPage = () => {
                   </div>
                   <div>
                     <h4 className="text-slate-900 font-serif text-lg mb-1">Operating Hours</h4>
-                    <p className="text-slate-600">Chauffeur Services: 24/7<br />Office: 8:00 AM - 8:00 PM (EST)</p>
+                    <p className="text-slate-600">Chauffeur Services: 24/7<br />Office: 8:00 AM - 8:00 PM (IST)</p>
                   </div>
                 </div>
               </div>

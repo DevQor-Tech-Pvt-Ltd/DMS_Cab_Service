@@ -38,6 +38,7 @@ const DriverDashboard = lazy(() => import('./pages/DriverDashboard'));
 const PrivacyPage = lazy(() => import('./pages/PrivacyPage'));
 const TermsPage = lazy(() => import('./pages/TermsPage'));
 const CookiePage = lazy(() => import('./pages/CookiePage'));
+const PaymentPolicyPage = lazy(() => import('./pages/PaymentPolicyPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 
 import Navbar from './components/Navbar';
@@ -76,6 +77,7 @@ const AppContent = () => {
             <Route path="/privacy" element={<PrivacyPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/cookies" element={<CookiePage />} />
+            <Route path="/payment-policy" element={<PaymentPolicyPage />} />
             {/* Security/Catch-all Route for any undefined paths */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
