@@ -425,23 +425,21 @@ exports.contactInquiry = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
 
-    // Await email delivery — only return success if Nodemailer confirms send
-    const result = await sendInquiryEmail({ firstName, lastName, email, phone, subject, message });
-
-    // If connect-timeout already triggered 503 response, exit silently
-    if (req.timedout) return;
-
-    if (!result.success) {
-      logger.warn('[Contact Inquiry] Email delivery failed for: %s — code=%s', email, result.code);
-      return res.status(500).json({
-        success: false,
-        message: 'Email could not be sent. Please try again later.',
+    // Send email asynchronously in the background so the response is returned immediately
+    sendInquiryEmail({ firstName, lastName, email, phone, subject, message })
+      .then(result => {
+        if (!result.success) {
+          logger.error('[Contact Inquiry] Asynchronous email delivery failed for: %s — code=%s, error=%s', email, result.code, result.error);
+        } else {
+          logger.info('[Contact Inquiry] Asynchronous email delivered successfully for: %s', email);
+        }
+      })
+      .catch(err => {
+        logger.error('[Contact Inquiry] Asynchronous email execution error for: %s — %s', email, err.message);
       });
-    }
 
     return res.status(200).json({ success: true, message: 'Inquiry sent successfully' });
   } catch (error) {
-    if (req.timedout) return;
     logger.error('Contact inquiry controller error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Failed to submit inquiry. Please try again.' });
   }
