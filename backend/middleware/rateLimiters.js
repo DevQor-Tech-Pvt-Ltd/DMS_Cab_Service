@@ -148,7 +148,7 @@ const paymentLimiter = createLimiter({
  */
 const contactInquiryLimiter = createLimiter({
   windowMs: 10 * 60 * 1000, // 10 Minutes
-  maxProd: 5,                // Strict but allows legitimate retries
+  maxProd: 15,               // Allows legitimate retries while still blocking spam
   maxDev: 1000,
   message: 'Too many contact inquiries. Please try again later.',
   apiName: 'CONTACT_INQUIRY'
