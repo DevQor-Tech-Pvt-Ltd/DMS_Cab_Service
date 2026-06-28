@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const logger = require('../utils/logger');
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 
 const runMigration = async () => {
   try {

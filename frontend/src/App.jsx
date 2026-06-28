@@ -90,10 +90,8 @@ const AppContent = () => {
 
 function App() {
   useEffect(() => {
-    if (import.meta.env.MODE === 'development') {
-      // Wake up the Render backend container in the background as soon as user lands
-      api.get('/').catch((err) => console.log('Backend wake-up ping:', err.message));
-    }
+    // Wake up the Render backend container in the background as soon as user lands
+    api.get('/').catch((err) => console.log('Backend wake-up ping:', err.message));
   }, []);
 
   return (
