@@ -134,7 +134,7 @@ const PaymentPolicyPage = () => {
               <p className="text-[#003893] font-bold text-sm">DMS Cab Services Finance Desk</p>
               <p>Email: contact@dmscabservices.com</p>
               <p>Phone: +91 9903941219</p>
-              <p>Address: Cabin 19, 8th Floor, Delta Tower (Awfis), Sector V, Salt Lake Bypass, Bidhannagar, Kolkata, West Bengal – 700091</p>
+              <p>Address: 8th Floor, Delta Tower (Awfis), Sector V, Salt Lake Bypass, Bidhannagar, Kolkata, West Bengal – 700091</p>
             </div>
           </section>
         </div>
