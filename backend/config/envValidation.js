@@ -11,6 +11,11 @@ const envSchema = z.object({
   SMTP_PASS: z.string().min(1, 'SMTP_PASS must not be empty'),
   SMTP_HOST: z.string().default('smtp.gmail.com'),
   SMTP_PORT: z.string().default('587'),
+
+  CONTACT_INQUIRY_RECIPIENT: z
+    .string()
+    .email("CONTACT_INQUIRY_RECIPIENT must be a valid email")
+    .optional(),
 });
 
 const validateEnv = () => {
