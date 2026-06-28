@@ -31,7 +31,8 @@ const transporter = nodemailer.createTransport({
   port: smtpPort,
   secure: smtpPort === 465,
 
-  // Force IPv4 by providing a custom DNS resolver lookup
+  // Force IPv4 by providing a custom DNS resolver lookup and binding localAddress to IPv4
+  localAddress: '0.0.0.0',
   lookup: (hostname, options, callback) => {
     dns.lookup(hostname, { family: 4 }, callback);
   },
