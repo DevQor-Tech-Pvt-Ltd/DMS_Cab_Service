@@ -774,9 +774,14 @@ exports.testSmtpLive = async (req, res) => {
       });
     };
 
-    // 2. Test TCP Ports
-    const tcp465 = await testTcpPort('smtp.gmail.com', 465);
-    const tcp587 = await testTcpPort('smtp.gmail.com', 587);
+    // 2. Test TCP Ports using resolved IPs
+    const ipv4Address = dnsResults.ipv4?.[0] || '172.253.117.108';
+    const ipv6Address = dnsResults.ipv6?.[0] || '2607:f8b0:400e:c06::6d';
+
+    const tcp465_v4 = await testTcpPort(ipv4Address, 465);
+    const tcp587_v4 = await testTcpPort(ipv4Address, 587);
+    const tcp465_v6 = await testTcpPort(ipv6Address, 465);
+    const tcp587_v6 = await testTcpPort(ipv6Address, 587);
 
     // 3. Test Nodemailer verification
     const { testSmtpConnection } = require('../utils/emailService');
@@ -799,8 +804,16 @@ exports.testSmtpLive = async (req, res) => {
       },
       dns: dnsResults,
       tcp: {
-        port465: tcp465,
-        port587: tcp587
+        ipv4: {
+          ip: ipv4Address,
+          port465: tcp465_v4,
+          port587: tcp587_v4
+        },
+        ipv6: {
+          ip: ipv6Address,
+          port465: tcp465_v6,
+          port587: tcp587_v6
+        }
       },
       verification
     });
