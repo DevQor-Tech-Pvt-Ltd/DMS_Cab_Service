@@ -428,6 +428,9 @@ exports.contactInquiry = async (req, res, next) => {
     // Await email delivery — only return success if Nodemailer confirms send
     const result = await sendInquiryEmail({ firstName, lastName, email, phone, subject, message });
 
+    // If connect-timeout already triggered 503 response, exit silently
+    if (req.timedout) return;
+
     if (!result.success) {
       logger.warn('[Contact Inquiry] Email delivery failed for: %s — code=%s', email, result.code);
       return res.status(500).json({
@@ -438,6 +441,7 @@ exports.contactInquiry = async (req, res, next) => {
 
     return res.status(200).json({ success: true, message: 'Inquiry sent successfully' });
   } catch (error) {
+    if (req.timedout) return;
     logger.error('Contact inquiry controller error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Failed to submit inquiry. Please try again.' });
   }
@@ -728,6 +732,8 @@ exports.testSmtpLive = async (req, res) => {
     const { testSmtpConnection } = require('../utils/emailService');
     const verification = await testSmtpConnection();
     
+    if (req.timedout) return;
+    
     const user = process.env.SMTP_USER || '';
     const maskedUser = user.length > 5 
       ? user.substring(0, 3) + '***' + user.substring(user.indexOf('@') - 2)
@@ -744,6 +750,7 @@ exports.testSmtpLive = async (req, res) => {
       verification
     });
   } catch (error) {
+    if (req.timedout) return;
     logger.error('Test SMTP Live endpoint error: %s', error.message);
     return res.status(500).json({
       success: false,

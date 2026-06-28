@@ -107,7 +107,7 @@ app.use(compression());
 app.use(cookieParser());
 app.use(require('./middleware/csrfMiddleware'));
 
-const requestTimeoutVal = process.env.REQUEST_TIMEOUT || '15s';
+const requestTimeoutVal = process.env.REQUEST_TIMEOUT || '30s';
 app.use(timeout(requestTimeoutVal));
 app.use(haltOnTimedout);
 
