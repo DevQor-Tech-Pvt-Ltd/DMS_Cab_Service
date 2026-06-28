@@ -621,3 +621,18 @@ exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, 
     return false;
   }
 };
+
+/**
+ * Verify SMTP connection state and return the result/error message
+ */
+exports.testSmtpConnection = async () => {
+  return new Promise((resolve) => {
+    transporter.verify((error, success) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+      } else {
+        resolve({ success: true });
+      }
+    });
+  });
+};

@@ -443,6 +443,34 @@ exports.contactInquiry = async (req, res, next) => {
   }
 };
 
+exports.testSmtpLive = async (req, res) => {
+  try {
+    const { testSmtpConnection } = require('../utils/emailService');
+    const verification = await testSmtpConnection();
+    
+    const user = process.env.SMTP_USER || '';
+    const maskedUser = user.length > 5 
+      ? user.substring(0, 3) + '***' + user.substring(user.indexOf('@') - 2)
+      : '***';
+
+    return res.status(200).json({
+      success: true,
+      smtp: {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        user: maskedUser,
+        recipient: process.env.CONTACT_INQUIRY_RECIPIENT
+      },
+      verification
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+
 exports.deleteAccount = async (req, res, next) => {
   try {
     const user = await User.findById(req.user._id);
