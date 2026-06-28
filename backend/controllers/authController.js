@@ -727,11 +727,63 @@ exports.emailHealth = async (req, res) => {
  */
 exports.testSmtpLive = async (req, res) => {
   try {
+    const dns = require('dns').promises;
+    const net = require('net');
+
+    // 1. Resolve DNS
+    const dnsResults = {};
+    try {
+      dnsResults.ipv4 = await dns.resolve4('smtp.gmail.com');
+    } catch (e) {
+      dnsResults.ipv4Error = e.message;
+    }
+    try {
+      dnsResults.ipv6 = await dns.resolve6('smtp.gmail.com');
+    } catch (e) {
+      dnsResults.ipv6Error = e.message;
+    }
+    try {
+      dnsResults.lookup = await new Promise((resolve) => {
+        require('dns').lookup('smtp.gmail.com', (err, address, family) => {
+          resolve(err ? { error: err.message } : { address, family });
+        });
+      });
+    } catch (e) {
+      dnsResults.lookupError = e.message;
+    }
+
+    // Helper to test TCP port
+    const testTcpPort = (host, port) => {
+      return new Promise((resolve) => {
+        const socket = new net.Socket();
+        const startTime = Date.now();
+        socket.setTimeout(3000);
+        socket.on('connect', () => {
+          socket.destroy();
+          resolve({ connected: true, durationMs: Date.now() - startTime });
+        });
+        socket.on('timeout', () => {
+          socket.destroy();
+          resolve({ connected: false, error: 'timeout' });
+        });
+        socket.on('error', (err) => {
+          socket.destroy();
+          resolve({ connected: false, error: err.message });
+        });
+        socket.connect(port, host);
+      });
+    };
+
+    // 2. Test TCP Ports
+    const tcp465 = await testTcpPort('smtp.gmail.com', 465);
+    const tcp587 = await testTcpPort('smtp.gmail.com', 587);
+
+    // 3. Test Nodemailer verification
     const { testSmtpConnection } = require('../utils/emailService');
     const verification = await testSmtpConnection();
-    
+
     if (req.timedout) return;
-    
+
     const user = process.env.SMTP_USER || '';
     const maskedUser = user.length > 5 
       ? user.substring(0, 3) + '***' + user.substring(user.indexOf('@') - 2)
@@ -744,6 +796,11 @@ exports.testSmtpLive = async (req, res) => {
         port: Number(process.env.SMTP_PORT) || 587,
         user: maskedUser,
         recipient: process.env.CONTACT_INQUIRY_RECIPIENT || user
+      },
+      dns: dnsResults,
+      tcp: {
+        port465: tcp465,
+        port587: tcp587
       },
       verification
     });
