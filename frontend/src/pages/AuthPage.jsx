@@ -22,12 +22,16 @@ const AuthPage = () => {
   const [licenseDocument, setLicenseDocument] = useState('');
   const [rcFileName, setRcFileName] = useState('');
   const [licenseFileName, setLicenseFileName] = useState('');
+  const [aadhaarDocument, setAadhaarDocument] = useState('');
+  const [aadhaarFileName, setAadhaarFileName] = useState('');
+  const [panDocument, setPanDocument] = useState('');
+  const [panFileName, setPanFileName] = useState('');
   const [currentCity, setCurrentCity] = useState('');
   const [vehicleModelYear, setVehicleModelYear] = useState('');
   const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [driverNameIfVendor, setDriverNameIfVendor] = useState('');
   const [driverContactNumber, setDriverContactNumber] = useState('');
-  const [rcCopyAvailable, setRcCopyAvailable] = useState('No');
+  const [rcCopyAvailable, setRcCopyAvailable] = useState('Yes');
   const [insuranceValidTill, setInsuranceValidTill] = useState('');
   const [preferredServiceArea, setPreferredServiceArea] = useState('');
   const [previousExperience, setPreviousExperience] = useState('');
@@ -220,12 +224,16 @@ const AuthPage = () => {
           setError('Driving License Number is required.');
           return;
         }
-        if (!rcCopyAvailable) {
-          setError('Please select if RC Copy is available.');
+        if (!rcDocument) {
+          setError('Please upload vehicle RC document.');
           return;
         }
-        if (rcCopyAvailable === 'Yes' && !rcDocument) {
-          setError('Please upload vehicle RC document.');
+        if (!aadhaarDocument) {
+          setError('Please upload Aadhaar Card document.');
+          return;
+        }
+        if (!panDocument) {
+          setError('Please upload PAN Card document.');
           return;
         }
         if (!insuranceValidTill.trim()) {
@@ -272,6 +280,8 @@ const AuthPage = () => {
           licenseNumber, 
           rcDocument, 
           licenseDocument,
+          aadhaarDocument,
+          panDocument,
           currentCity,
           vehicleModelYear,
           aadhaarNumber,
@@ -750,64 +760,34 @@ const AuthPage = () => {
                       </div>
                     </motion.div>
 
-                    {/* RC Copy Available: Yes / No */}
+                    {/* RC File Upload */}
                     <motion.div
                       layout={!isMobile}
                       initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
                       animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
                       transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
                     >
-                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">RC Copy Available</label>
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">RC File (Vehicle Registration)</label>
                       <div className="relative">
-                        <Briefcase className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
-                        <select
-                          value={rcCopyAvailable}
-                          onChange={(e) => {
-                            setRcCopyAvailable(e.target.value);
-                            if (e.target.value === 'No') {
-                              setRcDocument('');
-                              setRcFileName('');
-                            }
-                          }}
-                          required
-                          className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all appearance-none"
+                        <input
+                          type="file"
+                          id="rc-upload"
+                          onChange={(e) => handleFileChange(e, setRcDocument, setRcFileName)}
+                          accept=".jpg,.jpeg,.png,.pdf"
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="rc-upload"
+                          className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-xl py-3 px-4 text-slate-900 cursor-pointer transition-colors"
                         >
-                          <option value="No">No</option>
-                          <option value="Yes">Yes</option>
-                        </select>
+                          <Upload className="text-[#003893] shrink-0" size={18} />
+                          <span className="text-slate-500 truncate flex-1 text-sm">
+                            {rcFileName || 'Upload RC File (Image or PDF)...'}
+                          </span>
+                          {rcFileName && <FileText className="text-emerald-500" size={16} />}
+                        </label>
                       </div>
                     </motion.div>
-
-                    {/* RC File Upload (Conditionally shown if RC Copy is Available) */}
-                    {rcCopyAvailable === 'Yes' && (
-                      <motion.div
-                        layout={!isMobile}
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: 'auto' }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">RC File (Vehicle Registration)</label>
-                        <div className="relative">
-                          <input
-                            type="file"
-                            id="rc-upload"
-                            onChange={(e) => handleFileChange(e, setRcDocument, setRcFileName)}
-                            accept=".jpg,.jpeg,.png,.pdf"
-                            className="hidden"
-                          />
-                          <label
-                            htmlFor="rc-upload"
-                            className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-xl py-3 px-4 text-slate-900 cursor-pointer transition-colors"
-                          >
-                            <Upload className="text-[#003893] shrink-0" size={18} />
-                            <span className="text-slate-500 truncate flex-1 text-sm">
-                              {rcFileName || 'Upload RC File (Image or PDF)...'}
-                            </span>
-                            {rcFileName && <FileText className="text-emerald-500" size={16} />}
-                          </label>
-                        </div>
-                      </motion.div>
-                    )}
 
                     {/* Insurance Valid Till */}
                     <motion.div
@@ -895,6 +875,64 @@ const AuthPage = () => {
                             {licenseFileName || 'Upload License File (Image or PDF)...'}
                           </span>
                           {licenseFileName && <FileText className="text-emerald-400" size={16} />}
+                        </label>
+                      </div>
+                    </motion.div>
+
+                    {/* Aadhaar Card Document */}
+                    <motion.div
+                      layout={!isMobile}
+                      initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                      animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                      transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                    >
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Aadhaar Card Document</label>
+                      <div className="relative">
+                        <input
+                          type="file"
+                          id="aadhaar-upload"
+                          onChange={(e) => handleFileChange(e, setAadhaarDocument, setAadhaarFileName)}
+                          accept=".jpg,.jpeg,.png,.pdf"
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="aadhaar-upload"
+                          className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-xl py-3 px-4 text-slate-900 cursor-pointer transition-colors"
+                        >
+                          <Upload className="text-[#003893] shrink-0" size={18} />
+                          <span className="text-slate-500 truncate flex-1 text-sm">
+                            {aadhaarFileName || 'Upload Aadhaar Card (Image or PDF)...'}
+                          </span>
+                          {aadhaarFileName && <FileText className="text-emerald-500" size={16} />}
+                        </label>
+                      </div>
+                    </motion.div>
+
+                    {/* PAN Card Document */}
+                    <motion.div
+                      layout={!isMobile}
+                      initial={isMobile ? { opacity: 1 } : { opacity: 0, y: 10 }}
+                      animate={isMobile ? { opacity: 1 } : { opacity: 1, y: 0 }}
+                      transition={isMobile ? { duration: 0 } : { duration: 0.3 }}
+                    >
+                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">PAN Card Document</label>
+                      <div className="relative">
+                        <input
+                          type="file"
+                          id="pan-upload"
+                          onChange={(e) => handleFileChange(e, setPanDocument, setPanFileName)}
+                          accept=".jpg,.jpeg,.png,.pdf"
+                          className="hidden"
+                        />
+                        <label
+                          htmlFor="pan-upload"
+                          className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-xl py-3 px-4 text-slate-900 cursor-pointer transition-colors"
+                        >
+                          <Upload className="text-[#003893] shrink-0" size={18} />
+                          <span className="text-slate-500 truncate flex-1 text-sm">
+                            {panFileName || 'Upload PAN Card (Image or PDF)...'}
+                          </span>
+                          {panFileName && <FileText className="text-emerald-500" size={16} />}
                         </label>
                       </div>
                     </motion.div>

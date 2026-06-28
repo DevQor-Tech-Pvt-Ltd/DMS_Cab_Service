@@ -15,6 +15,8 @@ const signupSchema = z.object({
   licenseNumber: z.string().trim().optional(),
   rcDocument: z.string().trim().optional(),
   licenseDocument: z.string().trim().optional(),
+  aadhaarDocument: z.string().trim().optional(),
+  panDocument: z.string().trim().optional(),
   currentCity: z.string().trim().optional(),
   vehicleModelYear: z.string().trim().optional(),
   aadhaarNumber: z.string().trim().optional(),
@@ -35,22 +37,18 @@ const signupSchema = z.object({
       data.vehicleNumber &&
       data.vehicleModelYear &&
       data.licenseNumber &&
-      data.rcCopyAvailable &&
       data.insuranceValidTill &&
       data.preferredServiceArea &&
-      data.licenseDocument
+      data.licenseDocument &&
+      data.rcDocument &&
+      data.aadhaarDocument &&
+      data.panDocument
     );
-    if (!hasRequiredBase) return false;
-
-    // If RC Copy Available is 'Yes', then rcDocument upload is required
-    if (data.rcCopyAvailable === 'Yes' && !data.rcDocument) {
-      return false;
-    }
-    return true;
+    return hasRequiredBase;
   }
   return true;
 }, {
-  message: "All driver details (Contact Number, Current City, Car Number, Vehicle Model & Year, Driving License Number, RC Copy Available, Insurance Valid Till, Preferred Service Area, License Document, and RC Document if copy is available) are required.",
+  message: "All driver details (Contact Number, Current City, Car Number, Vehicle Model & Year, Driving License Number, Insurance Valid Till, Preferred Service Area, License Document, RC Document, Aadhaar Document, and PAN Document) are required.",
   path: ["role"]
 });
 
@@ -98,6 +96,8 @@ const updateProfileSchema = z.object({
   licenseNumber: z.string().trim().optional(),
   rcDocument: z.string().optional(),
   licenseDocument: z.string().optional(),
+  aadhaarDocument: z.string().optional(),
+  panDocument: z.string().optional(),
   currentCity: z.string().trim().optional(),
   vehicleModelYear: z.string().trim().optional(),
   aadhaarNumber: z.string().trim().optional(),

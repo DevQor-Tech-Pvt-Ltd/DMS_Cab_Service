@@ -80,6 +80,8 @@ exports.register = async (req, res, next) => {
       licenseNumber,
       rcDocument,
       licenseDocument,
+      aadhaarDocument,
+      panDocument,
       currentCity,
       vehicleModelYear,
       aadhaarNumber,
@@ -139,15 +141,16 @@ exports.register = async (req, res, next) => {
         !vehicleNumber ||
         !vehicleModelYear ||
         !licenseNumber ||
-        !rcCopyAvailable ||
         !insuranceValidTill ||
         !preferredServiceArea ||
         !licenseDocument ||
-        (rcCopyAvailable === 'Yes' && !rcDocument)
+        !rcDocument ||
+        !aadhaarDocument ||
+        !panDocument
       ) {
         return res.status(400).json({
           success: false,
-          message: 'All driver details (Contact Number, Current City, Car Number, Vehicle Model & Year, Driving License Number, RC Copy Available, Insurance Valid Till, Preferred Service Area, License Document, and RC Document if available) are required.'
+          message: 'All driver details (Contact Number, Current City, Car Number, Vehicle Model & Year, Driving License Number, Insurance Valid Till, Preferred Service Area, License Document, RC Document, Aadhaar Document, and PAN Document) are required.'
         });
       }
       userData.vehicleNumber = vehicleNumber;
@@ -156,13 +159,15 @@ exports.register = async (req, res, next) => {
       // Upload documents to Cloudinary to replace base64 strings with clean URLs
       userData.rcDocument = rcDocument ? await uploadBase64Document(rcDocument, 'dms_luxe_vehicle_rc') : null;
       userData.licenseDocument = licenseDocument ? await uploadBase64Document(licenseDocument, 'dms_luxe_driver_licenses') : null;
+      userData.aadhaarDocument = aadhaarDocument ? await uploadBase64Document(aadhaarDocument, 'dms_luxe_driver_aadhaars') : null;
+      userData.panDocument = panDocument ? await uploadBase64Document(panDocument, 'dms_luxe_driver_pans') : null;
 
       userData.currentCity = currentCity;
       userData.vehicleModelYear = vehicleModelYear;
       userData.aadhaarNumber = aadhaarNumber;
       userData.driverNameIfVendor = driverNameIfVendor;
       userData.driverContactNumber = driverContactNumber;
-      userData.rcCopyAvailable = rcCopyAvailable;
+      userData.rcCopyAvailable = rcCopyAvailable || 'Yes';
       userData.insuranceValidTill = insuranceValidTill;
       userData.preferredServiceArea = preferredServiceArea;
       userData.previousExperience = previousExperience;
@@ -306,6 +311,8 @@ exports.updateProfile = async (req, res, next) => {
       licenseNumber,
       rcDocument,
       licenseDocument,
+      aadhaarDocument,
+      panDocument,
       profilePicture,
       currentCity,
       vehicleModelYear,
@@ -357,6 +364,12 @@ exports.updateProfile = async (req, res, next) => {
       }
       if (licenseDocument !== undefined) {
         user.licenseDocument = licenseDocument ? await uploadBase64Document(licenseDocument, 'dms_luxe_driver_licenses') : null;
+      }
+      if (aadhaarDocument !== undefined) {
+        user.aadhaarDocument = aadhaarDocument ? await uploadBase64Document(aadhaarDocument, 'dms_luxe_driver_aadhaars') : null;
+      }
+      if (panDocument !== undefined) {
+        user.panDocument = panDocument ? await uploadBase64Document(panDocument, 'dms_luxe_driver_pans') : null;
       }
       if (currentCity !== undefined) user.currentCity = currentCity;
       if (vehicleModelYear !== undefined) user.vehicleModelYear = vehicleModelYear;

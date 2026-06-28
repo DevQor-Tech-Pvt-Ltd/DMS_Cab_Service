@@ -99,7 +99,6 @@ const AdminApprovedDrivers = ({
                         <p><strong className="text-slate-500 font-medium">Aadhaar:</strong> <MaskedAadhaar aadhaar={driver.aadhaarNumber} driverId={driver._id} /></p>
                         {driver.driverNameIfVendor && <p><strong className="text-slate-500 font-medium">Driver (Vendor):</strong> <span className="font-semibold text-slate-900">{driver.driverNameIfVendor}</span></p>}
                         {driver.driverContactNumber && <p><strong className="text-slate-500 font-medium">Driver Contact:</strong> <span className="font-semibold text-slate-900">{driver.driverContactNumber}</span></p>}
-                        <p><strong className="text-slate-500 font-medium">RC Available:</strong> <span className="font-semibold text-slate-900">{driver.rcCopyAvailable || 'No'}</span></p>
                         <p><strong className="text-slate-500 font-medium">Insurance Till:</strong> <span className="font-semibold text-slate-900">{driver.insuranceValidTill || 'N/A'}</span></p>
                         <p><strong className="text-slate-500 font-medium">Preferred Area:</strong> <span className="font-semibold text-slate-900">{driver.preferredServiceArea || 'N/A'}</span></p>
                         {driver.previousExperience && <p><strong className="text-slate-500 font-medium">Experience:</strong> <span className="font-semibold text-slate-900">{driver.previousExperience}</span></p>}
@@ -136,6 +135,32 @@ const AdminApprovedDrivers = ({
                           </button>
                         ) : (
                           <span className="text-xs text-slate-700 font-medium italic">No License</span>
+                        )}
+                        {driver.aadhaarDocument && (
+                          <button
+                            onClick={() => setSelectedDoc({
+                              docData: driver.aadhaarDocument,
+                              docTitle: 'Aadhaar Card Document',
+                              driverName: driver.fullName
+                            })}
+                            className="flex items-center space-x-1.5 text-xs bg-white border border-[#003893]/40 text-[#003893] hover:bg-[#003893] hover:text-white hover:border-[#003893] px-3 py-1.5 rounded-lg transition-all duration-200 font-semibold shadow-sm cursor-pointer"
+                          >
+                            <Eye size={12} />
+                            <span>View Aadhaar</span>
+                          </button>
+                        )}
+                        {driver.panDocument && (
+                          <button
+                            onClick={() => setSelectedDoc({
+                              docData: driver.panDocument,
+                              docTitle: 'PAN Card Document',
+                              driverName: driver.fullName
+                            })}
+                            className="flex items-center space-x-1.5 text-xs bg-white border border-[#003893]/40 text-[#003893] hover:bg-[#003893] hover:text-white hover:border-[#003893] px-3 py-1.5 rounded-lg transition-all duration-200 font-semibold shadow-sm cursor-pointer"
+                          >
+                            <Eye size={12} />
+                            <span>View PAN Card</span>
+                          </button>
                         )}
                       </div>
                     </td>
@@ -184,7 +209,6 @@ const AdminApprovedDrivers = ({
                       <p><strong className="text-slate-500 font-medium">Aadhaar:</strong> <MaskedAadhaar aadhaar={driver.aadhaarNumber} driverId={driver._id} /></p>
                       {driver.driverNameIfVendor && <p><strong className="text-slate-500 font-medium">Driver (Vendor):</strong> <span className="font-semibold">{driver.driverNameIfVendor}</span></p>}
                       {driver.driverContactNumber && <p><strong className="text-slate-500 font-medium">Driver Phone:</strong> <span className="font-semibold">{driver.driverContactNumber}</span></p>}
-                      <p><strong className="text-slate-500 font-medium">RC Available:</strong> <span className="font-semibold">{driver.rcCopyAvailable || 'No'}</span></p>
                       <p><strong className="text-slate-500 font-medium">Insurance Till:</strong> <span className="font-semibold">{driver.insuranceValidTill || 'N/A'}</span></p>
                       <p><strong className="text-slate-500 font-medium">Preferred Area:</strong> <span className="font-semibold">{driver.preferredServiceArea || 'N/A'}</span></p>
                       {driver.previousExperience && <p><strong className="text-slate-500 font-medium">Experience:</strong> <span className="font-semibold">{driver.previousExperience}</span></p>}
@@ -224,6 +248,32 @@ const AdminApprovedDrivers = ({
                       </button>
                     ) : (
                       <span className="text-xs text-slate-500 font-medium italic">No License</span>
+                    )}
+                    {driver.aadhaarDocument && (
+                      <button
+                        onClick={() => setSelectedDoc({
+                          docData: driver.aadhaarDocument,
+                          docTitle: 'Aadhaar Card Document',
+                          driverName: driver.fullName
+                        })}
+                        className="flex items-center space-x-1 text-[11px] bg-white border border-[#003893]/30 text-[#003893] hover:bg-[#003893] hover:text-white px-2.5 py-1.5 rounded-lg transition-all duration-200 font-semibold shadow-xs cursor-pointer"
+                      >
+                        <Eye size={12} />
+                        <span>Aadhaar</span>
+                      </button>
+                    )}
+                    {driver.panDocument && (
+                      <button
+                        onClick={() => setSelectedDoc({
+                          docData: driver.panDocument,
+                          docTitle: 'PAN Card Document',
+                          driverName: driver.fullName
+                        })}
+                        className="flex items-center space-x-1 text-[11px] bg-white border border-[#003893]/30 text-[#003893] hover:bg-[#003893] hover:text-white px-2.5 py-1.5 rounded-lg transition-all duration-200 font-semibold shadow-xs cursor-pointer"
+                      >
+                        <Eye size={12} />
+                        <span>PAN Card</span>
+                      </button>
                     )}
                   </div>
                 </div>

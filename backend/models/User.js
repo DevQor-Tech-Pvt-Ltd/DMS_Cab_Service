@@ -61,6 +61,8 @@ const userSchema = new mongoose.Schema(
     licenseNumber: String,
     rcDocument: String,
     licenseDocument: String,
+    aadhaarDocument: String,
+    panDocument: String,
     profilePicture: String,
     currentCity: String,
     vehicleModelYear: String,

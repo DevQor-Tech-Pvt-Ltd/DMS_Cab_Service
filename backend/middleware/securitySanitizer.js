@@ -8,6 +8,8 @@ const EXCLUDED_KEYS = new Set([
   'currentPassword',
   'rcDocument',
   'licenseDocument',
+  'aadhaarDocument',
+  'panDocument',
   'profilePicture',
   'token',
   'refreshToken',

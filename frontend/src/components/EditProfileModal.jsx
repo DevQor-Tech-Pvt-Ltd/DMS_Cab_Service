@@ -15,14 +15,18 @@ const EditProfileModal = ({ isOpen, onClose }) => {
   const [licenseNumber, setLicenseNumber] = useState('');
   const [rcDocument, setRcDocument] = useState('');
   const [licenseDocument, setLicenseDocument] = useState('');
+  const [aadhaarDocument, setAadhaarDocument] = useState('');
+  const [panDocument, setPanDocument] = useState('');
   const [rcFileName, setRcFileName] = useState('');
   const [licenseFileName, setLicenseFileName] = useState('');
+  const [aadhaarFileName, setAadhaarFileName] = useState('');
+  const [panFileName, setPanFileName] = useState('');
   const [currentCity, setCurrentCity] = useState('');
   const [vehicleModelYear, setVehicleModelYear] = useState('');
   const [aadhaarNumber, setAadhaarNumber] = useState('');
   const [driverNameIfVendor, setDriverNameIfVendor] = useState('');
   const [driverContactNumber, setDriverContactNumber] = useState('');
-  const [rcCopyAvailable, setRcCopyAvailable] = useState('No');
+  const [rcCopyAvailable, setRcCopyAvailable] = useState('Yes');
   const [insuranceValidTill, setInsuranceValidTill] = useState('');
   const [preferredServiceArea, setPreferredServiceArea] = useState('');
   const [previousExperience, setPreviousExperience] = useState('');
@@ -52,13 +56,17 @@ const EditProfileModal = ({ isOpen, onClose }) => {
       setLicenseDocument(user.licenseDocument || '');
       setRcFileName(user.rcDocument ? 'Uploaded RC Document' : '');
       setLicenseFileName(user.licenseDocument ? 'Uploaded License Document' : '');
+      setAadhaarDocument(user.aadhaarDocument || '');
+      setAadhaarFileName(user.aadhaarDocument ? 'Uploaded Aadhaar Card' : '');
+      setPanDocument(user.panDocument || '');
+      setPanFileName(user.panDocument ? 'Uploaded PAN Card' : '');
       setProfilePicture(user.profilePicture || '');
       setCurrentCity(user.currentCity || '');
       setVehicleModelYear(user.vehicleModelYear || '');
       setAadhaarNumber(user.aadhaarNumber || '');
       setDriverNameIfVendor(user.driverNameIfVendor || '');
       setDriverContactNumber(user.driverContactNumber || '');
-      setRcCopyAvailable(user.rcCopyAvailable || 'No');
+      setRcCopyAvailable(user.rcCopyAvailable || 'Yes');
       setInsuranceValidTill(user.insuranceValidTill || '');
       setPreferredServiceArea(user.preferredServiceArea || '');
       setPreviousExperience(user.previousExperience || '');
@@ -151,8 +159,16 @@ const EditProfileModal = ({ isOpen, onClose }) => {
         setError('Driving License Number is required.');
         return;
       }
-      if (rcCopyAvailable === 'Yes' && !rcDocument) {
+      if (!rcDocument) {
         setError('Please upload vehicle RC document.');
+        return;
+      }
+      if (!aadhaarDocument) {
+        setError('Please upload Aadhaar Card document.');
+        return;
+      }
+      if (!panDocument) {
+        setError('Please upload PAN Card document.');
         return;
       }
       if (!insuranceValidTill.trim()) {
@@ -202,6 +218,8 @@ const EditProfileModal = ({ isOpen, onClose }) => {
           licenseNumber, 
           rcDocument, 
           licenseDocument,
+          aadhaarDocument,
+          panDocument,
           currentCity,
           vehicleModelYear,
           aadhaarNumber,
@@ -469,54 +487,29 @@ const EditProfileModal = ({ isOpen, onClose }) => {
                     </div>
                   </div>
 
-                  {/* RC Copy Available */}
+                  {/* RC Document */}
                   <div>
-                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">RC Copy Available</label>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">RC Document</label>
                     <div className="relative">
-                      <Briefcase className="absolute left-4 top-1/2 -translate-y-1/2 text-[#003893]" size={18} />
-                      <select
-                        value={rcCopyAvailable}
-                        onChange={(e) => {
-                          setRcCopyAvailable(e.target.value);
-                          if (e.target.value === 'No') {
-                            setRcDocument('');
-                            setRcFileName('');
-                          }
-                        }}
-                        required
-                        className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors appearance-none"
+                      <input
+                        type="file"
+                        id="modal-rc-upload"
+                        onChange={(e) => handleFileChange(e, setRcDocument, setRcFileName)}
+                        accept=".jpg,.jpeg,.png,.pdf"
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="modal-rc-upload"
+                        className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-lg py-2.5 px-4 text-slate-800 cursor-pointer transition-colors"
                       >
-                        <option value="No">No</option>
-                        <option value="Yes">Yes</option>
-                      </select>
+                        <Upload className="text-[#003893] shrink-0" size={18} />
+                        <span className="text-slate-500 truncate flex-1 text-sm">
+                          {rcFileName || 'Upload New RC File...'}
+                        </span>
+                        {rcFileName && <FileText className="text-emerald-500" size={16} />}
+                      </label>
                     </div>
                   </div>
-
-                  {/* RC Document */}
-                  {rcCopyAvailable === 'Yes' && (
-                    <div>
-                      <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">RC Document</label>
-                      <div className="relative">
-                        <input
-                          type="file"
-                          id="modal-rc-upload"
-                          onChange={(e) => handleFileChange(e, setRcDocument, setRcFileName)}
-                          accept=".jpg,.jpeg,.png,.pdf"
-                          className="hidden"
-                        />
-                        <label
-                          htmlFor="modal-rc-upload"
-                          className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-lg py-2.5 px-4 text-slate-800 cursor-pointer transition-colors"
-                        >
-                          <Upload className="text-[#003893] shrink-0" size={18} />
-                          <span className="text-slate-500 truncate flex-1 text-sm">
-                            {rcFileName || 'Upload New RC File...'}
-                          </span>
-                          {rcFileName && <FileText className="text-emerald-500" size={16} />}
-                        </label>
-                      </div>
-                    </div>
-                  )}
 
                   {/* Insurance Valid Till */}
                   <div>
@@ -584,6 +577,54 @@ const EditProfileModal = ({ isOpen, onClose }) => {
                           {licenseFileName || 'Upload New License File...'}
                         </span>
                         {licenseFileName && <FileText className="text-emerald-500" size={16} />}
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Aadhaar Card Document */}
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Aadhaar Card Document</label>
+                    <div className="relative">
+                      <input
+                        type="file"
+                        id="modal-aadhaar-upload"
+                        onChange={(e) => handleFileChange(e, setAadhaarDocument, setAadhaarFileName)}
+                        accept=".jpg,.jpeg,.png,.pdf"
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="modal-aadhaar-upload"
+                        className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-lg py-2.5 px-4 text-slate-800 cursor-pointer transition-colors"
+                      >
+                        <Upload className="text-[#003893] shrink-0" size={18} />
+                        <span className="text-slate-500 truncate flex-1 text-sm">
+                          {aadhaarFileName || 'Upload New Aadhaar Card File...'}
+                        </span>
+                        {aadhaarFileName && <FileText className="text-emerald-500" size={16} />}
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* PAN Card Document */}
+                  <div>
+                    <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">PAN Card Document</label>
+                    <div className="relative">
+                      <input
+                        type="file"
+                        id="modal-pan-upload"
+                        onChange={(e) => handleFileChange(e, setPanDocument, setPanFileName)}
+                        accept=".jpg,.jpeg,.png,.pdf"
+                        className="hidden"
+                      />
+                      <label
+                        htmlFor="modal-pan-upload"
+                        className="flex items-center space-x-3 w-full bg-slate-50 border border-slate-200 hover:border-[#003893]/50 rounded-lg py-2.5 px-4 text-slate-800 cursor-pointer transition-colors"
+                      >
+                        <Upload className="text-[#003893] shrink-0" size={18} />
+                        <span className="text-slate-500 truncate flex-1 text-sm">
+                          {panFileName || 'Upload New PAN Card File...'}
+                        </span>
+                        {panFileName && <FileText className="text-emerald-500" size={16} />}
                       </label>
                     </div>
                   </div>
