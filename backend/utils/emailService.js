@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const dns = require('dns');
 const escapeHtml = require('./escapeHtml');
 const logger = require('./logger');
 
@@ -30,7 +31,10 @@ const transporter = nodemailer.createTransport({
   port: smtpPort,
   secure: smtpPort === 465,
 
-  family: 4,
+  // Force IPv4 by providing a custom DNS resolver lookup
+  lookup: (hostname, options, callback) => {
+    dns.lookup(hostname, { family: 4 }, callback);
+  },
 
   auth: {
     user: smtpUser,
