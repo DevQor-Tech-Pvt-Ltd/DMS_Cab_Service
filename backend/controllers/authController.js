@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { sendInquiryEmail, getEmailHealthStatus } = require('../utils/emailService');
+const { sendInquiryEmail, sendEmail, getEmailHealthStatus } = require('../utils/emailService');
 const { uploadBase64Document } = require('../utils/cloudinary');
 const logger = require('../utils/logger');
 const { isDeployed, getCookieOptions } = require('../utils/env');
@@ -718,3 +718,37 @@ exports.emailHealth = async (req, res) => {
     return res.status(500).json({ error: 'Failed to retrieve email health status.' });
   }
 };
+
+/**
+ * GET /api/v1/auth/test-smtp-live
+ * Performs real-time SMTP connection verification and returns diagnosis status
+ */
+exports.testSmtpLive = async (req, res) => {
+  try {
+    const { testSmtpConnection } = require('../utils/emailService');
+    const verification = await testSmtpConnection();
+    
+    const user = process.env.SMTP_USER || '';
+    const maskedUser = user.length > 5 
+      ? user.substring(0, 3) + '***' + user.substring(user.indexOf('@') - 2)
+      : '***';
+
+    return res.status(200).json({
+      success: true,
+      smtp: {
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: Number(process.env.SMTP_PORT) || 587,
+        user: maskedUser,
+        recipient: process.env.CONTACT_INQUIRY_RECIPIENT || user
+      },
+      verification
+    });
+  } catch (error) {
+    logger.error('Test SMTP Live endpoint error: %s', error.message);
+    return res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+};
+

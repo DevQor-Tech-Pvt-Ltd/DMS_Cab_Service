@@ -719,12 +719,48 @@ async function sendInquiryEmail({ firstName, lastName, email, phone, subject, me
 }
 
 // ---------------------------------------------------------------------------
+// sendEmail — generic email sender helper mapping to safeSendEmail
+// ---------------------------------------------------------------------------
+async function sendEmail({ to, subject, html, text }) {
+  const mailOptions = {
+    from: `"DMS Cab Services" <${smtpUser}>`,
+    to,
+    subject,
+    html,
+    text,
+  };
+  const result = await safeSendEmail(mailOptions, { context: 'GENERIC' });
+  if (!result.success) {
+    throw new Error(result.error || 'Failed to send email');
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// testSmtpConnection — verifies SMTP connection
+// ---------------------------------------------------------------------------
+async function testSmtpConnection() {
+  return new Promise((resolve) => {
+    transporter.verify((error, success) => {
+      if (error) {
+        resolve({ success: false, error: error.message });
+      } else {
+        resolve({ success: true });
+      }
+    });
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 module.exports = {
   safeSendEmail,
+  sendEmail,
   sendInvoiceEmail,
   sendOtpEmail,
   sendInquiryEmail,
   getEmailHealthStatus,
+  testSmtpConnection,
 };
+
