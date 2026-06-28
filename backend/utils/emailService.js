@@ -36,9 +36,9 @@ const transporter = nodemailer.createTransport({
   pool: true,
   maxConnections: 5,
   maxMessages: 100,
-  connectionTimeout: 10000,  // 10 s — fail fast on unreachable host
-  greetingTimeout: 10000,    // 10 s
-  socketTimeout: 30000,      // 30 s — enough for slow SMTP handshakes
+  connectionTimeout: 5000,   // 5 s — fail fast
+  greetingTimeout: 5000,     // 5 s
+  socketTimeout: 15000,      // 15 s
   tls: {
     rejectUnauthorized: true,
     minVersion: 'TLSv1.2',
@@ -70,7 +70,7 @@ function logSmtpError(context, error, recipient) {
 // Retry policy: up to 3 attempts with exponential backoff (1 s, 2 s, 4 s).
 // Returns a structured result object — never throws.
 // ---------------------------------------------------------------------------
-const RETRY_DELAYS = [1000, 2000, 4000]; // ms between retries
+const RETRY_DELAYS = [500, 1000, 2000]; // ms between retries
 
 async function safeSendEmail(mailOptions, meta = {}) {
   const startTime = Date.now();
