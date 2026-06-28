@@ -147,8 +147,8 @@ const paymentLimiter = createLimiter({
  * Prevents SMTP spam abuse on the unauthenticated public contact form.
  */
 const contactInquiryLimiter = createLimiter({
-  windowMs: 15 * 60 * 1000, // 15 Minutes
-  maxProd: 3,                // Very strict — public, unauthenticated endpoint
+  windowMs: 10 * 60 * 1000, // 10 Minutes
+  maxProd: 5,                // Strict but allows legitimate retries
   maxDev: 1000,
   message: 'Too many contact inquiries. Please try again later.',
   apiName: 'CONTACT_INQUIRY'

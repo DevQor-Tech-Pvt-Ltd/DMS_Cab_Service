@@ -1,6 +1,5 @@
 const nodemailer = require('nodemailer');
 const dns = require('dns');
-const https = require('https');
 const escapeHtml = require('./escapeHtml');
 const logger = require('./logger');
 
@@ -71,38 +70,6 @@ function logSmtpError(context, error, recipient) {
 }
 
 // ---------------------------------------------------------------------------
-// Native HTTPS helper to post requests to Resend API
-// ---------------------------------------------------------------------------
-const makeHttpsPost = (url, headers, body) => {
-  return new Promise((resolve, reject) => {
-    const urlObj = new URL(url);
-    const options = {
-      method: 'POST',
-      hostname: urlObj.hostname,
-      path: urlObj.pathname,
-      headers: headers
-    };
-
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        let parsed;
-        try { parsed = JSON.parse(data); } catch (e) { parsed = data; }
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve({ status: res.statusCode, data: parsed });
-        } else {
-          reject({ status: res.statusCode, data: parsed });
-        }
-      });
-    });
-    req.on('error', (e) => reject(e));
-    req.write(JSON.stringify(body));
-    req.end();
-  });
-};
-
-// ---------------------------------------------------------------------------
 // safeSendEmail — centralised, retry-capable email dispatcher
 //
 // Every email in the project (invoice, OTP, inquiry, future) MUST use this.
@@ -116,61 +83,6 @@ async function safeSendEmail(mailOptions, meta = {}) {
   const startTime = Date.now();
   const recipient = mailOptions.to;
   const context = meta.context || 'GENERIC';
-
-  const resendApiKey = process.env.RESEND_API_KEY;
-  const resendFrom = process.env.RESEND_FROM || 'onboarding@resend.dev';
-
-  if (resendApiKey) {
-    logger.info('[EMAIL] Dispatching %s email via Resend API — to=%s subject="%s"', context, recipient, mailOptions.subject);
-    try {
-      let displayName = 'DMS Cab Services';
-      if (mailOptions.from) {
-        const match = mailOptions.from.match(/^"([^"]+)"/);
-        if (match) {
-          displayName = match[1];
-        }
-      }
-
-      const payload = {
-        from: `${displayName} <${resendFrom}>`,
-        to: mailOptions.to,
-        subject: mailOptions.subject,
-        html: mailOptions.html,
-      };
-
-      if (mailOptions.replyTo) {
-        payload.reply_to = mailOptions.replyTo;
-      }
-
-      const res = await makeHttpsPost(
-        'https://api.resend.com/emails',
-        {
-          'Authorization': `Bearer ${resendApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        payload
-      );
-
-      const durationMs = Date.now() - startTime;
-      logger.info('[EMAIL SUCCESS] %s via Resend — id=%s duration=%dms', context, res.data?.id, durationMs);
-
-      return {
-        success: true,
-        messageId: res.data?.id || 'resend-id',
-        accepted: [recipient],
-        rejected: []
-      };
-    } catch (error) {
-      const errMsg = error.data?.message || error.message || 'Unknown Resend Error';
-      logger.error('[EMAIL RESEND FAILED] %s — error: %s', context, errMsg);
-      return {
-        success: false,
-        error: errMsg,
-        code: 'RESEND_ERROR',
-        responseCode: error.status || null
-      };
-    }
-  }
 
   logger.info('[EMAIL] Sending %s email — to=%s subject="%s"', context, recipient, mailOptions.subject);
 
@@ -218,15 +130,12 @@ async function safeSendEmail(mailOptions, meta = {}) {
 // getEmailHealthStatus — safe config check for the /email-health endpoint
 // ---------------------------------------------------------------------------
 function getEmailHealthStatus() {
-  const resendApiKey = process.env.RESEND_API_KEY;
   return {
     smtpConfigured: !!(smtpUser && smtpPass),
     host: smtpHost,
     port: smtpPort,
     userConfigured: !!smtpUser,
     recipientConfigured: !!(process.env.CONTACT_INQUIRY_RECIPIENT || smtpUser),
-    resendConfigured: !!resendApiKey,
-    resendFrom: process.env.RESEND_FROM || 'onboarding@resend.dev'
   };
 }
 
