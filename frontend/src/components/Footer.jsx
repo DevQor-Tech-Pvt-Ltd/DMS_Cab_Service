@@ -77,7 +77,7 @@ const Footer = () => {
               </li>
               <li className="flex flex-col items-center text-center space-y-1 space-x-0 md:flex-row md:items-start md:text-left md:space-x-3 md:space-y-0">
                 <MapPin size={15} className="text-[#FFC107] mt-0.5 shrink-0" />
-                <span className="text-slate-300 leading-relaxed">Cabin 19, 8th Floor, Delta Tower (Awfis), Sector V, Salt Lake Bypass, Bidhannagar, Kolkata – 700091</span>
+                <span className="text-slate-300 leading-relaxed">8th Floor, Delta Tower (Awfis), Sector V, Salt Lake Bypass, Bidhannagar, Kolkata – 700091</span>
               </li>
             </ul>
           </div>
