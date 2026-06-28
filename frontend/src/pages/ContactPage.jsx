@@ -59,7 +59,9 @@ const ContactPage = () => {
       setTimeout(() => setIsSubmitted(false), 5000);
     } catch (err) {
       console.error('Contact inquiry submit error:', err);
-      setError(err.response?.data?.message || 'Failed to submit inquiry. Please try again.');
+      // Show backend message if available, otherwise a user-friendly fallback
+      const backendMsg = err.response?.data?.message;
+      setError(backendMsg || "We couldn't send your message right now. Please try again later.");
     } finally {
       setLoading(false);
     }

@@ -2,129 +2,140 @@ const nodemailer = require('nodemailer');
 const escapeHtml = require('./escapeHtml');
 const logger = require('./logger');
 
-const https = require('https');
-
+// ---------------------------------------------------------------------------
+// SMTP Configuration (production-safe: never log SMTP_PASS)
+// ---------------------------------------------------------------------------
 const smtpUser = process.env.SMTP_USER;
 const smtpPass = process.env.SMTP_PASS;
-const resendApiKey = process.env.RESEND_API_KEY;
-const resendFrom = process.env.RESEND_FROM || 'onboarding@resend.dev';
+const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
+const smtpPort = Number(process.env.SMTP_PORT) || 587;
 
-let transporter = null;
-
-if (resendApiKey) {
-  logger.info('Email Service: Resend API configured. SMTP will be bypassed.');
+if (!smtpUser || !smtpPass) {
+  logger.warn('[EMAIL CONFIG] SMTP_USER or SMTP_PASS environment variables are not set.');
 } else {
-  if (!smtpUser || !smtpPass) {
-    logger.warn('Warning: Neither RESEND_API_KEY nor SMTP credentials are set.');
-  }
-  const smtpPort = parseInt(process.env.SMTP_PORT || '587');
-  transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: smtpPort,
-    secure: smtpPort === 465,
-    auth: {
-      user: smtpUser,
-      pass: smtpPass,
-    },
-  });
+  logger.info('[EMAIL CONFIG] SMTP configured — host=%s port=%d user=%s', smtpHost, smtpPort, smtpUser);
+}
 
-  // Verify SMTP connection on startup if using SMTP
-  transporter.verify((error, success) => {
-    if (error) {
-      logger.error('[SMTP VERIFICATION ERROR] Connection failed: %s', error.message);
-    } else {
-      logger.info('SMTP connection established successfully.');
-    }
+// ---------------------------------------------------------------------------
+// Production-grade Nodemailer Transporter
+// - Pooled connections for throughput
+// - Explicit timeouts to prevent hanging on Render cold-starts
+// - secure auto-detected from port (465 → true, else false)
+// - TLS hardened for production
+// - NO startup transporter.verify() — it causes false timeout errors on
+//   free-tier hosts and delays boot for no production benefit
+// ---------------------------------------------------------------------------
+const transporter = nodemailer.createTransport({
+  host: smtpHost,
+  port: smtpPort,
+  secure: smtpPort === 465,
+  auth: {
+    user: smtpUser,
+    pass: smtpPass,
+  },
+  pool: true,
+  maxConnections: 5,
+  maxMessages: 100,
+  connectionTimeout: 10000,  // 10 s — fail fast on unreachable host
+  greetingTimeout: 10000,    // 10 s
+  socketTimeout: 30000,      // 30 s — enough for slow SMTP handshakes
+  tls: {
+    rejectUnauthorized: true,
+    minVersion: 'TLSv1.2',
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Structured SMTP Error Logger (production-safe — never logs credentials)
+// ---------------------------------------------------------------------------
+function logSmtpError(context, error, recipient) {
+  logger.error('[SMTP ERROR] %s', context, {
+    message: error.message,
+    code: error.code || 'UNKNOWN',
+    responseCode: error.responseCode || null,
+    response: error.response || null,
+    command: error.command || null,
+    hostname: smtpHost,
+    port: smtpPort,
+    recipient: recipient || 'N/A',
+    stack: error.stack,
   });
 }
 
-/**
- * Native HTTPS helper to post requests to Resend API
- */
-const makeHttpsPost = (url, headers, body) => {
-  return new Promise((resolve, reject) => {
-    const urlObj = new URL(url);
-    const options = {
-      method: 'POST',
-      hostname: urlObj.hostname,
-      path: urlObj.pathname,
-      headers: headers
-    };
+// ---------------------------------------------------------------------------
+// safeSendEmail — centralised, retry-capable email dispatcher
+//
+// Every email in the project (invoice, OTP, inquiry, future) MUST use this.
+//
+// Retry policy: up to 3 attempts with exponential backoff (1 s, 2 s, 4 s).
+// Returns a structured result object — never throws.
+// ---------------------------------------------------------------------------
+const RETRY_DELAYS = [1000, 2000, 4000]; // ms between retries
 
-    const req = https.request(options, (res) => {
-      let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
-        let parsed;
-        try { parsed = JSON.parse(data); } catch (e) { parsed = data; }
-        if (res.statusCode >= 200 && res.statusCode < 300) {
-          resolve({ status: res.statusCode, data: parsed });
-        } else {
-          reject({ status: res.statusCode, data: parsed });
-        }
-      });
-    });
-    req.on('error', (e) => reject(e));
-    req.write(JSON.stringify(body));
-    req.end();
-  });
-};
+async function safeSendEmail(mailOptions, meta = {}) {
+  const startTime = Date.now();
+  const recipient = mailOptions.to;
+  const context = meta.context || 'GENERIC';
 
-/**
- * Unified sendMail function that either uses Resend API or SMTP
- */
-const sendMail = async (options) => {
-  if (resendApiKey) {
-    let displayName = 'DMS Cab Services';
-    if (options.from) {
-      const match = options.from.match(/^"([^"]+)"/);
-      if (match) {
-        displayName = match[1];
+  logger.info('[EMAIL] Sending %s email — to=%s subject="%s"', context, recipient, mailOptions.subject);
+
+  for (let attempt = 1; attempt <= RETRY_DELAYS.length + 1; attempt++) {
+    try {
+      const info = await transporter.sendMail(mailOptions);
+      const durationMs = Date.now() - startTime;
+
+      logger.info('[EMAIL SUCCESS] %s — messageId=%s accepted=%j rejected=%j duration=%dms',
+        context, info.messageId, info.accepted, info.rejected, durationMs);
+
+      return {
+        success: true,
+        messageId: info.messageId,
+        accepted: info.accepted,
+        rejected: info.rejected,
+      };
+    } catch (error) {
+      logSmtpError(`${context} attempt ${attempt}/${RETRY_DELAYS.length + 1}`, error, recipient);
+
+      // If we have retries left, wait and try again
+      if (attempt <= RETRY_DELAYS.length) {
+        const delay = RETRY_DELAYS[attempt - 1];
+        logger.info('[EMAIL RETRY] %s — retrying in %dms (attempt %d/%d)',
+          context, delay, attempt + 1, RETRY_DELAYS.length + 1);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        // All retries exhausted
+        const durationMs = Date.now() - startTime;
+        logger.error('[EMAIL FAILED] %s — all %d attempts exhausted, duration=%dms',
+          context, RETRY_DELAYS.length + 1, durationMs);
+
+        return {
+          success: false,
+          error: error.message,
+          code: error.code || 'UNKNOWN',
+          responseCode: error.responseCode || null,
+        };
       }
     }
-
-    const payload = {
-      from: `${displayName} <${resendFrom}>`,
-      to: options.to,
-      subject: options.subject,
-      html: options.html,
-      text: options.text,
-    };
-
-    if (options.replyTo) {
-      payload.reply_to = options.replyTo;
-    }
-
-    try {
-      const res = await makeHttpsPost(
-        'https://api.resend.com/emails',
-        {
-          'Authorization': `Bearer ${resendApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        payload
-      );
-      return {
-        messageId: res.data?.id || 'resend-id',
-        response: '250 OK'
-      };
-    } catch (err) {
-      const errMsg = err.data?.message || err.message || 'Unknown Resend Error';
-      logger.error('[RESEND ERROR] Failed to dispatch email: %s', errMsg);
-      throw new Error(errMsg);
-    }
-  } else {
-    if (!transporter) {
-      throw new Error('Email service not initialized (missing SMTP or Resend credentials)');
-    }
-    return await transporter.sendMail(options);
   }
-};
+}
 
-/**
- * Send booking confirmation and invoice email to client
- */
-exports.sendInvoiceEmail = async (ride) => {
+// ---------------------------------------------------------------------------
+// getEmailHealthStatus — safe config check for the /email-health endpoint
+// ---------------------------------------------------------------------------
+function getEmailHealthStatus() {
+  return {
+    smtpConfigured: !!(smtpUser && smtpPass),
+    host: smtpHost,
+    port: smtpPort,
+    userConfigured: !!smtpUser,
+    recipientConfigured: !!(process.env.CONTACT_INQUIRY_RECIPIENT || smtpUser),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// sendInvoiceEmail — booking confirmation & invoice
+// ---------------------------------------------------------------------------
+async function sendInvoiceEmail(ride) {
   try {
     const to = ride.passengerDetails.email;
     const isPaid = ride.paymentStatus === 'paid';
@@ -410,38 +421,18 @@ exports.sendInvoiceEmail = async (ride) => {
       html: htmlContent,
     };
 
-    const info = await sendMail(mailOptions);
-    logger.info(`[EMAIL SUCCESS] Invoice sent for ride: ${ride._id}. MessageId: ${info.messageId}`);
-    return true;
+    const result = await safeSendEmail(mailOptions, { context: 'INVOICE' });
+    return result.success;
   } catch (error) {
-    logger.error('[EMAIL ERROR] Failed to dispatch invoice email: %s', error.message);
+    logSmtpError('INVOICE_BUILD', error, ride?.passengerDetails?.email);
     return false;
   }
-};
+}
 
-/**
- * Generic reusable sendEmail helper
- */
-exports.sendEmail = async ({ to, subject, html }) => {
-  try {
-    const mailOptions = {
-      from: `"DMS Cab Services" <${smtpUser}>`,
-      to,
-      subject,
-      html,
-    };
-    const info = await sendMail(mailOptions);
-    return info;
-  } catch (error) {
-    logger.error('[GENERIC EMAIL ERROR]: %s', error.message);
-    throw error;
-  }
-};
-
-/**
- * Send secure Ride Start OTP to client
- */
-exports.sendOtpEmail = async (ride, otp, driverName) => {
+// ---------------------------------------------------------------------------
+// sendOtpEmail — ride start verification code
+// ---------------------------------------------------------------------------
+async function sendOtpEmail(ride, otp, driverName) {
   try {
     const to = ride.passengerDetails.email;
     const bookingId = ride._id.toString().substring(18, 24).toUpperCase();
@@ -554,27 +545,36 @@ exports.sendOtpEmail = async (ride, otp, driverName) => {
     </html>
     `;
 
-    await exports.sendEmail({
+    const mailOptions = {
+      from: `"DMS Cab Services" <${smtpUser}>`,
       to,
       subject: `Ride Verification Code - DMS Cab Services`,
       html: htmlContent,
-    });
-    logger.info(`[OTP EMAIL SUCCESS] Sent to client: ${to}`);
-    return true;
+    };
+
+    const result = await safeSendEmail(mailOptions, { context: 'OTP' });
+    return result.success;
   } catch (error) {
-    logger.error('[OTP EMAIL ERROR]: %s', error.message);
+    logSmtpError('OTP_BUILD', error, ride?.passengerDetails?.email);
     return false;
   }
-};
+}
 
-/**
- * Send inquiry detail email to admin/reservations email
- */
-exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, message }) => {
+// ---------------------------------------------------------------------------
+// sendInquiryEmail — contact form submission to admin
+//
+// Returns structured result (not boolean) so the controller can report
+// real delivery status to the frontend.
+// ---------------------------------------------------------------------------
+async function sendInquiryEmail({ firstName, lastName, email, phone, subject, message }) {
+  const recipientEnv = process.env.CONTACT_INQUIRY_RECIPIENT;
+  const to = recipientEnv || smtpUser;
+  const fullName = `${firstName} ${lastName}`;
+
+  logger.info('[INQUIRY] Incoming inquiry — from=%s recipient=%s (source=%s)',
+    email, to, recipientEnv ? 'CONTACT_INQUIRY_RECIPIENT' : 'SMTP_USER fallback');
+
   try {
-    const to = process.env.CONTACT_INQUIRY_RECIPIENT || smtpUser;
-    const fullName = `${firstName} ${lastName}`;
-
     const htmlContent = `
     <!DOCTYPE html>
     <html>
@@ -706,51 +706,25 @@ exports.sendInquiryEmail = async ({ firstName, lastName, email, phone, subject, 
       html: htmlContent,
     };
 
-    const info = await sendMail(mailOptions);
-    logger.info(`[EMAIL SUCCESS] Inquiry email sent to ${to}. MessageId: ${info.messageId}`);
-    return true;
+    return await safeSendEmail(mailOptions, { context: 'INQUIRY' });
   } catch (error) {
-    logger.error('[EMAIL ERROR] Failed to send inquiry email: %s', error.message);
-    return false;
+    logSmtpError('INQUIRY_BUILD', error, email);
+    return {
+      success: false,
+      error: error.message,
+      code: error.code || 'UNKNOWN',
+      responseCode: null,
+    };
   }
-};
+}
 
-/**
- * Verify SMTP connection state and return the result/error message
- */
-exports.testSmtpConnection = async () => {
-  if (resendApiKey) {
-    try {
-      await makeHttpsPost(
-        'https://api.resend.com/emails',
-        {
-          'Authorization': `Bearer ${resendApiKey}`,
-          'Content-Type': 'application/json'
-        },
-        {}
-      );
-      return { success: true };
-    } catch (err) {
-      if (err.status === 401) {
-        return { success: false, error: 'Unauthorized: Invalid Resend API Key' };
-      }
-      if (err.status === 422 || err.status === 400) {
-        return { success: true };
-      }
-      return { success: false, error: err.data?.message || err.message || 'Resend connection failed' };
-    }
-  } else {
-    return new Promise((resolve) => {
-      if (!transporter) {
-        return resolve({ success: false, error: 'SMTP Transporter not configured' });
-      }
-      transporter.verify((error, success) => {
-        if (error) {
-          resolve({ success: false, error: error.message });
-        } else {
-          resolve({ success: true });
-        }
-      });
-    });
-  }
+// ---------------------------------------------------------------------------
+// Exports
+// ---------------------------------------------------------------------------
+module.exports = {
+  safeSendEmail,
+  sendInvoiceEmail,
+  sendOtpEmail,
+  sendInquiryEmail,
+  getEmailHealthStatus,
 };

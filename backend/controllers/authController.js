@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { sendInquiryEmail, sendEmail } = require('../utils/emailService');
+const { sendInquiryEmail, getEmailHealthStatus } = require('../utils/emailService');
 const { uploadBase64Document } = require('../utils/cloudinary');
 const logger = require('../utils/logger');
 const { isDeployed, getCookieOptions } = require('../utils/env');
@@ -425,49 +425,21 @@ exports.contactInquiry = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'Please provide all required fields' });
     }
 
-    // Dispatch email asynchronously in the background to ensure instant API response
-    sendInquiryEmail({ firstName, lastName, email, phone, subject, message })
-      .then(sent => {
-        if (!sent) {
-          logger.warn(`[Contact Inquiry] Email failed to send for: ${email}`);
-        }
-      })
-      .catch(err => {
-        logger.error(`[Contact Inquiry] Error sending email for ${email}: %s`, err.message);
+    // Await email delivery — only return success if Nodemailer confirms send
+    const result = await sendInquiryEmail({ firstName, lastName, email, phone, subject, message });
+
+    if (!result.success) {
+      logger.warn('[Contact Inquiry] Email delivery failed for: %s — code=%s', email, result.code);
+      return res.status(500).json({
+        success: false,
+        message: 'Email could not be sent. Please try again later.',
       });
+    }
 
     return res.status(200).json({ success: true, message: 'Inquiry sent successfully' });
   } catch (error) {
     logger.error('Contact inquiry controller error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Failed to submit inquiry. Please try again.' });
-  }
-};
-
-exports.testSmtpLive = async (req, res) => {
-  try {
-    const { testSmtpConnection } = require('../utils/emailService');
-    const verification = await testSmtpConnection();
-    
-    const user = process.env.SMTP_USER || '';
-    const maskedUser = user.length > 5 
-      ? user.substring(0, 3) + '***' + user.substring(user.indexOf('@') - 2)
-      : '***';
-
-    return res.status(200).json({
-      success: true,
-      smtp: {
-        host: process.env.SMTP_HOST,
-        port: process.env.SMTP_PORT,
-        user: maskedUser,
-        recipient: process.env.CONTACT_INQUIRY_RECIPIENT
-      },
-      verification
-    });
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      error: error.message
-    });
   }
 };
 
@@ -730,5 +702,19 @@ exports.verifyPhoneOtp = async (req, res, next) => {
   } catch (error) {
     logger.error('Verify phone OTP error: %s', error.message);
     return res.status(500).json({ success: false, message: 'Verification failed. Please try again.' });
+  }
+};
+
+/**
+ * GET /api/v1/auth/email-health
+ * Returns SMTP configuration health (never exposes passwords)
+ */
+exports.emailHealth = async (req, res) => {
+  try {
+    const status = getEmailHealthStatus();
+    return res.status(200).json(status);
+  } catch (error) {
+    logger.error('Email health check error: %s', error.message);
+    return res.status(500).json({ error: 'Failed to retrieve email health status.' });
   }
 };

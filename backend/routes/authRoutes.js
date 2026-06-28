@@ -1,5 +1,5 @@
 const express = require('express');
-const { register, login, getMe, logout, updateProfile, contactInquiry, testSmtpLive, deleteAccount, sendPhoneOtp, verifyPhoneOtp } = require('../controllers/authController');
+const { register, login, getMe, logout, updateProfile, contactInquiry, deleteAccount, sendPhoneOtp, verifyPhoneOtp, emailHealth } = require('../controllers/authController');
 const { protect, isApproved } = require('../middleware/authMiddleware');
 const { loginLimiter, signupLimiter, contactInquiryLimiter } = require('../middleware/rateLimiters');
 const validate = require('../middleware/validationMiddleware');
@@ -16,6 +16,6 @@ router.post('/logout', protect, logout);
 router.put('/update-profile', protect, validate(updateProfileSchema), updateProfile);
 router.delete('/delete-account', protect, deleteAccount);
 router.post('/contact-inquiry', contactInquiryLimiter, validate(contactInquirySchema), contactInquiry);
-router.get('/test-smtp-live', testSmtpLive);
+router.get('/email-health', emailHealth);
 
 module.exports = router;
