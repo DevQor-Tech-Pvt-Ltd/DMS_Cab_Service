@@ -341,76 +341,55 @@ const AuthPage = () => {
           }
         }
       } else {
-        // Standard Sign Up
-        if (!signupOtpSent) {
-          // Send OTP to register
-          const response = await api.post('/auth/phone-login/send', { phone, email });
-          if (response.data?.success) {
-            setSignupOtpSent(true);
-            setCountdown(30);
-          } else {
-            throw new Error(response.data?.message || 'Failed to send verification code.');
-          }
+        // Standard Sign Up - register directly without OTP verification
+        const payload = {
+          fullName,
+          email,
+          phone,
+          role,
+          password,
+          confirmPassword,
+          ...(role === 'driver' && {
+            vehicleNumber,
+            licenseNumber,
+            rcDocument,
+            licenseDocument,
+            aadhaarDocument,
+            panDocument,
+            currentCity,
+            vehicleModelYear,
+            aadhaarNumber,
+            driverNameIfVendor,
+            driverContactNumber,
+            rcCopyAvailable,
+            insuranceValidTill,
+            preferredServiceArea,
+            previousExperience
+          }),
+        };
+
+        const response = await registerRequest(payload);
+        if (response.approvalRequired) {
+          setError('Registration successful! Your account is pending admin approval.');
+          setIsLogin(true);
         } else {
-          if (!otpCode.trim()) {
-            setError('Please enter the 6-digit verification code.');
-            setIsSubmitting(false);
-            clearTimeout(warningTimeout);
-            return;
-          }
-
-          const payload = {
-            fullName,
-            email,
-            phone,
-            role,
-            password,
-            confirmPassword,
-            otp: otpCode,
-            ...(role === 'driver' && {
-              vehicleNumber,
-              licenseNumber,
-              rcDocument,
-              licenseDocument,
-              aadhaarDocument,
-              panDocument,
-              currentCity,
-              vehicleModelYear,
-              aadhaarNumber,
-              driverNameIfVendor,
-              driverContactNumber,
-              rcCopyAvailable,
-              insuranceValidTill,
-              preferredServiceArea,
-              previousExperience
-            }),
+          const userData = {
+            ...response.user,
+            token: response.token,
+            refreshToken: response.refreshToken
           };
-
-          const response = await registerRequest(payload);
-          if (response.approvalRequired) {
-            setError('Registration successful! Your account is pending admin approval.');
-            setIsLogin(true);
-            setSignupOtpSent(false);
-            setOtpCode('');
+          login(userData);
+          if (redirect && ['activity', 'wallet'].includes(redirect)) {
+            navigate(`/client/dashboard?tab=${redirect}`);
+          } else if (redirect === 'get-started') {
+            navigate('/get-started');
           } else {
-            const userData = {
-              ...response.user,
-              token: response.token,
-              refreshToken: response.refreshToken
-            };
-            login(userData);
-            if (redirect && ['activity', 'wallet'].includes(redirect)) {
-              navigate(`/client/dashboard?tab=${redirect}`);
-            } else if (redirect === 'get-started') {
-              navigate('/get-started');
+            if (response.user.role === 'admin') {
+              navigate('/admin/dashboard');
+            } else if (response.user.role === 'driver') {
+              navigate('/driver/dashboard');
             } else {
-              if (response.user.role === 'admin') {
-                navigate('/admin/dashboard');
-              } else if (response.user.role === 'driver') {
-                navigate('/driver/dashboard');
-              } else {
-                navigate('/');
-              }
+              navigate('/');
             }
           }
         }
@@ -689,43 +668,6 @@ const AuthPage = () => {
                   </motion.div>
                 )}
 
-                {/* OTP Verification Code Input for signup phone verification */}
-                {!isLogin && authMethod === 'email' && signupOtpSent && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="space-y-1.5"
-                  >
-                    <div className="flex justify-between items-center">
-                      <label className="block text-xs text-slate-500 font-medium uppercase tracking-wider">6-Digit Verification Code</label>
-                      {countdown > 0 ? (
-                        <span className="text-xs text-slate-500 font-medium flex items-center space-x-1">
-                          <Clock size={12} className="inline animate-spin mr-1 text-[#003893]" />
-                          Resend in {countdown}s
-                        </span>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleResendSignupOtp}
-                          className="text-xs font-semibold text-[#003893] hover:underline focus:outline-none"
-                        >
-                          Resend Code
-                        </button>
-                      )}
-                    </div>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        maxLength={6}
-                        value={otpCode}
-                        onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
-                        className="w-full text-center text-xl font-bold tracking-[0.5em] bg-slate-50 border border-slate-200 rounded-xl py-3 focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all placeholder:text-slate-300"
-                        placeholder="000000"
-                        required
-                      />
-                    </div>
-                  </motion.div>
-                )}
 
                 {/* 5. Account Role - On Sign Up OR Phone OTP Login (to allow registration role routing) */}
                 {(!isLogin || (isLogin && authMethod === 'phone')) && (
@@ -1208,8 +1150,8 @@ const AuthPage = () => {
                             ? otpSent
                               ? 'Verifying...'
                               : 'Sending Code...'
-                            : isLogin ? 'Signing In...' : 'Verifying & Registering...'
-                          : isLogin ? 'Signing In...' : 'Creating Account...'}
+                            : 'Signing In...'
+                          : 'Creating Account...'}
                       </span>
                     </>
                   ) : (
@@ -1225,9 +1167,7 @@ const AuthPage = () => {
                             ? otpSent
                               ? 'Verify & Create Account'
                               : 'Send Verification Code'
-                            : signupOtpSent
-                              ? 'Verify & Create Account'
-                              : 'Create Account'}
+                            : 'Create Account'}
                       </span>
                       <ArrowRight size={18} />
                     </>

@@ -125,27 +125,7 @@ exports.register = async (req, res, next) => {
       return res.status(409).json({ success: false, message: 'Phone number already in use' });
     }
 
-    // Verify phone OTP for standard email registration
-    const PhoneOtp = require('../models/PhoneOtp');
-    const bcrypt = require('bcryptjs');
-    if (!otp) {
-      return res.status(400).json({ success: false, message: 'Verification code is required for your phone number.' });
-    }
-    const record = await PhoneOtp.findOne({ phone });
-    if (!record) {
-      return res.status(400).json({ success: false, message: 'Verification code has expired or is invalid. Please request a new OTP.' });
-    }
-    if (record.attempts >= 3) {
-      return res.status(400).json({ success: false, message: 'Too many verification failures. Please request a new OTP.' });
-    }
-    record.attempts += 1;
-    await record.save();
 
-    const isMatch = await bcrypt.compare(otp, record.otpHash);
-    if (!isMatch) {
-      return res.status(400).json({ success: false, message: 'Invalid verification code.' });
-    }
-    await PhoneOtp.deleteOne({ phone });
 
     // Prepare user data
     const userData = {
