@@ -32,10 +32,10 @@ const transporter = nodemailer.createTransport({
   secure: smtpPort === 465,
 
   // Force IPv4 by providing a custom DNS resolver lookup and setting family to 4
-  family: 4,
-  lookup: (hostname, options, callback) => {
-    dns.lookup(hostname, { ...options, family: 4 }, callback);
-  },
+  // family: 4,
+  // lookup: (hostname, options, callback) => {
+  //   dns.lookup(hostname, { ...options, family: 4 }, callback);
+  // },
 
   auth: {
     user: smtpUser,
