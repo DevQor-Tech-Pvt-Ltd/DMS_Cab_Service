@@ -49,6 +49,25 @@ const AuthPage = () => {
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState('');
   const [countdown, setCountdown] = useState(0);
+  const [signupOtpSent, setSignupOtpSent] = useState(false);
+
+  const handleResendSignupOtp = async () => {
+    setError('');
+    setIsSubmitting(true);
+    try {
+      const response = await api.post('/auth/phone-login/send', { phone, email });
+      if (response.data?.success) {
+        setCountdown(30);
+        setOtpCode('');
+      } else {
+        throw new Error(response.data?.message || 'Failed to resend OTP.');
+      }
+    } catch (err) {
+      setError(err?.response?.data?.message || err.message || 'Unable to resend OTP');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     let timer;
@@ -113,7 +132,8 @@ const AuthPage = () => {
     setError('');
     setShowColdStartWarning(false);
 
-    if (authMethod === 'phone' && isLogin) {
+    // Case A: Phone OTP Login & Signup
+    if (authMethod === 'phone') {
       if (!phone.trim()) {
         setError('Phone number is required.');
         return;
@@ -123,6 +143,35 @@ const AuthPage = () => {
         setError('Please enter a valid 10-digit Indian phone number starting with 6-9.');
         return;
       }
+
+      if (!isLogin) {
+        if (!fullName.trim()) {
+          setError('Full name is required.');
+          return;
+        }
+        if (!role) {
+          setError('Please select a role.');
+          return;
+        }
+
+        if (role === 'driver') {
+          if (!currentCity.trim()) { setError('Current City is required.'); return; }
+          if (!vehicleNumber.trim()) { setError('Car Number is required.'); return; }
+          if (!vehicleModelYear.trim()) { setError('Vehicle Model & Year is required.'); return; }
+          if (!licenseNumber.trim()) { setError('Driving License Number is required.'); return; }
+          if (!rcDocument) { setError('Please upload vehicle RC document.'); return; }
+          if (!aadhaarDocument) { setError('Please upload Aadhaar Card document.'); return; }
+          if (!panDocument) { setError('Please upload PAN Card document.'); return; }
+          if (!insuranceValidTill.trim()) { setError('Insurance Validity Date is required.'); return; }
+          if (!preferredServiceArea.trim()) { setError('Preferred Service Area is required.'); return; }
+          if (!licenseDocument) { setError('Please upload license document.'); return; }
+          if (driverContactNumber && !phoneRegex.test(driverContactNumber.trim())) {
+            setError('Please enter a valid 10-digit driver contact number starting with 6-9.');
+            return;
+          }
+        }
+      }
+
       setIsSubmitting(true);
       const warningTimeout = setTimeout(() => {
         setShowColdStartWarning(true);
@@ -146,9 +195,36 @@ const AuthPage = () => {
             clearTimeout(warningTimeout);
             return;
           }
-          const response = await api.post('/auth/phone-login/verify', { phone, otp: otpCode, role });
+
+          const payload = {
+            phone,
+            otp: otpCode,
+            role,
+            ...(!isLogin && {
+              fullName,
+              ...(role === 'driver' && {
+                vehicleNumber,
+                licenseNumber,
+                rcDocument,
+                licenseDocument,
+                aadhaarDocument,
+                panDocument,
+                currentCity,
+                vehicleModelYear,
+                aadhaarNumber,
+                driverNameIfVendor,
+                driverContactNumber,
+                rcCopyAvailable,
+                insuranceValidTill,
+                preferredServiceArea,
+                previousExperience
+              })
+            })
+          };
+
+          const response = await api.post('/auth/phone-login/verify', payload);
           const data = response.data;
-          
+
           if (data?.success && data?.user) {
             const userData = {
               ...data.user,
@@ -184,7 +260,7 @@ const AuthPage = () => {
       return;
     }
 
-    // Standard Email Login & Signup
+    // Case B: Standard Email Login & Signup
     if (!email.trim() || !password.trim()) {
       setError('Email and password are required.');
       return;
@@ -208,44 +284,18 @@ const AuthPage = () => {
       }
 
       if (role === 'driver') {
-        if (!currentCity.trim()) {
-          setError('Current City is required.');
-          return;
-        }
-        if (!vehicleNumber.trim()) {
-          setError('Car Number is required.');
-          return;
-        }
-        if (!vehicleModelYear.trim()) {
-          setError('Vehicle Model & Year is required.');
-          return;
-        }
-        if (!licenseNumber.trim()) {
-          setError('Driving License Number is required.');
-          return;
-        }
-        if (!rcDocument) {
-          setError('Please upload vehicle RC document.');
-          return;
-        }
-        if (!aadhaarDocument) {
-          setError('Please upload Aadhaar Card document.');
-          return;
-        }
-        if (!panDocument) {
-          setError('Please upload PAN Card document.');
-          return;
-        }
-        if (!insuranceValidTill.trim()) {
-          setError('Insurance Validity Date is required.');
-          return;
-        }
-        if (!preferredServiceArea.trim()) {
-          setError('Preferred Service Area is required.');
-          return;
-        }
-        if (!licenseDocument) {
-          setError('Please upload license document.');
+        if (!currentCity.trim()) { setError('Current City is required.'); return; }
+        if (!vehicleNumber.trim()) { setError('Car Number is required.'); return; }
+        if (!vehicleModelYear.trim()) { setError('Vehicle Model & Year is required.'); return; }
+        if (!licenseNumber.trim()) { setError('Driving License Number is required.'); return; }
+        if (!rcDocument) { setError('Please upload vehicle RC document.'); return; }
+        if (!aadhaarDocument) { setError('Please upload Aadhaar Card document.'); return; }
+        if (!panDocument) { setError('Please upload PAN Card document.'); return; }
+        if (!insuranceValidTill.trim()) { setError('Insurance Validity Date is required.'); return; }
+        if (!preferredServiceArea.trim()) { setError('Preferred Service Area is required.'); return; }
+        if (!licenseDocument) { setError('Please upload license document.'); return; }
+        if (driverContactNumber && !phoneRegex.test(driverContactNumber.trim())) {
+          setError('Please enter a valid 10-digit driver contact number starting with 6-9.');
           return;
         }
       }
@@ -262,46 +312,15 @@ const AuthPage = () => {
       }
     }
 
+    // Process submission
     setIsSubmitting(true);
     const warningTimeout = setTimeout(() => {
       setShowColdStartWarning(true);
     }, 4000);
 
     try {
-      const payload = {
-        fullName,
-        email,
-        phone,
-        role,
-        password,
-        confirmPassword,
-        ...(role === 'driver' && { 
-          vehicleNumber, 
-          licenseNumber, 
-          rcDocument, 
-          licenseDocument,
-          aadhaarDocument,
-          panDocument,
-          currentCity,
-          vehicleModelYear,
-          aadhaarNumber,
-          driverNameIfVendor,
-          driverContactNumber,
-          rcCopyAvailable,
-          insuranceValidTill,
-          preferredServiceArea,
-          previousExperience
-        }),
-      };
-
-      const response = isLogin
-        ? await loginRequest({ email, password })
-        : await registerRequest(payload);
-
-      if (response.approvalRequired) {
-        setError('Registration successful! Your account is pending admin approval.');
-        setIsLogin(true);
-      } else {
+      if (isLogin) {
+        const response = await loginRequest({ email, password });
         const userData = {
           ...response.user,
           token: response.token,
@@ -319,6 +338,80 @@ const AuthPage = () => {
             navigate('/driver/dashboard');
           } else {
             navigate('/');
+          }
+        }
+      } else {
+        // Standard Sign Up
+        if (!signupOtpSent) {
+          // Send OTP to register
+          const response = await api.post('/auth/phone-login/send', { phone, email });
+          if (response.data?.success) {
+            setSignupOtpSent(true);
+            setCountdown(30);
+          } else {
+            throw new Error(response.data?.message || 'Failed to send verification code.');
+          }
+        } else {
+          if (!otpCode.trim()) {
+            setError('Please enter the 6-digit verification code.');
+            setIsSubmitting(false);
+            clearTimeout(warningTimeout);
+            return;
+          }
+
+          const payload = {
+            fullName,
+            email,
+            phone,
+            role,
+            password,
+            confirmPassword,
+            otp: otpCode,
+            ...(role === 'driver' && {
+              vehicleNumber,
+              licenseNumber,
+              rcDocument,
+              licenseDocument,
+              aadhaarDocument,
+              panDocument,
+              currentCity,
+              vehicleModelYear,
+              aadhaarNumber,
+              driverNameIfVendor,
+              driverContactNumber,
+              rcCopyAvailable,
+              insuranceValidTill,
+              preferredServiceArea,
+              previousExperience
+            }),
+          };
+
+          const response = await registerRequest(payload);
+          if (response.approvalRequired) {
+            setError('Registration successful! Your account is pending admin approval.');
+            setIsLogin(true);
+            setSignupOtpSent(false);
+            setOtpCode('');
+          } else {
+            const userData = {
+              ...response.user,
+              token: response.token,
+              refreshToken: response.refreshToken
+            };
+            login(userData);
+            if (redirect && ['activity', 'wallet'].includes(redirect)) {
+              navigate(`/client/dashboard?tab=${redirect}`);
+            } else if (redirect === 'get-started') {
+              navigate('/get-started');
+            } else {
+              if (response.user.role === 'admin') {
+                navigate('/admin/dashboard');
+              } else if (response.user.role === 'driver') {
+                navigate('/driver/dashboard');
+              } else {
+                navigate('/');
+              }
+            }
           }
         }
       }
@@ -450,39 +543,43 @@ const AuthPage = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                {/* Method switcher for login */}
-                {isLogin && (
-                  <div className="flex border border-slate-100 mb-6 bg-slate-50 p-1 rounded-xl">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAuthMethod('phone');
-                        setError('');
-                      }}
-                      className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
-                        authMethod === 'phone'
-                          ? 'bg-[#003893] text-white shadow-sm'
-                          : 'text-slate-500 hover:text-slate-900'
-                      }`}
-                    >
-                      Phone OTP
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setAuthMethod('email');
-                        setError('');
-                      }}
-                      className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
-                        authMethod === 'email'
-                          ? 'bg-[#003893] text-white shadow-sm'
-                          : 'text-slate-500 hover:text-slate-900'
-                      }`}
-                    >
-                      Email / Password
-                    </button>
-                  </div>
-                )}
+                {/* Method switcher for login & signup */}
+                <div className="flex border border-slate-100 mb-6 bg-slate-50 p-1 rounded-xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMethod('phone');
+                      setError('');
+                      setOtpSent(false);
+                      setSignupOtpSent(false);
+                      setOtpCode('');
+                    }}
+                    className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+                      authMethod === 'phone'
+                        ? 'bg-[#003893] text-white shadow-sm'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    Phone OTP
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuthMethod('email');
+                      setError('');
+                      setOtpSent(false);
+                      setSignupOtpSent(false);
+                      setOtpCode('');
+                    }}
+                    className={`flex-1 py-2 text-xs font-semibold rounded-lg transition-all ${
+                      authMethod === 'email'
+                        ? 'bg-[#003893] text-white shadow-sm'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    Email / Password
+                  </button>
+                </div>
 
                 {/* 1. Full Name - Only on Sign Up */}
                 {!isLogin && (
@@ -502,8 +599,8 @@ const AuthPage = () => {
                   </motion.div>
                 )}
 
-                {/* 2. Email Address - On Sign Up OR Email Login */}
-                {(!isLogin || (isLogin && authMethod === 'email')) && (
+                {/* 2. Email Address - On Sign Up OR Email Login (only for email auth method) */}
+                {authMethod === 'email' && (
                   <motion.div layout={!isMobile}>
                     <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Email Address</label>
                     <div className="relative">
@@ -529,13 +626,14 @@ const AuthPage = () => {
                       <input
                         type="tel"
                         value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
+                        onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        maxLength={10}
                         required
                         disabled={isLogin && otpSent}
                         className={`w-full border rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all ${
                           isLogin && otpSent ? 'bg-slate-100 border-slate-300 text-slate-500 cursor-not-allowed' : 'bg-slate-50 border-slate-200'
                         }`}
-                        placeholder="+91 000-000-0000"
+                        placeholder="Enter 10-digit mobile number"
                       />
                       {isLogin && otpSent && (
                         <button
@@ -553,8 +651,8 @@ const AuthPage = () => {
                   </motion.div>
                 )}
 
-                {/* 4. OTP Verification Code Input - Only on Phone OTP Login when code is sent */}
-                {isLogin && authMethod === 'phone' && otpSent && (
+                {/* 4. OTP Verification Code Input - Only on Phone OTP Login/Signup when code is sent */}
+                {authMethod === 'phone' && otpSent && (
                   <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -571,6 +669,44 @@ const AuthPage = () => {
                         <button
                           type="button"
                           onClick={handleResendOtp}
+                          className="text-xs font-semibold text-[#003893] hover:underline focus:outline-none"
+                        >
+                          Resend Code
+                        </button>
+                      )}
+                    </div>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value.replace(/[^0-9]/g, ''))}
+                        className="w-full text-center text-xl font-bold tracking-[0.5em] bg-slate-50 border border-slate-200 rounded-xl py-3 focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all placeholder:text-slate-300"
+                        placeholder="000000"
+                        required
+                      />
+                    </div>
+                  </motion.div>
+                )}
+
+                {/* OTP Verification Code Input for signup phone verification */}
+                {!isLogin && authMethod === 'email' && signupOtpSent && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-1.5"
+                  >
+                    <div className="flex justify-between items-center">
+                      <label className="block text-xs text-slate-500 font-medium uppercase tracking-wider">6-Digit Verification Code</label>
+                      {countdown > 0 ? (
+                        <span className="text-xs text-slate-500 font-medium flex items-center space-x-1">
+                          <Clock size={12} className="inline animate-spin mr-1 text-[#003893]" />
+                          Resend in {countdown}s
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleResendSignupOtp}
                           className="text-xs font-semibold text-[#003893] hover:underline focus:outline-none"
                         >
                           Resend Code
@@ -753,9 +889,10 @@ const AuthPage = () => {
                         <input
                           type="tel"
                           value={driverContactNumber}
-                          onChange={(e) => setDriverContactNumber(e.target.value)}
+                          onChange={(e) => setDriverContactNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                          maxLength={10}
                           className="w-full bg-slate-50 border border-slate-200 rounded-xl py-3 pl-11 pr-4 text-slate-900 text-sm focus:border-[#003893] focus:outline-none focus:ring-1 focus:ring-[#003893]/20 transition-all"
-                          placeholder="Enter driver's contact number"
+                          placeholder="Enter driver's 10-digit contact number"
                         />
                       </div>
                     </motion.div>
@@ -939,8 +1076,8 @@ const AuthPage = () => {
                   </>
                 )}
 
-                {/* 7. Password / Confirm Password (Only on Signup OR Email Login) */}
-                {(!isLogin || (isLogin && authMethod === 'email')) && (
+                {/* 7. Password / Confirm Password (Only on Signup OR Email Login, but only if authMethod is email) */}
+                {authMethod === 'email' && (
                   <>
                     <motion.div layout={!isMobile}>
                       <label className="block text-xs text-slate-500 mb-1.5 font-medium uppercase tracking-wider">Password</label>
@@ -964,6 +1101,45 @@ const AuthPage = () => {
                         </button>
                       </div>
                     </motion.div>
+
+                    {/* Password criteria status display during signup */}
+                    {!isLogin && (
+                      <div className="p-3.5 bg-slate-50 border border-slate-100 rounded-xl space-y-2 text-xs">
+                        <p className="font-semibold text-slate-700 mb-1">Password Requirements:</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <div className="flex items-center space-x-2">
+                            <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${password.length >= 8 ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                            <span className={`transition-colors ${password.length >= 8 ? 'text-emerald-600 font-semibold' : 'text-slate-500'}`}>
+                              Min 8 characters
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${/[A-Z]/.test(password) ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                            <span className={`transition-colors ${/[A-Z]/.test(password) ? 'text-emerald-600 font-semibold' : 'text-slate-500'}`}>
+                              One uppercase (A-Z)
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${/[a-z]/.test(password) ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                            <span className={`transition-colors ${/[a-z]/.test(password) ? 'text-emerald-600 font-semibold' : 'text-slate-500'}`}>
+                              One lowercase (a-z)
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${/\d/.test(password) ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                            <span className={`transition-colors ${/\d/.test(password) ? 'text-emerald-600 font-semibold' : 'text-slate-500'}`}>
+                              One number (0-9)
+                            </span>
+                          </div>
+                          <div className="flex items-center space-x-2 sm:col-span-2">
+                            <span className={`w-2 h-2 rounded-full shrink-0 transition-colors ${/[^a-zA-Z0-9]/.test(password) ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                            <span className={`transition-colors ${/[^a-zA-Z0-9]/.test(password) ? 'text-emerald-600 font-semibold' : 'text-slate-500'}`}>
+                              One special char (e.g., !@#$%^&*)
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {!isLogin && (
                       <motion.div layout={!isMobile}>
@@ -1032,8 +1208,8 @@ const AuthPage = () => {
                             ? otpSent
                               ? 'Verifying...'
                               : 'Sending Code...'
-                            : 'Signing In...'
-                          : 'Creating Account...'}
+                            : isLogin ? 'Signing In...' : 'Verifying & Registering...'
+                          : isLogin ? 'Signing In...' : 'Creating Account...'}
                       </span>
                     </>
                   ) : (
@@ -1045,7 +1221,13 @@ const AuthPage = () => {
                               ? 'Verify & Sign In'
                               : 'Send Verification Code'
                             : 'Sign In'
-                          : 'Create Account'}
+                          : authMethod === 'phone'
+                            ? otpSent
+                              ? 'Verify & Create Account'
+                              : 'Send Verification Code'
+                            : signupOtpSent
+                              ? 'Verify & Create Account'
+                              : 'Create Account'}
                       </span>
                       <ArrowRight size={18} />
                     </>
@@ -1059,6 +1241,9 @@ const AuthPage = () => {
                   onClick={() => {
                     setIsLogin(!isLogin);
                     setError('');
+                    setOtpSent(false);
+                    setSignupOtpSent(false);
+                    setOtpCode('');
                   }}
                   className="ml-2 text-[#003893] font-semibold hover:text-[#002d72] transition-colors"
                 >

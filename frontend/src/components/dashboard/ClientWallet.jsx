@@ -504,7 +504,7 @@ const ClientWallet = ({
                         if (transferError) setTransferError('');
                       }}
                       className="w-full bg-white border border-slate-200 focus:border-[#003893] focus:outline-none rounded-xl py-2.5 px-4 text-slate-900 text-xs"
-                      placeholder="driver@dms.com or +919876543210"
+                      placeholder="driver@dms.com or 10-digit mobile number"
                       required
                     />
                   </div>

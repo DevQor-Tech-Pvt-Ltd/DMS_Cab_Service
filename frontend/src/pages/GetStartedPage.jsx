@@ -190,7 +190,10 @@ const GetStartedPage = () => {
   };
 
   const handlePassengerChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    if (name === 'phone') {
+      value = value.replace(/\D/g, '').slice(0, 10);
+    }
     setFormData(prev => ({
       ...prev,
       passengerDetails: {
@@ -269,7 +272,13 @@ const GetStartedPage = () => {
     const errors = {};
     if (!formData.passengerDetails.fullName.trim()) errors.fullName = 'Full Name is required';
     if (!formData.passengerDetails.email.trim()) errors.email = 'Email is required';
-    if (!formData.passengerDetails.phone.trim()) errors.phone = 'Phone number is required';
+    
+    const phoneVal = formData.passengerDetails.phone.trim();
+    if (!phoneVal) {
+      errors.phone = 'Phone number is required';
+    } else if (!/^[6-9]\d{9}$/.test(phoneVal)) {
+      errors.phone = 'Please enter a valid 10-digit Indian phone number starting with 6-9.';
+    }
 
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -809,8 +818,9 @@ const GetStartedPage = () => {
                         name="phone"
                         value={formData.passengerDetails.phone}
                         onChange={handlePassengerChange}
+                        maxLength={10}
                         className="w-full bg-white border border-slate-200 rounded-xl py-3.5 pl-12 pr-4 text-slate-900 focus:border-[#003893] focus:outline-none transition-colors text-sm"
-                        placeholder="Chauffeur call-up number"
+                        placeholder="Enter 10-digit mobile number"
                       />
                     </div>
                     {formErrors.phone && <p className="text-red-500 text-xs mt-1.5">{formErrors.phone}</p>}

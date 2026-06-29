@@ -18,9 +18,13 @@ const ContactPage = () => {
   });
 
   const handleChange = (e) => {
+    let { name, value } = e.target;
+    if (name === 'phone') {
+      value = value.replace(/\D/g, '').slice(0, 10);
+    }
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [name]: value
     });
   };
 
@@ -224,13 +228,14 @@ const ContactPage = () => {
                     </div>
                     <div>
                       <label className="block text-sm text-slate-600 mb-2 font-medium">Phone Number</label>
-                      <input
+                       <input
                         type="tel"
                         name="phone"
                         value={formData.phone}
                         onChange={handleChange}
+                        maxLength={10}
                         className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-3 text-slate-900 focus:outline-none focus:border-[#003893] focus:ring-1 focus:ring-[#003893] transition-colors"
-                        placeholder="+91 000-000-0000"
+                        placeholder="Enter 10-digit mobile number"
                       />
                     </div>
                   </div>

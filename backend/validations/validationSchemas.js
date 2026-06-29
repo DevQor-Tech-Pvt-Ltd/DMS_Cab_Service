@@ -4,13 +4,14 @@ const { z } = require('zod');
 const signupSchema = z.object({
   fullName: z.string().trim().min(1, 'Full name is required').max(100),
   email: z.string().trim().email('Invalid email address').transform(val => val.toLowerCase()),
-  phone: z.string().trim().min(1, 'Phone number is required').regex(/^[+]?[\d\s\-().]{7,15}$/, 'Invalid phone number format'),
+  phone: z.string().trim().min(1, 'Phone number is required').regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit Indian phone number starting with 6-9'),
   role: z.enum(['client', 'driver']),
   password: z.string().min(8, 'Password must be at least 8 characters long')
-    .refine(v => /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])/.test(v), {
-      message: 'Password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 special character.'
+    .refine(v => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9])/.test(v), {
+      message: 'Password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.'
     }),
   confirmPassword: z.string().min(8),
+  otp: z.string().trim().optional(),
   vehicleNumber: z.string().trim().optional(),
   licenseNumber: z.string().trim().optional(),
   rcDocument: z.string().trim().optional(),
@@ -21,7 +22,7 @@ const signupSchema = z.object({
   vehicleModelYear: z.string().trim().optional(),
   aadhaarNumber: z.string().trim().optional(),
   driverNameIfVendor: z.string().trim().optional(),
-  driverContactNumber: z.string().trim().optional(),
+  driverContactNumber: z.string().trim().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit Indian phone number starting with 6-9').optional().or(z.literal('')),
   rcCopyAvailable: z.enum(['Yes', 'No']).optional(),
   insuranceValidTill: z.string().trim().optional(),
   preferredServiceArea: z.string().trim().optional(),
@@ -62,7 +63,7 @@ const loginSchema = z.object({
 const passengerDetailsSchema = z.object({
   fullName: z.string().trim().min(1, 'Passenger name is required'),
   email: z.string().trim().email('Invalid passenger email address').transform(val => val.toLowerCase()),
-  phone: z.string().trim().min(1, 'Passenger phone is required').regex(/^[+]?[\d\s\-().]{7,15}$/, 'Invalid phone number format'),
+  phone: z.string().trim().min(1, 'Passenger phone is required').regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit Indian phone number starting with 6-9'),
   specialInstructions: z.string().trim().optional().default(''),
 });
 
@@ -85,11 +86,11 @@ const rideBookingSchema = z.object({
 const updateProfileSchema = z.object({
   fullName: z.string().trim().optional(),
   email: z.string().trim().email('Invalid email address').transform(val => val.toLowerCase()).optional(),
-  phone: z.string().trim().optional(),
+  phone: z.string().trim().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit Indian phone number starting with 6-9').optional().or(z.literal('')),
   currentPassword: z.string().optional(),
   newPassword: z.string().min(8, 'New password must be at least 8 characters long')
-    .refine(v => /^(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])/.test(v), {
-      message: 'New password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 special character.'
+    .refine(v => /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z0-9])/.test(v), {
+      message: 'New password must contain at least 1 uppercase letter, 1 lowercase letter, 1 number, and 1 special character.'
     }).optional(),
   profilePicture: z.string().optional(),
   vehicleNumber: z.string().trim().optional(),
@@ -102,7 +103,7 @@ const updateProfileSchema = z.object({
   vehicleModelYear: z.string().trim().optional(),
   aadhaarNumber: z.string().trim().optional(),
   driverNameIfVendor: z.string().trim().optional(),
-  driverContactNumber: z.string().trim().optional(),
+  driverContactNumber: z.string().trim().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit Indian phone number starting with 6-9').optional().or(z.literal('')),
   rcCopyAvailable: z.enum(['Yes', 'No']).optional(),
   insuranceValidTill: z.string().trim().optional(),
   preferredServiceArea: z.string().trim().optional(),
@@ -120,7 +121,7 @@ const contactInquirySchema = z.object({
   firstName: z.string().trim().min(1, 'First name is required').max(50),
   lastName: z.string().trim().min(1, 'Last name is required').max(50),
   email: z.string().trim().email('Invalid email address').transform(val => val.toLowerCase()),
-  phone: z.string().trim().optional(),
+  phone: z.string().trim().regex(/^[6-9]\d{9}$/, 'Please enter a valid 10-digit Indian phone number starting with 6-9').optional().or(z.literal('')),
   subject: z.string().trim().min(1, 'Subject is required'),
   message: z.string().trim().min(1, 'Message is required').max(1000),
 });

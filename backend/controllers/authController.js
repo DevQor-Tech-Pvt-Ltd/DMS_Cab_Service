@@ -76,6 +76,7 @@ exports.register = async (req, res, next) => {
       role,
       password,
       confirmPassword,
+      otp,
       vehicleNumber,
       licenseNumber,
       rcDocument,
@@ -123,6 +124,28 @@ exports.register = async (req, res, next) => {
     if (existingPhone) {
       return res.status(409).json({ success: false, message: 'Phone number already in use' });
     }
+
+    // Verify phone OTP for standard email registration
+    const PhoneOtp = require('../models/PhoneOtp');
+    const bcrypt = require('bcryptjs');
+    if (!otp) {
+      return res.status(400).json({ success: false, message: 'Verification code is required for your phone number.' });
+    }
+    const record = await PhoneOtp.findOne({ phone });
+    if (!record) {
+      return res.status(400).json({ success: false, message: 'Verification code has expired or is invalid. Please request a new OTP.' });
+    }
+    if (record.attempts >= 3) {
+      return res.status(400).json({ success: false, message: 'Too many verification failures. Please request a new OTP.' });
+    }
+    record.attempts += 1;
+    await record.save();
+
+    const isMatch = await bcrypt.compare(otp, record.otpHash);
+    if (!isMatch) {
+      return res.status(400).json({ success: false, message: 'Invalid verification code.' });
+    }
+    await PhoneOtp.deleteOne({ phone });
 
     // Prepare user data
     const userData = {
@@ -488,8 +511,8 @@ exports.deleteAccount = async (req, res, next) => {
 exports.sendPhoneOtp = async (req, res, next) => {
   try {
     const { phone } = req.body;
-    if (!phone || !/^[+]?[\d\s\-().]{7,15}$/.test(phone)) {
-      return res.status(400).json({ success: false, message: 'Please provide a valid phone number.' });
+    if (!phone || !/^[6-9]\d{9}$/.test(phone)) {
+      return res.status(400).json({ success: false, message: 'Please provide a valid 10-digit Indian phone number starting with 6-9.' });
     }
 
     const crypto = require('crypto');
@@ -511,7 +534,11 @@ exports.sendPhoneOtp = async (req, res, next) => {
 
     // Send OTP via Email instead of SMS
     const user = await User.findOne({ phone });
-    const recipientEmail = user ? user.email : (process.env.ADMIN_EMAIL || 'contact@dmscabservices.com');
+    const recipientEmail = req.body.email ? req.body.email.toLowerCase().trim() : (user ? user.email : (process.env.ADMIN_EMAIL || 'contact@dmscabservices.com'));
+
+    // Try sending SMS first (will log in dev / send in prod if twilio configured)
+    const messageText = `Your DMS Cab Services verification code is: ${otp}. Valid for 5 minutes.`;
+    await smsService.sendSMS(phone, messageText);
 
     const htmlContent = `
     <!DOCTYPE html>
@@ -666,21 +693,48 @@ exports.verifyPhoneOtp = async (req, res, next) => {
     let user = await User.findOne({ phone });
 
     if (!user) {
-      // Create user with sparse email placeholder
+      // Create user with sparse or provided email
       const cleanPhone = phone.replace(/[^0-9]/g, '');
       const uniqueSuffix = Math.random().toString(36).substring(2, 6);
-      const emailPlaceholder = `user_${cleanPhone}_${uniqueSuffix}@dms-luxe.com`;
-
+      const emailPlaceholder = req.body.email ? req.body.email.toLowerCase().trim() : `user_${cleanPhone}_${uniqueSuffix}@dms-luxe.com`;
+      const defaultName = req.body.fullName ? req.body.fullName.trim() : `User_${cleanPhone.slice(-4) || 'Luxe'}`;
       const selectRole = role && ['client', 'driver'].includes(role) ? role : 'client';
 
-      user = await User.create({
-        fullName: `User_${cleanPhone.slice(-4) || 'Luxe'}`,
+      const newUserData = {
+        fullName: defaultName,
         phone,
         email: emailPlaceholder,
         role: selectRole,
         status: selectRole === 'driver' ? 'pending' : 'approved',
         isApproved: selectRole === 'driver' ? false : true
-      });
+      };
+
+      if (selectRole === 'driver') {
+        const {
+          vehicleNumber, licenseNumber, rcDocument, licenseDocument,
+          aadhaarDocument, panDocument, currentCity, vehicleModelYear,
+          aadhaarNumber, driverNameIfVendor, driverContactNumber,
+          rcCopyAvailable, insuranceValidTill, preferredServiceArea, previousExperience
+        } = req.body;
+
+        newUserData.vehicleNumber = vehicleNumber;
+        newUserData.licenseNumber = licenseNumber;
+        newUserData.rcDocument = rcDocument ? await uploadBase64Document(rcDocument, 'dms_luxe_vehicle_rc') : null;
+        newUserData.licenseDocument = licenseDocument ? await uploadBase64Document(licenseDocument, 'dms_luxe_driver_licenses') : null;
+        newUserData.aadhaarDocument = aadhaarDocument ? await uploadBase64Document(aadhaarDocument, 'dms_luxe_driver_aadhaars') : null;
+        newUserData.panDocument = panDocument ? await uploadBase64Document(panDocument, 'dms_luxe_driver_pans') : null;
+        newUserData.currentCity = currentCity;
+        newUserData.vehicleModelYear = vehicleModelYear;
+        newUserData.aadhaarNumber = aadhaarNumber;
+        newUserData.driverNameIfVendor = driverNameIfVendor;
+        newUserData.driverContactNumber = driverContactNumber;
+        newUserData.rcCopyAvailable = rcCopyAvailable || 'Yes';
+        newUserData.insuranceValidTill = insuranceValidTill;
+        newUserData.preferredServiceArea = preferredServiceArea;
+        newUserData.previousExperience = previousExperience;
+      }
+
+      user = await User.create(newUserData);
     }
 
     if (user.isActive === false) {

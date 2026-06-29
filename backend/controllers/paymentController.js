@@ -686,11 +686,22 @@ exports.transferWallet = async (req, res) => {
         return res.status(400).json({ success: false, message: 'Recipient email or phone is required.' });
       }
 
+      let searchRecipient = recipient.toLowerCase().trim();
+      let phoneSearch = recipient.trim();
+
+      // If it is likely a phone number (contains digits/symbols and no alphabetic characters)
+      if (!/[a-z]/.test(searchRecipient)) {
+        const digits = phoneSearch.replace(/\D/g, '');
+        if (digits.length >= 10) {
+          phoneSearch = digits.slice(-10);
+        }
+      }
+
       // Find recipient user
       const recipientUser = await User.findOne({
         $or: [
-          { email: recipient.toLowerCase().trim() },
-          { phone: recipient.trim() }
+          { email: searchRecipient },
+          { phone: phoneSearch }
         ]
       });
 

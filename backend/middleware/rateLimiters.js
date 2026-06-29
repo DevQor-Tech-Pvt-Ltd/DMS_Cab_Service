@@ -88,7 +88,7 @@ const loginLimiter = createLimiter({
  */
 const signupLimiter = createLimiter({
   windowMs: 60 * 60 * 1000, // 1 Hour
-  maxProd: 5,               // Highly strict limit
+  maxProd: 15,              // Increased limit
   maxDev: 1000,
   message: 'Too many signup attempts from this address. Please try again in an hour.',
   apiName: 'AUTH_REGISTER'

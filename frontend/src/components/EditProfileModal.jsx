@@ -142,6 +142,12 @@ const EditProfileModal = ({ isOpen, onClose }) => {
       return;
     }
 
+    const phoneRegex = /^[6-9]\d{9}$/;
+    if (!phoneRegex.test(phone.trim())) {
+      setError('Please enter a valid 10-digit Indian phone number starting with 6-9.');
+      return;
+    }
+
     if (user.role === 'driver') {
       if (!currentCity.trim()) {
         setError('Current City is required.');
@@ -181,6 +187,10 @@ const EditProfileModal = ({ isOpen, onClose }) => {
       }
       if (!licenseDocument) {
         setError('Please upload license document.');
+        return;
+      }
+      if (driverContactNumber && !/^[6-9]\d{9}$/.test(driverContactNumber.trim())) {
+        setError('Please enter a valid 10-digit driver contact number starting with 6-9.');
         return;
       }
     }
@@ -365,10 +375,11 @@ const EditProfileModal = ({ isOpen, onClose }) => {
                   <input
                     type="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => setPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                    maxLength={10}
                     required
                     className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
-                    placeholder="+1 (555) 000-0000"
+                    placeholder="Enter 10-digit mobile number"
                   />
                 </div>
               </div>
@@ -480,9 +491,10 @@ const EditProfileModal = ({ isOpen, onClose }) => {
                       <input
                         type="tel"
                         value={driverContactNumber}
-                        onChange={(e) => setDriverContactNumber(e.target.value)}
+                        onChange={(e) => setDriverContactNumber(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                        maxLength={10}
                         className="w-full bg-slate-50 border border-slate-200 rounded-lg py-2.5 pl-11 pr-4 text-sm text-slate-800 focus:border-[#003893] focus:outline-none transition-colors"
-                        placeholder="Driver Contact Number"
+                        placeholder="Enter driver's 10-digit contact number"
                       />
                     </div>
                   </div>

@@ -30,7 +30,7 @@ const createAdmin = async () => {
       await User.create({
         fullName: process.env.ADMIN_NAME,
         email: process.env.ADMIN_EMAIL,
-        phone: "+91-9876543210",
+        phone: "9876543210",
         password: hashedPassword,
         role: "admin",
         isApproved: true,
